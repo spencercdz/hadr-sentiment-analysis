@@ -4,8 +4,8 @@ import json
 from datasets import load_dataset
 from huggingface_hub import login
 
-# Authenticate to HuggingFace
-login(token="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")  # Replace with your token
+# Authenticate to HuggingFace if you are not using the CLI to login
+# login(token="hf_REPLACEWITHYOURTOKEN")
 
 # Create target path
 current_dir = os.path.dirname(os.path.abspath(__file__))  # src/data/
