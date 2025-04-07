@@ -9,7 +9,7 @@ from huggingface_hub import login
 
 # Create target path
 current_dir = os.path.dirname(os.path.abspath(__file__))  # src/data/
-project_root = os.path.dirname(os.path.dirname(current_dir))  # Goes up to project/
+project_root = os.path.dirname(os.path.dirname(current_dir))  # Goes up to project
 raw_path = os.path.join(project_root, 'data', 'raw')  # project/data/raw/
 metadata_path = os.path.join(project_root, 'data', 'metadata') # project/data/metadata/
 
