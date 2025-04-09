@@ -1,44 +1,37 @@
 # clean_text.py: Data Cleaner Utilities 
-from emoji import demojize
 import pandas as pd
-import numpy as np
-import os
-import re
+from text_utils import TextCleaner
+from pathlib import Path
 
 # Create paths
-current_dir = os.path.dirname(os.path.abspath(__file__)) # src/data/preprocessing
-project_root = os.path.dirname(os.path.dirname(current_dir)) # Goes up to project
-raw_path = os.path.join(project_root, 'data', 'raw') # project/data/raw
-processed_path = os.path.join(project_root, 'data', 'processed') # project/data/processed
+project_root = Path.cwd() # Project is in hadr/src/data/preprocessing
 
-# Handling tags and encoding emojis
-def clean_keep_crisis_tags(text):
-    pass
+# Define main paths
+raw_path = project_root / 'data' / 'raw'
+processed_path = project_root / 'data' / 'processed'
 
-def encode_emojis(text):
-    return demojize(text, delimiters=(" ", " "))
+# Create TextCleaner object
+cleaner = TextCleaner()
 
-# Final data cleaner function
-def clean_text(text):
-    text = re.sub(r'http\S+|www\S+|https\S+', '', text) # Remove all URLs
+# Keep important columns and information
+columns_to_keep = ['clean_text', 'sentiment', 'event_type', 'event_type_detail', 'label'] 
 
-    text = re.sub(r'@\w+', '', text) # Remove all mentions (@username)
-
-    text = re.sub(r'[^\w\s.,!?]', '', text) # Remove special chars and keep basic letters and basic punctuation
-
-    text = encode_emojis(text) # Encode emojis
-
-    text = text.lower() # Convert to lowercase
-
-    text = ' '.join(text.split()) # Remove extra whitespaces
-
-    return text
-
-# Open csv files
+# Open csv files and clean
 try:
     for file_name in ["test.csv", "train.csv", "validation.csv"]:
-        file_path = os.path.join(processed_path, 'file_name') # Locate file path
-        df = pd.read_csv(file_path, ) # Read path into a pandas array
+        file_path = raw_path / file_name # Initialize file path
+        output_path = processed_path / file_name # Initialize output path
+
+        df = pd.read_csv(file_path) # Read file into a pandas array
+        df.dropna(inplace=True) # Remove missing values
+
+        df.rename(columns={'target':'sentiment'}, inplace=True) # Rename columns
+
+        df['clean_text'] = df['text'].apply(cleaner.clean) # Clean Text
+
+        df = df[columns_to_keep] # Only keep columns that we want
+
+        df.to_csv(output_path, index=False) # Export as csv to data/processed/
         
 except Exception as e:
     print(f"An exception has occured while trying to clean file")
