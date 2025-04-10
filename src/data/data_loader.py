@@ -13,6 +13,10 @@ project_root = os.path.dirname(os.path.dirname(current_dir))  # Goes up to proje
 raw_path = os.path.join(project_root, 'data', 'raw')  # project/data/raw/
 metadata_path = os.path.join(project_root, 'data', 'metadata') # project/data/metadata/
 
+# Create directories if they don't exist
+raw_path.mkdir(parents=True, exist_ok=True)
+metadata_path.mkdir(parents=True, exist_ok=True)
+
 # Load Hugging Face dataset (Natural Disasters) in data/raw
 ds = load_dataset(
     "melisekm/natural-disasters-from-social-media",
