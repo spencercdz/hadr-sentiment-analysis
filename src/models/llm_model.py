@@ -75,8 +75,12 @@ class MultiTaskRoberta(RobertaPreTrainedModel):
         self.event_detail_classifier = nn.Linear(config.hidden_size, config.event_detail_num_labels)
         self.label_classifier = nn.Linear(config.hidden_size, config.label_num_labels)
         
+        # Loss function
+        self.loss_fct = nn.CrossEntropyLoss()
+        
     def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, position_ids=None, 
-                head_mask=None, inputs_embeds=None, labels=None, output_attentions=None, 
+                head_mask=None, inputs_embeds=None, sentiment_labels=None, event_type_labels=None,
+                event_detail_labels=None, label_labels=None, output_attentions=None, 
                 output_hidden_states=None, return_dict=None):
         
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
@@ -101,12 +105,46 @@ class MultiTaskRoberta(RobertaPreTrainedModel):
         event_detail_logits = self.event_detail_classifier(pooled_output)
         label_logits = self.label_classifier(pooled_output)
         
-        return {
-            'sentiment': sentiment_logits,
-            'event_type': event_type_logits,
-            'event_detail': event_detail_logits,
-            'label': label_logits
-        }
+        # Initialize the total loss as 0
+        total_loss = 0
+        
+        # Calculate loss for each task if labels are provided
+        if sentiment_labels is not None:
+            sentiment_loss = self.loss_fct(sentiment_logits.view(-1, config.sentiment_num_labels), 
+                                          sentiment_labels.view(-1))
+            total_loss += sentiment_loss
+        
+        if event_type_labels is not None:
+            event_type_loss = self.loss_fct(event_type_logits.view(-1, config.event_type_num_labels), 
+                                           event_type_labels.view(-1))
+            total_loss += event_type_loss
+            
+        if event_detail_labels is not None:
+            event_detail_loss = self.loss_fct(event_detail_logits.view(-1, config.event_detail_num_labels), 
+                                             event_detail_labels.view(-1))
+            total_loss += event_detail_loss
+            
+        if label_labels is not None:
+            label_loss = self.loss_fct(label_logits.view(-1, config.label_num_labels), 
+                                      label_labels.view(-1))
+            total_loss += label_loss
+        
+        # Return everything
+        if total_loss > 0:
+            return {
+                'loss': total_loss,
+                'sentiment': sentiment_logits,
+                'event_type': event_type_logits, 
+                'event_detail': event_detail_logits,
+                'label': label_logits
+            }
+        else:
+            return {
+                'sentiment': sentiment_logits,
+                'event_type': event_type_logits,
+                'event_detail': event_detail_logits,
+                'label': label_logits
+            }
 
 # Get the base configuration
 config = RobertaConfig.from_pretrained(model_path)
