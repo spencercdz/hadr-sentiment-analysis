@@ -1,5 +1,5 @@
 from datasets import DatasetDict, Dataset
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
+from transformers import AutoTokenizer, Trainer, TrainingArguments
 import evaluate
 import numpy as np
 import pandas as pd
@@ -8,7 +8,7 @@ from pathlib import Path
 from transformers import DataCollatorWithPadding
 import torch
 import gc
-from transformers import set_seed
+from transformers import set_seed, RobertaConfig
 from torch import nn
 from transformers import RobertaPreTrainedModel, RobertaModel
 
@@ -19,7 +19,7 @@ if torch.cuda.is_available():
 
 # Paths
 current_dir = Path(__file__).resolve().parent  # Get the directory containing this script
-project_root = current_dir.parent.parent  # Go up to project root (3 levels: preprocessing -> data -> src -> root)
+project_root = current_dir.parent.parent  # Go up to project root (models -> src -> root)
 train_path = project_root / 'data' / 'processed' / 'train.csv'
 test_path = project_root / 'data' / 'processed' / 'test.csv'
 validation_path = project_root / 'data' / 'processed' / 'validation.csv'
@@ -69,14 +69,30 @@ class MultiTaskRoberta(RobertaPreTrainedModel):
         super().__init__(config)
         self.roberta = RobertaModel(config)
         
-        # Classifiers for each task
-        self.sentiment_classifier = nn.Linear(config.hidden_size, 2)
-        self.event_type_classifier = nn.Linear(config.hidden_size, len(event_types))
-        self.event_detail_classifier = nn.Linear(config.hidden_size, len(event_type_details))
-        self.label_classifier = nn.Linear(config.hidden_size, len(labels))
+        # Classifiers for each task using config attributes
+        self.sentiment_classifier = nn.Linear(config.hidden_size, config.sentiment_num_labels)
+        self.event_type_classifier = nn.Linear(config.hidden_size, config.event_type_num_labels)
+        self.event_detail_classifier = nn.Linear(config.hidden_size, config.event_detail_num_labels)
+        self.label_classifier = nn.Linear(config.hidden_size, config.label_num_labels)
         
-    def forward(self, input_ids, attention_mask=None, labels=None):
-        outputs = self.roberta(input_ids, attention_mask=attention_mask)
+    def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, position_ids=None, 
+                head_mask=None, inputs_embeds=None, labels=None, output_attentions=None, 
+                output_hidden_states=None, return_dict=None):
+        
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        
+        outputs = self.roberta(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            position_ids=position_ids,
+            head_mask=head_mask,
+            inputs_embeds=inputs_embeds,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+        
         pooled_output = outputs[1]  # Use pooled output for classification
         
         # Get logits for each task
@@ -92,30 +108,30 @@ class MultiTaskRoberta(RobertaPreTrainedModel):
             'label': label_logits
         }
 
-# Initialize the multi-task model
-model = MultiTaskRoberta.from_pretrained(
-    model_path,
-    num_labels={
-        'sentiment': 2,
-        'event_type': len(event_types),
-        'event_detail': len(event_type_details),
-        'label': len(labels)
-    }
-)
+# Get the base configuration
+config = RobertaConfig.from_pretrained(model_path)
+
+# Add custom configuration for multi-task learning
+config.sentiment_num_labels = 2
+config.event_type_num_labels = len(event_types)
+config.event_detail_num_labels = len(event_type_details)
+config.label_num_labels = len(labels)
+
+# Initialize the model with the modified config
+model = MultiTaskRoberta.from_pretrained(model_path, config=config)
 
 # Convert pandas DataFrames to HuggingFace Datasets
 train_dataset = Dataset.from_pandas(train_data)
 test_dataset = Dataset.from_pandas(test_data)
 validation_dataset = Dataset.from_pandas(validation_data)
 
-# Modify the preprocess function to handle all tasks
+# Preprocess function to handle all tasks
 def preprocess_function(examples):
     tokenized = tokenizer(
         examples['clean_text'],
         truncation=True,
-        padding=True,
+        padding='max_length',
         max_length=256,
-        return_tensors='pt'
     )
     
     # Add all labels
@@ -177,6 +193,14 @@ def compute_metrics(eval_pred):
     )['accuracy']
     metrics['label_accuracy'] = label_accuracy
     
+    # Calculate average accuracy
+    metrics['avg_accuracy'] = np.mean([
+        sentiment_accuracy, 
+        event_type_accuracy, 
+        event_detail_accuracy, 
+        label_accuracy
+    ])
+    
     return metrics
 
 # Set up training arguments
@@ -208,9 +232,11 @@ training_args = TrainingArguments(
     per_device_eval_batch_size=batch_size,
     num_train_epochs=epochs,
     logging_strategy='epoch',
-    eval_strategy='epoch',
+    eval_strategy='epoch', 
     save_strategy='epoch',
     load_best_model_at_end=True,
+    metric_for_best_model='avg_accuracy',
+    greater_is_better=True,
     fp16=True,
     gradient_accumulation_steps=2,
     warmup_ratio=0.1,
@@ -235,6 +261,7 @@ trainer.train()
 
 # Save model
 model.save_pretrained('multi-task-disaster-classifier')
+tokenizer.save_pretrained('multi-task-disaster-classifier')  # Also save the tokenizer
 
 # Apply model to test set
 test_results = trainer.predict(test_tokenized)
@@ -245,8 +272,12 @@ test_labels = test_results.label_ids
 
 # Calculate and print test metrics
 test_metrics = compute_metrics((test_predictions, test_labels))
-print(test_metrics)
+print("Test metrics:")
+for metric_name, value in test_metrics.items():
+    print(f"{metric_name}: {value:.4f}")
 
 # Save test metrics to file
 with open('test_metrics.json', 'w') as f:
-    json.dump(test_metrics, f)
+    json.dump(test_metrics, f, indent=2)
+
+print("Model training and evaluation complete!")
