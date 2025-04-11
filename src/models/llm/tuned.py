@@ -18,8 +18,8 @@ if torch.cuda.is_available():
     print(f"GPU Device: {torch.cuda.get_device_name(0)}")
 
 # Paths
-current_dir = Path(__file__).resolve().parent  # Get the directory containing this script
-project_root = current_dir.parent.parent  # Go up to project root (models -> src -> root)
+current_dir = Path(__file__).resolve().parent # Get the directory containing this script
+project_root = current_dir.parent.parent.parent  # Go up to project root (models -> src -> root)
 train_path = project_root / 'data' / 'processed' / 'train.csv'
 test_path = project_root / 'data' / 'processed' / 'test.csv'
 validation_path = project_root / 'data' / 'processed' / 'validation.csv'
