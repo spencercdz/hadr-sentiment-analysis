@@ -6,7 +6,7 @@ from tqdm import tqdm
 import logging
 from transformers import Trainer, TrainingArguments
 
-from .tuned import TunedLLM
+from .llm.tuned import TunedLLM
 
 # Add the project root to the Python path
 project_root = Path(__file__).resolve().parent.parent.parent
@@ -42,7 +42,7 @@ def main():
                 'weight_decay': 0.01,
                 'learning_rate': 2e-5,
                 'gradient_accumulation_steps': 2,
-                'fp16': torch.cuda.is_available(),  # Use mixed precision if CUDA is available
+                'fp16': torch.cuda.is_available(),
                 'logging_steps': 10,
                 'save_steps': 100,
                 'evaluation_strategy': 'steps',
@@ -58,7 +58,7 @@ def main():
         # Create and train the model
         logger.info("Initializing model...")
         model = TunedLLM(
-            model_name='aellxx/disaster-tweet-classification',
+            model_name='aellxx/disaster-tweet-classification', # original: aellxx/disaster-tweet-classification
             model_config=model_config
         )
         

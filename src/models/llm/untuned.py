@@ -46,7 +46,13 @@ class UntunedLLM(BaseLLM):
             self.model = AutoModelForSequenceClassification.from_pretrained(
                 self.model_name
             ).to(self.device)
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+
+            # Load tokenizer
+            try:
+                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            except OSError:
+                print("Tokenizer files not found in model repository, using base model tokenizer.")
+                self.tokenizer = AutoTokenizer.from_pretrained("bert-base-multilingual-uncased")
             
             # Clear memory
             torch.cuda.empty_cache()
@@ -80,93 +86,54 @@ class UntunedLLM(BaseLLM):
         return " ".join(new_text)
     
     def predict(self, texts: List[str]) -> List[Dict[str, Any]]:
-        """Generate predictions for all tasks.
-        
-        Args:
-            texts: List of texts to predict
-            
-        Returns:
-            List of dictionaries containing predictions for each task
         """
+        Generate predictions for all tasks using the untuned model.
+        Since the untuned model is a plain pretrained model with 2 output logits,
+        we replicate its binary prediction for every task in the label mapping.
+        """
+        from .labels import get_all_labels  # ensure import
+        from .utils import format_prediction_output  # ensure import
+
         predictions = []
         batch_size = self.batch_size
-        
         # Process texts in batches
-        for i in tqdm(range(0, len(texts), batch_size), desc="Generating predictions"):
+        for i in range(0, len(texts), batch_size):
             batch_texts = texts[i:i + batch_size]
+            # Encode texts without token_type_ids since the model does not accept them
+            encoded = self.tokenizer(
+                batch_texts,
+                padding=True,
+                truncation=True,
+                max_length=self.preprocessing_config.get('max_length', 128),
+                return_tensors='pt',
+                return_token_type_ids=False  # FIX: Do not return token_type_ids.
+            ).to(self.device)
             
-            try:
-                # Ensure all texts are strings and not empty
-                batch_texts = [str(text) if text is not None else "" for text in batch_texts]
-                
-                # Tokenize the batch
-                encoded = self.tokenizer(
-                    batch_texts,
-                    padding=True,
-                    truncation=True,
-                    max_length=self.preprocessing_config.get('max_length', 128),
-                    return_tensors='pt'
-                )
-                
-                # Move to device
-                input_ids = encoded['input_ids'].to(self.device)
-                attention_mask = encoded['attention_mask'].to(self.device)
-                
-                # Get predictions
-                with torch.no_grad():
-                    outputs = self.model(
-                        input_ids=input_ids,
-                        attention_mask=attention_mask
-                    )
-                    logits = outputs.logits
-                    scores = torch.softmax(logits, dim=1).cpu().numpy()
-                
-                # Format predictions for each task
-                for j in range(len(batch_texts)):
-                    task_predictions = {}
-                    for task in [
-                        'sentiment', 'genre', 'related', 'request', 'offer', 'aid_related',
-                        'medical_help', 'medical_products', 'search_and_rescue',
-                        'security', 'military', 'child_alone', 'water', 'food',
-                        'shelter', 'clothing', 'money', 'missing_people', 'refugees',
-                        'death', 'other_aid', 'infrastructure_related', 'other_infrastructure', 
-                        'weather_related', 'floods', 'storm', 'fire', 'earthquake',
-                        'cold', 'other_weather', 'direct_report'
-                    ]:
-                        # Convert numpy array to dictionary with labels
-                        scores_dict = {
-                            'negative': float(scores[j][0]),
-                            'positive': float(scores[j][1])
-                        }
-                        task_predictions[task] = {
-                            'scores': scores_dict,
-                            'prediction': bool(scores[j][1] > scores[j][0])
-                        }
-                    predictions.append(format_prediction_output(task_predictions))
-                
-                # Clear memory
-                del input_ids, attention_mask, outputs, logits
-                torch.cuda.empty_cache()
-                gc.collect()
-                
-            except RuntimeError as e:
-                if "out of memory" in str(e):
-                    print("Out of memory, skipping batch")
-                    # Add default predictions for skipped batch
-                    for _ in range(len(batch_texts)):
-                        task_predictions = {}
-                        for task in [
-                            'sentiment', 'genre', 'related', 'request', 'aid_related',
-                            'medical_help', 'medical_products', 'search_and_rescue',
-                            'security', 'military', 'child_alone', 'water', 'food',
-                            'shelter', 'clothing', 'money', 'missing_people', 'refugees',
-                            'deaths', 'weather', 'flood', 'storm', 'fire', 'earthquake',
-                            'cold', 'other_weather', 'direct_report'
-                        ]:
-                            task_predictions[task] = np.zeros(2)  # Default prediction
-                        predictions.append(format_prediction_output(task_predictions))
-                else:
-                    raise e
+            # Get model outputs
+            with torch.no_grad():
+                outputs = self.model(**encoded)
+                logits = outputs.logits  # shape: (batch_size, 2)
+                probs = torch.softmax(logits, dim=1).cpu().numpy()  # shape: (batch_size, 2)
+            
+            # For each sample in the batch, assign the same binary prediction to every task
+            for j in range(len(batch_texts)):
+                sample_pred = {}
+                # Calculate binary prediction and confidence
+                pred_binary = int(probs[j][1] > probs[j][0])
+                confidence = float(probs[j][1] if pred_binary == 1 else probs[j][0])
+                # Build prediction dictionary for each task based on label mappings
+                for task in get_all_labels().keys():
+                    sample_pred[task] = {
+                        'prediction': pred_binary,
+                        'confidence': confidence,
+                        'scores': {'0': float(probs[j][0]), '1': float(probs[j][1])}
+                    }
+                predictions.append(format_prediction_output(sample_pred))
+            
+            # Clean up
+            del encoded, outputs, logits
+            torch.cuda.empty_cache()
+            gc.collect()
         
         return predictions
     

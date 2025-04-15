@@ -18,7 +18,7 @@ untuned_model:
 
 # Tuned model settings
 tuned_model:
-  base_model_name: "aellxx/disaster-tweet-classification"
+  base_model_name: "aellxx/disaster-tweet-classification" # original aellxx/disaster-tweet-classification
   output_dir: "./results/models/llm/tuned"
   model_args:
     num_labels: 2  # non-negative, negative

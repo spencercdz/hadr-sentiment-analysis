@@ -9,7 +9,6 @@ def get_all_labels() -> Dict[str, Dict[int, str]]:
         to its dictionary of label ids and labels.
     """
     return {
-        'sentiment': get_sentiment_labels(),
         'genre': get_genre_labels(),
         'related': get_related_labels(),
         'request': get_request_labels(),
@@ -29,8 +28,15 @@ def get_all_labels() -> Dict[str, Dict[int, str]]:
         'missing_people': get_missing_people_labels(),
         'refugees': get_refugees_labels(),
         'death': get_death_labels(),
-        'other aid': get_other_aid_labels(),
+        'other_aid': get_other_aid_labels(),
         'infrastructure_related': get_infrastructure_related_labels(),
+        'transport': get_transport_labels(),
+        'buildings': get_buildings_labels(),
+        'electricity': get_electricity_labels(),
+        'tools': get_tools_labels(),
+        'hospitals': get_hospitals_labels(),
+        'shops': get_shops_labels(),
+        'aid_centers': get_aid_centers_labels(),
         'other_infrastructure': get_other_infrastructure_labels(),
         'weather_related': get_weather_related_labels(),
         'floods': get_floods_labels(),
@@ -42,33 +48,19 @@ def get_all_labels() -> Dict[str, Dict[int, str]]:
         'direct_report': get_direct_report_labels()
     }
 
-def get_sentiment_labels() -> Dict[int, str]:
-    """
-    Get mappings of sentiment label ids to human-readable labels.
-    
-    Returns:
-        Dict[int, str]: 
-            - 0: 'non-negative' (sentiment is not negative)
-            - 1: 'negative' (negative sentiment)
-    """
-    return {
-        0: 'non-negative',
-        1: 'negative'
-    }
-
 def get_genre_labels() -> Dict[int, str]:
     """
     Get mappings of genre label ids to human-readable labels.
     
     Returns:
         Dict[int, str]:
-            - 0: 'news'
-            - 1: 'direct'
-            - 2: 'social media'
+            - 0: 'direct' (direct messages)
+            - 1: 'news' (news stories or bulletins)
+            - 2: 'social media' (social posting)
     """
     return {
-        0: 'news',
-        1: 'direct',
+        0: 'direct',
+        1: 'news',
         2: 'social media'
     }
 
@@ -78,13 +70,13 @@ def get_related_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not related'
-            - 1: 'related'
-            - 2: 'maybe'
+            - 0: 'no' (not related)
+            - 1: 'yes' (related)
+            - 2: 'maybe' (possibly related)
     """
     return {
-        0: 'not related',
-        1: 'related',
+        0: 'no',
+        1: 'yes',
         2: 'maybe'
     }
 
@@ -94,12 +86,12 @@ def get_request_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not a request'
-            - 1: 'request'
+            - 0: 'no' (no request)
+            - 1: 'yes' (contains request)
     """
     return {
-        0: 'not a request',
-        1: 'request'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_offer_labels() -> Dict[int, str]:
@@ -108,12 +100,12 @@ def get_offer_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not offer'
-            - 1: 'offer'
+            - 0: 'no' (no offer)
+            - 1: 'yes' (contains offer)
     """
     return {
-        0: 'not offer',
-        1: 'offer'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_aid_related_labels() -> Dict[int, str]:
@@ -122,12 +114,12 @@ def get_aid_related_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not aid related'
-            - 1: 'aid related'
+            - 0: 'no' (not aid related)
+            - 1: 'yes' (aid related)
     """
     return {
-        0: 'not aid related',
-        1: 'aid related'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_medical_help_labels() -> Dict[int, str]:
@@ -136,12 +128,12 @@ def get_medical_help_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not medical help'
-            - 1: 'medical help'
+            - 0: 'no' (no medical help)
+            - 1: 'yes' (concerns medical help)
     """
     return {
-        0: 'not medical help',
-        1: 'medical help'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_medical_products_labels() -> Dict[int, str]:
@@ -150,12 +142,12 @@ def get_medical_products_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not medical products'
-            - 1: 'medical products'
+            - 0: 'no' (no medical products)
+            - 1: 'yes' (concerns medical products)
     """
     return {
-        0: 'not medical products',
-        1: 'medical products'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_search_and_rescue_labels() -> Dict[int, str]:
@@ -164,12 +156,12 @@ def get_search_and_rescue_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not search and rescue'
-            - 1: 'search and rescue'
+            - 0: 'no' (no search and rescue)
+            - 1: 'yes' (concerns search and rescue)
     """
     return {
-        0: 'not search and rescue',
-        1: 'search and rescue'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_security_labels() -> Dict[int, str]:
@@ -178,12 +170,12 @@ def get_security_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not security'
-            - 1: 'security'
+            - 0: 'no' (no security)
+            - 1: 'yes' (concerns security)
     """
     return {
-        0: 'not security',
-        1: 'security'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_military_labels() -> Dict[int, str]:
@@ -192,12 +184,12 @@ def get_military_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not military'
-            - 1: 'military'
+            - 0: 'no' (no military)
+            - 1: 'yes' (concerns military)
     """
     return {
-        0: 'not military',
-        1: 'military'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_child_alone_labels() -> Dict[int, str]:
@@ -206,12 +198,12 @@ def get_child_alone_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not child alone'
-            - 1: 'child alone'
+            - 0: 'no' (no child alone)
+            - 1: 'yes' (mentions child alone)
     """
     return {
-        0: 'not child alone',
-        1: 'child alone'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_water_labels() -> Dict[int, str]:
@@ -220,12 +212,12 @@ def get_water_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not water'
-            - 1: 'water'
+            - 0: 'no' (no water)
+            - 1: 'yes' (concerns water)
     """
     return {
-        0: 'not water',
-        1: 'water'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_food_labels() -> Dict[int, str]:
@@ -234,12 +226,12 @@ def get_food_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not food'
-            - 1: 'food'
+            - 0: 'no' (no food)
+            - 1: 'yes' (concerns food)
     """
     return {
-        0: 'not food',
-        1: 'food'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_shelter_labels() -> Dict[int, str]:
@@ -248,12 +240,12 @@ def get_shelter_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not shelter'
-            - 1: 'shelter'
+            - 0: 'no' (no shelter)
+            - 1: 'yes' (concerns shelter)
     """
     return {
-        0: 'not shelter',
-        1: 'shelter'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_clothing_labels() -> Dict[int, str]:
@@ -262,12 +254,12 @@ def get_clothing_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not clothing'
-            - 1: 'clothing'
+            - 0: 'no' (no clothing)
+            - 1: 'yes' (concerns clothing)
     """
     return {
-        0: 'not clothing',
-        1: 'clothing'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_money_labels() -> Dict[int, str]:
@@ -276,12 +268,12 @@ def get_money_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not money'
-            - 1: 'money'
+            - 0: 'no' (no money)
+            - 1: 'yes' (concerns money)
     """
     return {
-        0: 'not money',
-        1: 'money'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_missing_people_labels() -> Dict[int, str]:
@@ -290,12 +282,12 @@ def get_missing_people_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not missing people'
-            - 1: 'missing people'
+            - 0: 'no' (no missing people)
+            - 1: 'yes' (indicates missing people)
     """
     return {
-        0: 'not missing people',
-        1: 'missing people'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_refugees_labels() -> Dict[int, str]:
@@ -304,12 +296,12 @@ def get_refugees_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not refugees'
-            - 1: 'refugees'
+            - 0: 'no' (no refugees)
+            - 1: 'yes' (concerns refugees)
     """
     return {
-        0: 'not refugees',
-        1: 'refugees'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_death_labels() -> Dict[int, str]:
@@ -318,12 +310,12 @@ def get_death_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not death'
-            - 1: 'death'
+            - 0: 'no' (no death)
+            - 1: 'yes' (implies death)
     """
     return {
-        0: 'not death',
-        1: 'death'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_other_aid_labels() -> Dict[int, str]:
@@ -332,12 +324,12 @@ def get_other_aid_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not other aid'
-            - 1: 'other aid'
+            - 0: 'no' (no other aid)
+            - 1: 'yes' (other aid needed)
     """
     return {
-        0: 'not other aid',
-        1: 'other aid'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_infrastructure_related_labels() -> Dict[int, str]:
@@ -346,12 +338,110 @@ def get_infrastructure_related_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not infrastructure related'
-            - 1: 'infrastructure related'
+            - 0: 'no' (no infrastructure)
+            - 1: 'yes' (concerns infrastructure)
     """
     return {
-        0: 'not infrastructure related',
-        1: 'infrastructure related'
+        0: 'no',
+        1: 'yes'
+    }
+
+def get_transport_labels() -> Dict[int, str]:
+    """
+    Get mappings of transport label ids to human-readable labels.
+    
+    Returns:
+        Dict[int, str]:
+            - 0: 'no' (no transport)
+            - 1: 'yes' (concerns transport)
+    """
+    return {
+        0: 'no',
+        1: 'yes'
+    }
+
+def get_buildings_labels() -> Dict[int, str]:
+    """
+    Get mappings of buildings label ids to human-readable labels.
+    
+    Returns:
+        Dict[int, str]:
+            - 0: 'no' (no buildings)
+            - 1: 'yes' (concerns buildings)
+    """
+    return {
+        0: 'no',
+        1: 'yes'
+    }
+
+def get_electricity_labels() -> Dict[int, str]:
+    """
+    Get mappings of electricity label ids to human-readable labels.
+    
+    Returns:
+        Dict[int, str]:
+            - 0: 'no' (no electricity)
+            - 1: 'yes' (concerns electricity)
+    """
+    return {
+        0: 'no',
+        1: 'yes'
+    }
+
+def get_tools_labels() -> Dict[int, str]:
+    """
+    Get mappings of tools label ids to human-readable labels.
+    
+    Returns:
+        Dict[int, str]:
+            - 0: 'no' (no tools)
+            - 1: 'yes' (concerns tools)
+    """
+    return {
+        0: 'no',
+        1: 'yes'
+    }
+
+def get_hospitals_labels() -> Dict[int, str]:
+    """
+    Get mappings of hospitals label ids to human-readable labels.
+    
+    Returns:
+        Dict[int, str]:
+            - 0: 'no' (no hospitals)
+            - 1: 'yes' (concerns hospitals)
+    """
+    return {
+        0: 'no',
+        1: 'yes'
+    }
+
+def get_shops_labels() -> Dict[int, str]:
+    """
+    Get mappings of shops label ids to human-readable labels.
+    
+    Returns:
+        Dict[int, str]:
+            - 0: 'no' (no shops)
+            - 1: 'yes' (concerns shops)
+    """
+    return {
+        0: 'no',
+        1: 'yes'
+    }
+
+def get_aid_centers_labels() -> Dict[int, str]:
+    """
+    Get mappings of aid centers label ids to human-readable labels.
+    
+    Returns:
+        Dict[int, str]:
+            - 0: 'no' (no aid centers)
+            - 1: 'yes' (concerns aid centers)
+    """
+    return {
+        0: 'no',
+        1: 'yes'
     }
 
 def get_other_infrastructure_labels() -> Dict[int, str]:
@@ -360,12 +450,12 @@ def get_other_infrastructure_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not other infrastructure'
-            - 1: 'other infrastructure'
+            - 0: 'no' (no other infrastructure)
+            - 1: 'yes' (concerns other infrastructure)
     """
     return {
-        0: 'not other infrastructure',
-        1: 'other infrastructure'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_weather_related_labels() -> Dict[int, str]:
@@ -374,26 +464,26 @@ def get_weather_related_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not weather'
-            - 1: 'weather'
+            - 0: 'no' (no weather)
+            - 1: 'yes' (concerns weather)
     """
     return {
-        0: 'not weather',
-        1: 'weather'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_floods_labels() -> Dict[int, str]:
     """
-    Get mappings of flood label ids to human-readable labels.
+    Get mappings of floods label ids to human-readable labels.
     
     Returns:
         Dict[int, str]:
-            - 0: 'not flood'
-            - 1: 'flood'
+            - 0: 'no' (no flood)
+            - 1: 'yes' (indicates flood)
     """
     return {
-        0: 'not flood',
-        1: 'flood'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_storm_labels() -> Dict[int, str]:
@@ -402,12 +492,12 @@ def get_storm_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not storm'
-            - 1: 'storm'
+            - 0: 'no' (no storm)
+            - 1: 'yes' (indicates storm)
     """
     return {
-        0: 'not storm',
-        1: 'storm'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_fire_labels() -> Dict[int, str]:
@@ -416,12 +506,12 @@ def get_fire_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not fire'
-            - 1: 'fire'
+            - 0: 'no' (no fire)
+            - 1: 'yes' (indicates fire)
     """
     return {
-        0: 'not fire',
-        1: 'fire'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_earthquake_labels() -> Dict[int, str]:
@@ -430,12 +520,12 @@ def get_earthquake_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not earthquake'
-            - 1: 'earthquake'
+            - 0: 'no' (no earthquake)
+            - 1: 'yes' (indicates earthquake)
     """
     return {
-        0: 'not earthquake',
-        1: 'earthquake'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_cold_labels() -> Dict[int, str]:
@@ -444,12 +534,12 @@ def get_cold_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not cold'
-            - 1: 'cold'
+            - 0: 'no' (no cold)
+            - 1: 'yes' (indicates cold)
     """
     return {
-        0: 'not cold',
-        1: 'cold'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_other_weather_labels() -> Dict[int, str]:
@@ -458,12 +548,12 @@ def get_other_weather_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not other weather'
-            - 1: 'other weather'
+            - 0: 'no' (no other weather)
+            - 1: 'yes' (indicates other weather issues)
     """
     return {
-        0: 'not other weather',
-        1: 'other weather'
+        0: 'no',
+        1: 'yes'
     }
 
 def get_direct_report_labels() -> Dict[int, str]:
@@ -472,83 +562,10 @@ def get_direct_report_labels() -> Dict[int, str]:
     
     Returns:
         Dict[int, str]:
-            - 0: 'not a direct report'
-            - 1: 'direct report'
+            - 0: 'no' (not a direct report)
+            - 1: 'yes' (is a direct report)
     """
     return {
-        0: 'not a direct report',
-        1: 'direct report'
-    }
-
-
-
-
-
-""" OLD LABELS """
-
-# REMOVE: Get sentiment labels
-def get_sentiment_labels() -> Dict[int, str]:
-    """
-    Get mappings of sentiment label ids to human-readable labels.
-
-    Returns:
-        Dict[int, str]: A dictionary mapping label ids to labels.
-    """
-    return {
-        0: 'non-negative',
-        1: 'negative'
-    }
-
-# REMOVE: Get sentiment labels
-def get_event_type_labels() -> Dict[int, str]:
-    """
-    Get mappings of event type label ids to human-readable labels.
-    """
-    return {
-        0: 'unknown',
-        1: 'storm',
-        2: 'flood',
-        3: 'earthquake',
-        4: 'fire',
-        5: 'meteor',
-        6: 'volcano',
-        7: 'landslide',
-        8: 'haze',
-    }
-
-# REMOVE: Get sentiment labels
-def get_event_type_detail_labels() -> Dict[int, str]:
-    """
-    Get mappings of event type detail label ids to human-readable labels.
-    """
-    return {
-        0: 'unknown',
-        1: 'avalanche',
-        2: 'blizzard',
-        3: 'bush_fire',
-        4: 'cyclone',
-        5: 'dust_storm',
-        6: 'earthquake',
-        7: 'flood',
-        8: 'forest_fire',
-        9: 'haze',
-        10: 'hurricane',
-        11: 'landslide',
-        12: 'meteor',
-        13: 'storm',
-        14: 'tornado',
-        15: 'tsunami',
-        16: 'typhoon',
-        17: 'volcano',
-        18: 'wildfire'
-    }
-
-# REMOVE: Get sentiment labels
-def get_label_labels() -> Dict[int, str]:
-    """
-    Get mappings of label label ids to human-readable labels.
-    """
-    return {
-        0: 'irrelvant',
-        1: 'dont_know'
+        0: 'no',
+        1: 'yes'
     }
