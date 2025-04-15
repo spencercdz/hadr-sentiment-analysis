@@ -96,18 +96,21 @@ class UntunedLLM(BaseLLM):
             batch_texts = texts[i:i + batch_size]
             
             try:
+                # Ensure all texts are strings and not empty
+                batch_texts = [str(text) if text is not None else "" for text in batch_texts]
+                
                 # Tokenize the batch
                 encoded = self.tokenizer(
                     batch_texts,
                     padding=True,
                     truncation=True,
-                    max_length=self.preprocessing_config['max_length'],
+                    max_length=self.preprocessing_config.get('max_length', 128),
                     return_tensors='pt'
                 )
                 
                 # Move to device
-                input_ids = torch.tensor(encoded['input_ids']).to(self.device)
-                attention_mask = torch.tensor(encoded['attention_mask']).to(self.device)
+                input_ids = encoded['input_ids'].to(self.device)
+                attention_mask = encoded['attention_mask'].to(self.device)
                 
                 # Get predictions
                 with torch.no_grad():
@@ -122,14 +125,23 @@ class UntunedLLM(BaseLLM):
                 for j in range(len(batch_texts)):
                     task_predictions = {}
                     for task in [
-                        'sentiment', 'genre', 'related', 'request', 'aid_related',
+                        'sentiment', 'genre', 'related', 'request', 'offer', 'aid_related',
                         'medical_help', 'medical_products', 'search_and_rescue',
                         'security', 'military', 'child_alone', 'water', 'food',
                         'shelter', 'clothing', 'money', 'missing_people', 'refugees',
-                        'deaths', 'weather', 'flood', 'storm', 'fire', 'earthquake',
+                        'death', 'other_aid', 'infrastructure_related', 'other_infrastructure', 
+                        'weather_related', 'floods', 'storm', 'fire', 'earthquake',
                         'cold', 'other_weather', 'direct_report'
                     ]:
-                        task_predictions[task] = scores[j]
+                        # Convert numpy array to dictionary with labels
+                        scores_dict = {
+                            'negative': float(scores[j][0]),
+                            'positive': float(scores[j][1])
+                        }
+                        task_predictions[task] = {
+                            'scores': scores_dict,
+                            'prediction': bool(scores[j][1] > scores[j][0])
+                        }
                     predictions.append(format_prediction_output(task_predictions))
                 
                 # Clear memory

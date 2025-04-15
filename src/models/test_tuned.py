@@ -7,8 +7,8 @@ from tqdm import tqdm
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(project_root))
 
-from .llm.untuned import UntunedLLM
-from .llm.utils import format_prediction_output
+from src.models.llm.tuned import TunedLLM
+from src.models.llm.utils import format_prediction_output
 
 def main():
     # Initialize the model
@@ -18,11 +18,19 @@ def main():
             'padding': 'max_length',
             'truncation': True
         },
-        'batch_size': 32
+        'batch_size': 32,
+        'training': {
+            'num_epochs': 3,
+            'learning_rate': 2e-5,
+            'weight_decay': 0.01,
+            'warmup_steps': 500,
+            'gradient_accumulation_steps': 1,
+            'fp16': False
+        }
     }
     
-    model = UntunedLLM(
-        model_name='spencercdz/disaster-tweet-classification-v1',
+    model = TunedLLM(
+        model_name='aellxx/disaster-tweet-classification',
         model_config=model_config
     )
     
@@ -61,7 +69,7 @@ def main():
         'missing_people': {'correct': 0, 'total': 0},
         'refugees': {'correct': 0, 'total': 0},
         'death': {'correct': 0, 'total': 0},
-        'other aid': {'correct': 0, 'total': 0},
+        'other_aid': {'correct': 0, 'total': 0},
         'infrastructure_related': {'correct': 0, 'total': 0},
         'other_infrastructure': {'correct': 0, 'total': 0},
         'weather_related': {'correct': 0, 'total': 0},
@@ -120,4 +128,4 @@ def main():
                 print(f"{label}: {count} ({percentage:.2f}%)")
 
 if __name__ == "__main__":
-    main() 
+    main()

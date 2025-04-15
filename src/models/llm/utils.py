@@ -61,90 +61,16 @@ def batch_encode(
     """
     return tokenizer(
         texts,
-        padding=True,
+        padding='max_length',
         truncation=True,
         max_length=model_config.get('max_length', 512),
         return_tensors='pt'
     )
 
-# REMOVE: Get sentiment labels
-def get_sentiment_labels() -> Dict[int, str]:
-    """
-    Get mappings of sentiment label ids to human-readable labels.
-
-    Returns:
-        Dict[int, str]: A dictionary mapping label ids to labels.
-    """
-    return {
-        0: 'non-negative',
-        1: 'negative'
-    }
-
-# REMOVE: Get sentiment labels
-def get_event_type_labels() -> Dict[int, str]:
-    """
-    Get mappings of event type label ids to human-readable labels.
-    """
-    return {
-        0: 'unknown',
-        1: 'storm',
-        2: 'flood',
-        3: 'earthquake',
-        4: 'fire',
-        5: 'meteor',
-        6: 'volcano',
-        7: 'landslide',
-        8: 'haze',
-    }
-
-# REMOVE: Get sentiment labels
-def get_event_type_detail_labels() -> Dict[int, str]:
-    """
-    Get mappings of event type detail label ids to human-readable labels.
-    """
-    return {
-        0: 'unknown',
-        1: 'avalanche',
-        2: 'blizzard',
-        3: 'bush_fire',
-        4: 'cyclone',
-        5: 'dust_storm',
-        6: 'earthquake',
-        7: 'flood',
-        8: 'forest_fire',
-        9: 'haze',
-        10: 'hurricane',
-        11: 'landslide',
-        12: 'meteor',
-        13: 'storm',
-        14: 'tornado',
-        15: 'tsunami',
-        16: 'typhoon',
-        17: 'volcano',
-        18: 'wildfire'
-    }
-
-# REMOVE: Get sentiment labels
-def get_label_labels() -> Dict[int, str]:
-    """
-    Get mappings of label label ids to human-readable labels.
-    """
-    return {
-        0: 'irrelvant',
-        1: 'dont_know'
-    }
-
 # Format prediction results
 def format_prediction_output(prediction: Dict[str, Union[Dict[str, Any], np.ndarray]]) -> Dict[str, Any]:
-    """Format a single prediction output into a standardized format.
-    
-    Args:
-        prediction: Raw prediction output from the model for all tasks
-        
-    Returns:
-        Formatted prediction with all task predictions and scores
-    """
-    # Get all label mappings
+    """Format a single prediction output into a standardized format."""
+    # Get mappings for all tasks
     all_label_mapping = get_all_labels()
     
     formatted_prediction = {}
@@ -153,10 +79,26 @@ def format_prediction_output(prediction: Dict[str, Union[Dict[str, Any], np.ndar
     for task, pred in prediction.items():
         # Handle different prediction formats
         if isinstance(pred, dict):
-            if 'scores' in pred:
-                scores = pred['scores']
+            scores = pred.get('scores', pred)
+            prediction_value = pred.get('prediction', None)
+            
+            # Get the label with highest score
+            max_label = max(scores.items(), key=lambda x: x[1])[0]
+            max_score = scores[max_label]
+            
+            # Convert prediction to True/False based on task
+            if task == 'sentiment':
+                # For sentiment, keep the original labels
+                prediction_value = max_label
             else:
-                scores = pred
+                # For other tasks, use the provided prediction value
+                prediction_value = bool(prediction_value)
+            
+            formatted_prediction[task] = {
+                'prediction': prediction_value,
+                'confidence': float(max_score),
+                'scores': scores
+            }
         elif isinstance(pred, np.ndarray):
             if task == 'sentiment':
                 # For sentiment, combine positive and neutral into non-negative
@@ -168,13 +110,14 @@ def format_prediction_output(prediction: Dict[str, Union[Dict[str, Any], np.ndar
                         'negative': negative_score
                     }
                 else:
-                    scores = {all_label_mapping[i]: float(score) for i, score in enumerate(pred)}
+                    # Extract the task-specific mapping
+                    task_label_mapping = all_label_mapping.get(task, {})
+                    scores = {task_label_mapping[i]: float(score) for i, score in enumerate(pred)}
             else:
-                # For other tasks, use the disaster classification model output
-                scores = {all_label_mapping[i]: float(score) for i, score in enumerate(pred)}
-        else:
-            scores = {k: float(v) for k, v in pred.items()}
-        
+                # For other tasks, get the mapping using the task key
+                task_label_mapping = all_label_mapping.get(task, {})
+                scores = {task_label_mapping[i]: float(score) for i, score in enumerate(pred)}
+
         # Get the label with highest score
         max_label = max(scores.items(), key=lambda x: x[1])[0]
         max_score = scores[max_label]
@@ -185,8 +128,7 @@ def format_prediction_output(prediction: Dict[str, Union[Dict[str, Any], np.ndar
             prediction_value = max_label
         else:
             # For other tasks, convert to True/False
-            # If the label contains 'not' or is 'unknown', it's False
-            # Otherwise, it's True
+            # If the label contains 'not' or is 'unknown', it's False; otherwise, it's True
             prediction_value = not ('not' in max_label.lower() or max_label.lower() == 'unknown')
         
         formatted_prediction[task] = {
