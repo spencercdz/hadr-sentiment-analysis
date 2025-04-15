@@ -1,0 +1,12 @@
+{
+  "eval_loss": 1.642953634262085,
+  "eval_sentiment_accuracy": 0.9002774352651048,
+  "eval_event_type_accuracy": 0.9034114262227703,
+  "eval_event_detail_accuracy": 0.8979654747225647,
+  "eval_label_accuracy": 0.7317098232634608,
+  "eval_avg_accuracy": 0.8583410398684751,
+  "eval_runtime": 51.6476,
+  "eval_samples_per_second": 376.862,
+  "eval_steps_per_second": 23.564,
+  "epoch": 3.0
+}
