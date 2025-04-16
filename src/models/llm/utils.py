@@ -77,65 +77,75 @@ def format_prediction_output(prediction: Dict[str, Union[Dict[str, Any], np.ndar
     
     # Process each task's prediction
     for task, pred in prediction.items():
-        # Handle different prediction formats
+        # Get the task-specific mapping for label conversion
+        task_label_mapping = all_label_mapping.get(task, {})
+        
+        # Prepare a standardized prediction structure
         if isinstance(pred, dict):
-            scores = pred.get('scores', pred)
+            # Case 1: Prediction is already a dictionary with scores and prediction
+            scores = pred.get('scores', {})
             prediction_value = pred.get('prediction', None)
+            context = pred.get('context', "")
             
-            # Get the label with highest score
-            max_label = max(scores.items(), key=lambda x: x[1])[0]
-            max_score = scores[max_label]
-            
-            # Convert prediction to True/False based on task
-            if task == 'sentiment':
-                # For sentiment, keep the original labels
-                prediction_value = max_label
-            else:
-                # For other tasks, use the provided prediction value
-                prediction_value = bool(prediction_value)
-            
+            # Use the provided prediction directly - no conversion to True/False
             formatted_prediction[task] = {
                 'prediction': prediction_value,
-                'confidence': float(max_score),
-                'scores': scores
+                'confidence': max(scores.values()) if scores else 0.0,
+                'scores': scores,
+                'context': context
             }
+            
         elif isinstance(pred, np.ndarray):
-            if task == 'sentiment':
-                # For sentiment, combine positive and neutral into non-negative
-                if len(pred) == 3:  # twitter-roberta-base-sentiment output
-                    non_negative_score = float(pred[1] + pred[2])  # neutral + positive
-                    negative_score = float(pred[0])
+            # Case 2: Prediction is raw numpy array of scores
+            # Convert array to dictionary using label mapping
+            scores = {}
+            
+            # Different handling based on task type
+            if task in {'genre', 'related'}:
+                # For multi-class tasks
+                for i, score in enumerate(pred):
+                    if i < len(task_label_mapping):
+                        label = task_label_mapping[i]
+                        scores[label] = float(score)
+                
+                # Get the label with highest score
+                max_label = max(scores.items(), key=lambda x: x[1])[0] if scores else None
+                
+                formatted_prediction[task] = {
+                    'prediction': max_label,
+                    'confidence': scores.get(max_label, 0.0) if max_label else 0.0,
+                    'scores': scores
+                }
+            else:
+                # For binary tasks
+                if len(pred) >= 2:
                     scores = {
-                        'non-negative': non_negative_score,
-                        'negative': negative_score
+                        'no': float(pred[0]),
+                        'yes': float(pred[1])
+                    }
+                    
+                    # Determine prediction based on higher score
+                    max_label = 'yes' if pred[1] > pred[0] else 'no'
+                    
+                    formatted_prediction[task] = {
+                        'prediction': max_label,
+                        'confidence': scores.get(max_label, 0.0),
+                        'scores': scores
                     }
                 else:
-                    # Extract the task-specific mapping
-                    task_label_mapping = all_label_mapping.get(task, {})
-                    scores = {task_label_mapping[i]: float(score) for i, score in enumerate(pred)}
-            else:
-                # For other tasks, get the mapping using the task key
-                task_label_mapping = all_label_mapping.get(task, {})
-                scores = {task_label_mapping[i]: float(score) for i, score in enumerate(pred)}
-
-        # Get the label with highest score
-        max_label = max(scores.items(), key=lambda x: x[1])[0]
-        max_score = scores[max_label]
-        
-        # Convert prediction to True/False based on task
-        if task == 'sentiment':
-            # For sentiment, keep the original labels
-            prediction_value = max_label
+                    # Handle unexpected array size
+                    formatted_prediction[task] = {
+                        'prediction': 'no',
+                        'confidence': 0.0,
+                        'scores': {'no': 1.0, 'yes': 0.0}
+                    }
         else:
-            # For other tasks, convert to True/False
-            # If the label contains 'not' or is 'unknown', it's False; otherwise, it's True
-            prediction_value = not ('not' in max_label.lower() or max_label.lower() == 'unknown')
-        
-        formatted_prediction[task] = {
-            'prediction': prediction_value,
-            'confidence': float(max_score),
-            'scores': scores
-        }
+            # Fallback for unexpected prediction type
+            formatted_prediction[task] = {
+                'prediction': 'no',
+                'confidence': 0.0,
+                'scores': {'no': 1.0, 'yes': 0.0}
+            }
     
     return formatted_prediction
 

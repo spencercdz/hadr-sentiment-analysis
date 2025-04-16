@@ -1,0 +1,9 @@
+2025-04-16 11:47:21,629 - INFO - Starting model training...
+2025-04-16 11:47:21,630 - INFO - CUDA Available: True
+2025-04-16 11:47:21,632 - INFO - GPU Device: NVIDIA GeForce RTX 3080 Ti Laptop GPU
+2025-04-16 11:47:21,632 - INFO - Available GPU memory: 16384MB
+2025-04-16 11:47:21,633 - INFO - Initializing model...
+2025-04-16 11:47:24,148 - INFO - Starting training...
+2025-04-16 11:47:28,770 - WARNING - Parameter 'function'=<function TunedLLM.load_data.<locals>.preprocess_function at 0x000001BB39083420> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+2025-04-16 11:47:33,701 - ERROR - Error during training: Target size (torch.Size([16, 3])) must be the same as input size (torch.Size([16, 3, 76]))
+2025-04-16 11:47:33,701 - ERROR - Training failed. Please check the error message above.

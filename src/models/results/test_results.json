@@ -1,7 +1,0 @@
-{
-  "sentiment_accuracy": 0.9018893110175583,
-  "event_type_accuracy": 0.33037272820618135,
-  "event_detail_accuracy": 0.494968682616285,
-  "label_accuracy": 0.03742684053804292,
-  "avg_accuracy": 0.4411643905945169
-}

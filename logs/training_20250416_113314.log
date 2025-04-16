@@ -1,0 +1,9 @@
+2025-04-16 11:33:14,679 - INFO - Starting model training...
+2025-04-16 11:33:14,679 - INFO - CUDA Available: True
+2025-04-16 11:33:14,682 - INFO - GPU Device: NVIDIA GeForce RTX 3080 Ti Laptop GPU
+2025-04-16 11:33:14,682 - INFO - Available GPU memory: 16384MB
+2025-04-16 11:33:14,682 - INFO - Initializing model...
+2025-04-16 11:33:17,230 - INFO - Starting training...
+2025-04-16 11:33:21,855 - WARNING - Parameter 'function'=<function TunedLLM.load_data.<locals>.preprocess_function at 0x000002D219B1B6A0> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+2025-04-16 11:33:26,493 - ERROR - Error during training: TrainingArguments.__init__() got an unexpected keyword argument 'evaluation_strategy'
+2025-04-16 11:33:26,494 - ERROR - Training failed. Please check the error message above.

@@ -1,0 +1,45 @@
+2025-04-16 11:48:15,594 - INFO - Starting model training...
+2025-04-16 11:48:15,594 - INFO - CUDA Available: True
+2025-04-16 11:48:15,596 - INFO - GPU Device: NVIDIA GeForce RTX 3080 Ti Laptop GPU
+2025-04-16 11:48:15,596 - INFO - Available GPU memory: 16384MB
+2025-04-16 11:48:15,597 - INFO - Initializing model...
+2025-04-16 11:48:18,247 - INFO - Starting training...
+2025-04-16 11:48:22,949 - WARNING - Parameter 'function'=<function TunedLLM.load_data.<locals>.preprocess_function at 0x000001856BCFB880> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+2025-04-16 12:03:01,409 - INFO - Evaluating model...
+2025-04-16 12:03:01,409 - INFO - Evaluating model on test data: C:\Users\UserAdmin\Documents\projects\hadr-sentiment-analysis\data\raw\test1.csv
+2025-04-16 12:03:01,426 - INFO - Generating predictions...
+2025-04-16 12:03:01,650 - INFO - Calculating metrics...
+2025-04-16 12:03:02,409 - INFO - Task: request
+2025-04-16 12:03:02,410 - INFO -   Accuracy: 0.8102
+2025-04-16 12:03:02,410 - INFO -   Weighted F1: 0.7252
+2025-04-16 12:03:02,410 - INFO -   Macro F1: 0.4476
+2025-04-16 12:03:02,578 - INFO - Task: offer
+2025-04-16 12:03:02,579 - INFO -   Accuracy: 0.9547
+2025-04-16 12:03:02,579 - INFO -   Weighted F1: 0.9326
+2025-04-16 12:03:02,579 - INFO -   Macro F1: 0.4884
+2025-04-16 12:03:02,754 - INFO - Task: aid_related
+2025-04-16 12:03:02,754 - INFO -   Accuracy: 0.5645
+2025-04-16 12:03:02,754 - INFO -   Weighted F1: 0.4073
+2025-04-16 12:03:02,754 - INFO -   Macro F1: 0.3608
+2025-04-16 12:03:02,923 - INFO - Task: medical_help
+2025-04-16 12:03:02,924 - INFO -   Accuracy: 0.9163
+2025-04-16 12:03:02,924 - INFO -   Weighted F1: 0.8763
+2025-04-16 12:03:02,924 - INFO -   Macro F1: 0.4782
+2025-04-16 12:03:03,098 - INFO - Task: medical_products
+2025-04-16 12:03:03,099 - INFO -   Accuracy: 0.9593
+2025-04-16 12:03:03,099 - INFO -   Weighted F1: 0.9394
+2025-04-16 12:03:03,099 - INFO -   Macro F1: 0.4896
+2025-04-16 12:03:03,269 - INFO - Task: search_and_rescue
+2025-04-16 12:03:03,269 - INFO -   Accuracy: 0.9897
+2025-04-16 12:03:03,269 - INFO -   Weighted F1: 0.9846
+2025-04-16 12:03:03,269 - INFO -   Macro F1: 0.4974
+2025-04-16 12:03:03,438 - INFO - Task: security
+2025-04-16 12:03:03,438 - INFO -   Accuracy: 0.9943
+2025-04-16 12:03:03,439 - INFO -   Weighted F1: 0.9914
+2025-04-16 12:03:03,439 - INFO -   Macro F1: 0.4986
+2025-04-16 12:03:03,607 - INFO - Task: military
+2025-04-16 12:03:03,607 - INFO -   Accuracy: 0.9623
+2025-04-16 12:03:03,607 - INFO -   Weighted F1: 0.9439
+2025-04-16 12:03:03,608 - INFO -   Macro F1: 0.4904
+2025-04-16 12:03:03,628 - ERROR - Error during training: Number of classes, 1, does not match size of target_names, 2. Try specifying the labels parameter
+2025-04-16 12:03:03,629 - ERROR - Training failed. Please check the error message above.

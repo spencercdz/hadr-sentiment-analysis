@@ -1,0 +1,30 @@
+2025-04-16 11:19:42,109 - INFO - Starting model training...
+2025-04-16 11:19:42,109 - INFO - CUDA Available: True
+2025-04-16 11:19:42,111 - INFO - GPU Device: NVIDIA GeForce RTX 3080 Ti Laptop GPU
+2025-04-16 11:19:42,112 - INFO - Available GPU memory: 16384MB
+2025-04-16 11:19:42,112 - INFO - Initializing model...
+2025-04-16 11:19:43,899 - INFO - Starting training...
+2025-04-16 11:19:43,960 - ERROR - Error during training: 
+**********************************************************************
+  Resource [93mpunkt_tab[0m not found.
+  Please use the NLTK Downloader to obtain the resource:
+
+  [31m>>> import nltk
+  >>> nltk.download('punkt_tab')
+  [0m
+  For more information see: https://www.nltk.org/data.html
+
+  Attempted to load [93mtokenizers/punkt_tab/english/[0m
+
+  Searched in:
+    - 'C:\\Users\\UserAdmin/nltk_data'
+    - 'C:\\Users\\UserAdmin\\Documents\\projects\\hadr-sentiment-analysis\\venv\\nltk_data'
+    - 'C:\\Users\\UserAdmin\\Documents\\projects\\hadr-sentiment-analysis\\venv\\share\\nltk_data'
+    - 'C:\\Users\\UserAdmin\\Documents\\projects\\hadr-sentiment-analysis\\venv\\lib\\nltk_data'
+    - 'C:\\Users\\UserAdmin\\AppData\\Roaming\\nltk_data'
+    - 'C:\\nltk_data'
+    - 'D:\\nltk_data'
+    - 'E:\\nltk_data'
+**********************************************************************
+
+2025-04-16 11:19:43,970 - ERROR - Training failed. Please check the error message above.
