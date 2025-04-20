@@ -1,0 +1,10 @@
+{
+  "dataset_name": "natural-disasters-from-social-media",
+  "description": "",
+  "features": "{'text': Value(dtype='string', id=None), 'target': Value(dtype='int64', id=None), 'SOURCE_FILE': Value(dtype='string', id=None), 'tweet_id': Value(dtype='float64', id=None), 'filename': Value(dtype='string', id=None), 'event_type': Value(dtype='string', id=None), 'event_type_detail': Value(dtype='string', id=None), 'label': Value(dtype='string', id=None)}",
+  "num_samples": {
+    "train": 169109,
+    "validation": 21139,
+    "test": 21139
+  }
+}

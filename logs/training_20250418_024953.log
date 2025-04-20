@@ -1,0 +1,158 @@
+2025-04-18 02:49:53,957 - INFO - Starting model training...
+2025-04-18 02:49:53,957 - INFO - CUDA Available: True
+2025-04-18 02:49:53,960 - INFO - GPU Device: NVIDIA GeForce GTX 1060 6GB
+2025-04-18 02:49:53,960 - INFO - Available GPU memory: 6144MB
+2025-04-18 02:49:53,960 - INFO - Initializing model...
+2025-04-18 02:49:55,876 - WARNING - Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+2025-04-18 02:50:37,475 - WARNING - Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+2025-04-18 02:50:40,332 - INFO - Starting training...
+2025-04-18 02:50:45,481 - WARNING - Parameter 'function'=<bound method TunedLLM.preprocess_function of <src.models.llm.tuned.TunedLLM object at 0x000001ED0BD62BA0>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+2025-04-18 04:25:15,635 - INFO - Evaluating model...
+2025-04-18 04:25:15,636 - INFO - Evaluating model on test data: C:\Users\Spencer Chu\Desktop\Projects\hadr-sentiment-analysis\data\raw\test1.csv
+2025-04-18 04:25:15,695 - INFO - Generating predictions...
+2025-04-18 04:25:16,113 - INFO - Calculating metrics...
+2025-04-18 04:25:16,848 - INFO - Task: request
+2025-04-18 04:25:16,849 - INFO -   Accuracy: 0.8102
+2025-04-18 04:25:16,849 - INFO -   Weighted F1: 0.7252
+2025-04-18 04:25:16,849 - INFO -   Macro F1: 0.4476
+2025-04-18 04:25:17,071 - INFO - Task: offer
+2025-04-18 04:25:17,072 - INFO -   Accuracy: 0.9547
+2025-04-18 04:25:17,072 - INFO -   Weighted F1: 0.9326
+2025-04-18 04:25:17,072 - INFO -   Macro F1: 0.4884
+2025-04-18 04:25:17,300 - INFO - Task: aid_related
+2025-04-18 04:25:17,301 - INFO -   Accuracy: 0.5645
+2025-04-18 04:25:17,301 - INFO -   Weighted F1: 0.4073
+2025-04-18 04:25:17,301 - INFO -   Macro F1: 0.3608
+2025-04-18 04:25:17,652 - INFO - Task: medical_help
+2025-04-18 04:25:17,652 - INFO -   Accuracy: 0.9163
+2025-04-18 04:25:17,653 - INFO -   Weighted F1: 0.8763
+2025-04-18 04:25:17,653 - INFO -   Macro F1: 0.4782
+2025-04-18 04:25:17,872 - INFO - Task: medical_products
+2025-04-18 04:25:17,872 - INFO -   Accuracy: 0.9593
+2025-04-18 04:25:17,872 - INFO -   Weighted F1: 0.9394
+2025-04-18 04:25:17,872 - INFO -   Macro F1: 0.4896
+2025-04-18 04:25:18,090 - INFO - Task: search_and_rescue
+2025-04-18 04:25:18,091 - INFO -   Accuracy: 0.9897
+2025-04-18 04:25:18,091 - INFO -   Weighted F1: 0.9846
+2025-04-18 04:25:18,091 - INFO -   Macro F1: 0.4974
+2025-04-18 04:25:18,308 - INFO - Task: security
+2025-04-18 04:25:18,308 - INFO -   Accuracy: 0.9943
+2025-04-18 04:25:18,308 - INFO -   Weighted F1: 0.9914
+2025-04-18 04:25:18,309 - INFO -   Macro F1: 0.4986
+2025-04-18 04:25:18,537 - INFO - Task: military
+2025-04-18 04:25:18,537 - INFO -   Accuracy: 0.9623
+2025-04-18 04:25:18,537 - INFO -   Weighted F1: 0.9439
+2025-04-18 04:25:18,538 - INFO -   Macro F1: 0.4904
+2025-04-18 04:25:18,772 - INFO - Task: child_alone
+2025-04-18 04:25:18,773 - INFO -   Accuracy: 1.0000
+2025-04-18 04:25:18,773 - INFO -   Weighted F1: 1.0000
+2025-04-18 04:25:18,773 - INFO -   Macro F1: 1.0000
+2025-04-18 04:25:18,989 - INFO - Task: water
+2025-04-18 04:25:18,990 - INFO -   Accuracy: 0.9254
+2025-04-18 04:25:18,990 - INFO -   Weighted F1: 0.8896
+2025-04-18 04:25:18,990 - INFO -   Macro F1: 0.4806
+2025-04-18 04:25:19,207 - INFO - Task: food
+2025-04-18 04:25:19,207 - INFO -   Accuracy: 0.8760
+2025-04-18 04:25:19,207 - INFO -   Weighted F1: 0.8181
+2025-04-18 04:25:19,207 - INFO -   Macro F1: 0.4670
+2025-04-18 04:25:19,423 - INFO - Task: shelter
+2025-04-18 04:25:19,423 - INFO -   Accuracy: 0.9125
+2025-04-18 04:25:19,423 - INFO -   Weighted F1: 0.8708
+2025-04-18 04:25:19,424 - INFO -   Macro F1: 0.4771
+2025-04-18 04:25:19,651 - INFO - Task: clothing
+2025-04-18 04:25:19,651 - INFO -   Accuracy: 0.9859
+2025-04-18 04:25:19,652 - INFO -   Weighted F1: 0.9789
+2025-04-18 04:25:19,652 - INFO -   Macro F1: 0.4965
+2025-04-18 04:25:19,874 - INFO - Task: money
+2025-04-18 04:25:19,874 - INFO -   Accuracy: 0.9738
+2025-04-18 04:25:19,874 - INFO -   Weighted F1: 0.9608
+2025-04-18 04:25:19,874 - INFO -   Macro F1: 0.4934
+2025-04-18 04:25:20,101 - INFO - Task: missing_people
+2025-04-18 04:25:20,101 - INFO -   Accuracy: 0.9939
+2025-04-18 04:25:20,101 - INFO -   Weighted F1: 0.9909
+2025-04-18 04:25:20,102 - INFO -   Macro F1: 0.4985
+2025-04-18 04:25:20,323 - INFO - Task: refugees
+2025-04-18 04:25:20,323 - INFO -   Accuracy: 0.9719
+2025-04-18 04:25:20,323 - INFO -   Weighted F1: 0.9580
+2025-04-18 04:25:20,324 - INFO -   Macro F1: 0.4929
+2025-04-18 04:25:20,543 - INFO - Task: death
+2025-04-18 04:25:20,543 - INFO -   Accuracy: 0.9528
+2025-04-18 04:25:20,543 - INFO -   Weighted F1: 0.9298
+2025-04-18 04:25:20,544 - INFO -   Macro F1: 0.4879
+2025-04-18 04:25:20,775 - INFO - Task: other_aid
+2025-04-18 04:25:20,776 - INFO -   Accuracy: 0.9163
+2025-04-18 04:25:20,776 - INFO -   Weighted F1: 0.8763
+2025-04-18 04:25:20,776 - INFO -   Macro F1: 0.4782
+2025-04-18 04:25:20,994 - INFO - Task: infrastructure_related
+2025-04-18 04:25:20,994 - INFO -   Accuracy: 0.9700
+2025-04-18 04:25:20,994 - INFO -   Weighted F1: 0.9552
+2025-04-18 04:25:20,995 - INFO -   Macro F1: 0.4924
+2025-04-18 04:25:21,211 - INFO - Task: transport
+2025-04-18 04:25:21,212 - INFO -   Accuracy: 0.9506
+2025-04-18 04:25:21,212 - INFO -   Weighted F1: 0.9265
+2025-04-18 04:25:21,212 - INFO -   Macro F1: 0.4873
+2025-04-18 04:25:21,431 - INFO - Task: buildings
+2025-04-18 04:25:21,431 - INFO -   Accuracy: 0.9563
+2025-04-18 04:25:21,431 - INFO -   Weighted F1: 0.9349
+2025-04-18 04:25:21,431 - INFO -   Macro F1: 0.4888
+2025-04-18 04:25:21,661 - INFO - Task: electricity
+2025-04-18 04:25:21,661 - INFO -   Accuracy: 0.9840
+2025-04-18 04:25:21,661 - INFO -   Weighted F1: 0.9761
+2025-04-18 04:25:21,661 - INFO -   Macro F1: 0.4960
+2025-04-18 04:25:21,881 - INFO - Task: tools
+2025-04-18 04:25:21,881 - INFO -   Accuracy: 0.9985
+2025-04-18 04:25:21,881 - INFO -   Weighted F1: 0.9977
+2025-04-18 04:25:21,881 - INFO -   Macro F1: 0.4996
+2025-04-18 04:25:22,102 - INFO - Task: hospitals
+2025-04-18 04:25:22,103 - INFO -   Accuracy: 0.9932
+2025-04-18 04:25:22,103 - INFO -   Weighted F1: 0.9897
+2025-04-18 04:25:22,103 - INFO -   Macro F1: 0.4983
+2025-04-18 04:25:22,325 - INFO - Task: shops
+2025-04-18 04:25:22,325 - INFO -   Accuracy: 0.9973
+2025-04-18 04:25:22,325 - INFO -   Weighted F1: 0.9960
+2025-04-18 04:25:22,325 - INFO -   Macro F1: 0.4993
+2025-04-18 04:25:22,544 - INFO - Task: aid_centers
+2025-04-18 04:25:22,544 - INFO -   Accuracy: 0.9943
+2025-04-18 04:25:22,545 - INFO -   Weighted F1: 0.9914
+2025-04-18 04:25:22,545 - INFO -   Macro F1: 0.4986
+2025-04-18 04:25:22,777 - INFO - Task: other_infrastructure
+2025-04-18 04:25:22,778 - INFO -   Accuracy: 0.9840
+2025-04-18 04:25:22,778 - INFO -   Weighted F1: 0.9761
+2025-04-18 04:25:22,778 - INFO -   Macro F1: 0.4960
+2025-04-18 04:25:23,004 - INFO - Task: weather_related
+2025-04-18 04:25:23,004 - INFO -   Accuracy: 0.7219
+2025-04-18 04:25:23,004 - INFO -   Weighted F1: 0.6054
+2025-04-18 04:25:23,004 - INFO -   Macro F1: 0.4193
+2025-04-18 04:25:23,223 - INFO - Task: floods
+2025-04-18 04:25:23,223 - INFO -   Accuracy: 0.9064
+2025-04-18 04:25:23,223 - INFO -   Weighted F1: 0.8619
+2025-04-18 04:25:23,223 - INFO -   Macro F1: 0.4755
+2025-04-18 04:25:23,440 - INFO - Task: storm
+2025-04-18 04:25:23,441 - INFO -   Accuracy: 0.9110
+2025-04-18 04:25:23,441 - INFO -   Weighted F1: 0.8686
+2025-04-18 04:25:23,441 - INFO -   Macro F1: 0.4767
+2025-04-18 04:25:23,662 - INFO - Task: fire
+2025-04-18 04:25:23,662 - INFO -   Accuracy: 0.9958
+2025-04-18 04:25:23,662 - INFO -   Weighted F1: 0.9937
+2025-04-18 04:25:23,662 - INFO -   Macro F1: 0.4990
+2025-04-18 04:25:23,886 - INFO - Task: earthquake
+2025-04-18 04:25:23,886 - INFO -   Accuracy: 0.9137
+2025-04-18 04:25:23,886 - INFO -   Weighted F1: 0.8724
+2025-04-18 04:25:23,887 - INFO -   Macro F1: 0.4774
+2025-04-18 04:25:24,107 - INFO - Task: cold
+2025-04-18 04:25:24,107 - INFO -   Accuracy: 0.9829
+2025-04-18 04:25:24,107 - INFO -   Weighted F1: 0.9744
+2025-04-18 04:25:24,107 - INFO -   Macro F1: 0.4957
+2025-04-18 04:25:24,328 - INFO - Task: other_weather
+2025-04-18 04:25:24,328 - INFO -   Accuracy: 0.9597
+2025-04-18 04:25:24,328 - INFO -   Weighted F1: 0.9399
+2025-04-18 04:25:24,328 - INFO -   Macro F1: 0.4897
+2025-04-18 04:25:24,575 - INFO - Task: direct_report
+2025-04-18 04:25:24,575 - INFO -   Accuracy: 0.7661
+2025-04-18 04:25:24,575 - INFO -   Weighted F1: 0.6646
+2025-04-18 04:25:24,576 - INFO -   Macro F1: 0.4338
+2025-04-18 04:25:24,576 - INFO - Overall Metrics:
+2025-04-18 04:25:24,576 - INFO -   Average Accuracy: 0.9327
+2025-04-18 04:25:24,576 - INFO -   Average Weighted F1: 0.9028
+2025-04-18 04:25:24,576 - INFO -   Average Macro F1: 0.4956
+2025-04-18 04:25:24,585 - INFO - Training and evaluation complete!

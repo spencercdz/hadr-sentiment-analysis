@@ -1,0 +1,72 @@
+# Configuration for sentiment analysis models
+
+# General settings
+seed: 50
+max_sequence_length: 128
+
+# Untuned model settings
+untuned_model:
+  model_name: "cardiffnlp/twitter-roberta-base"  # Twitter-specific sentiment model
+  output_dir: "./results/models/llm/untuned"
+  batch_size: 16  # Change to GPU memory limit
+  model_args:
+    num_labels: 2  # non-negative, negative
+  preprocessing:
+    max_length: 128
+    padding: max_length
+    truncation: true
+
+# Tuned model settings
+tuned_model:
+  base_model_name: "cardiffnlp/twitter-roberta-base" # original aellxx/disaster-tweet-classification
+  output_dir: "./results/models/llm/tuned"
+  model_args:
+    num_labels: 2  # non-negative, negative
+  
+  # Training hyperparameters
+  training:
+    lr: 2e-4
+    batch_size: 16  # Change to GPU memory limit
+    epochs: 10
+    output_dir: 'multi-task-disaster-classifier'
+    learning_rate: lr
+    per_device_train_batch_size: batch_size
+    per_device_eval_batch_size: batch_size
+    num_train_epochs: epochs
+    logging_strategy: epoch
+    eval_strategy: epoch
+    save_strategy: epoch
+    load_best_model_at_end: true
+    metric_for_best_model: avg_accuracy
+    greater_is_better: true
+    fp16: true
+    gradient_accumulation_steps: 2
+    warmup_ratio: 0.1
+    weight_decay: 0.01
+    save_total_limit: 2
+    report_to: none
+
+  # Preprocessing settings  
+  preprocessing:
+    max_length: 128
+    padding: max_length
+    truncation: true
+
+model:
+  name: "finiteautomata/bertweet-base-sentiment-analysis"
+  max_length: 128
+  batch_size: 16
+  device: "cuda"  # or "cpu" if no GPU available
+
+training:
+  learning_rate: 2e-5
+  num_epochs: 3
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+
+data:
+  text_column: "clean_text"
+  label_column: "sentiment"
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
