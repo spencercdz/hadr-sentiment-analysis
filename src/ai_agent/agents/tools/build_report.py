@@ -20,8 +20,8 @@ from reportlab.graphics.charts.textlabels import Label
 test_data = {
     "Background": "On 28 March 2025, a magnitude 7.7–7.9 earthquake struck the Sagaing Region of Myanmar, with an epicenter close to Mandalay, the country's second-largest city. It was the most powerful earthquake to strike Myanmar since 1912, and the second deadliest in Myanmar's modern history, surpassed only by upper estimates of the 1930 Bago earthquake.",
     "Tweet Overview": "A total of 1026 Tweets were collected as part of this report. These are the 5 most impactful tweets made during this period of time...",
+    "Sentiment Overview": "The chart plot displays the changes in sentiment over time. The table indicates the frequency of requests and its request type reported on the respective days...",
     "Results": "Overall Sentiment Distribution was negative with an average score of 0.12, whereby 0 indicates the most negative sentiment and 1 indicates the most positive sentiment. Based on request classification, here are the results on a whole...",
-    "Day Overview": "The chart plot displays the changes in sentiment over time. The table indicates the frequency of requests and its request type reported on the respective days...",
     "Discussion": "Here is an overview of the situation with an understanding on the current sentiment and requirements on the ground...",
     "Recommendation": "In order to address public concerns, here are recommended solutions that we may consider...",
     "Summary" : "In overall, this is a holistic view of the sentiment regarding Myanmar Earthquake 2025..."
@@ -68,9 +68,92 @@ table_data = [
 
 sentiment_over_time = {
     # Sample data for sentiment over time (0-1 range)
-    "dates": ["29/03/2025", "30/03/2025", "31/03/2025", "01/04/2025", "02/04/2025"],
-    "sentiment": [0.35, 0.42, 0.51, 0.48, 0.55]
+    "dates": ["29/03/2025", "30/03/2025", "31/03/2025", "01/04/2025", "02/04/2025", "03/04/2025"],
+    "sentiment": [0.35, 0.42, 0.87, 0.48, 0.55, 0.62]
 }
+
+results_data = [
+    [
+        "Date",
+        "Sentiment",
+        "Elements",
+        "Impact",
+        "Requests",
+        "Summary"
+    ],
+    [
+        "29/03/2025",
+        "0.28",
+        "Earthquake, Flood",
+        "Infrastructure, Transport, Refugees, Death",
+        "Food, Water, Shelter",
+        "Public sentiment is low amid significant damage and urgent humanitarian needs."
+    ],
+    [
+        "30/03/2025",
+        "0.35",
+        "Earthquake, Flood",
+        "Infrastructure, Transport, Refugees, Death",
+        "Food, Water, Shelter",
+        "Requests for essentials dominate social media discussions."
+    ],
+    [
+        "31/03/2025",
+        "0.42",
+        "Flood",
+        "Transport, Refugees",
+        "Water, Shelter",
+        "Slight improvement in public mood as floodwaters stabilize. Still high demand for shelter and clean water."
+    ],
+    [
+        "01/04/2025",
+        "0.22",
+        "Earthquake",
+        "Infrastructure, Death",
+        "Shelter, Medical",
+        "Renewed fears after fresh tremors. Public sentiment dips to a low point with rising casualties and infrastructural collapse."
+    ],
+    [
+        "02/04/2025",
+        "0.47",
+        "Flood, Landslide",
+        "Infrastructure, Transport, Missing People, Death",
+        "Food, Water",
+        "Despite new disasters, coordinated relief brings slight optimism. However, missing persons remain a key concern."
+    ],
+    [
+        "03/04/2025",
+        "0.38",
+        "Earthquake, Flood",
+        "Refugees, Death",
+        "Medical Aid, Food, Shelter",
+        "Fluctuating sentiment as aid arrives but challenges persist. Refugee numbers grow, straining local resources."
+    ],
+    [
+        "04/04/2025",
+        "0.51",
+        "Flood",
+        "Transport, Infrastructure",
+        "Water, Shelter, Clothing, Medical Supplies",
+        "Public morale sees a boost with increased aid distribution and improving communication channels."
+    ],
+    [
+        "05/04/2025",
+        "0.43",
+        "Earthquake",
+        "Infrastructure, Refugees",
+        "Shelter, Medical",
+        "Steady efforts in rebuilding help ease public anxiety, but the need for shelter remains critical."
+    ],
+    [
+        "06/04/2025",
+        "0.31",
+        "Flood, Earthquake",
+        "Missing People, Refugees, Transport, Death, Other Infrastructure",
+        "Food, Water, Shelter",
+        "A sobering reminder of the crisis’ scale as new reports highlight unresolved tragedies. Public sentiment dips again."
+    ],
+]
 
 stylesheets = getSampleStyleSheet()
 
@@ -116,17 +199,17 @@ class SentimentReport(SimpleDocTemplate):
                 self.story.append(Paragraph(f"{content}", self.text_style))
 
                 # Check if the section has a Table/Graph/Chart
-                if header.lower() == "tweet overview" or header.lower() == "results" or header.lower() == "day overview":
+                if header.lower() == "tweet overview" or header.lower() == "results" or header.lower() == "sentiment overview":
                     self.story.append(Spacer(1, 13))
                     if header.lower() == "tweet overview":
                         # Add Tweet Table
                         self.story.append(self.tweet_table())
-                    elif header.lower() == "day overview":
+                    elif header.lower() == "sentiment overview":
                         # Add Sentiment Chart
                         self.story.append(self.sentiment_chart())
                     else:
                         # Add Results Chart/Table
-                        pass
+                        self.story.append(self.results_table())
                 
                 # Add spacing for the next section
                 self.story.append(Spacer(1, 13))
@@ -142,13 +225,25 @@ class SentimentReport(SimpleDocTemplate):
         t = Table(data, colWidths=col_widths, repeatRows=1)
 
         # Style tweet table
-        t.setStyle(self.build_tweet_table_style())
+        t.setStyle(self.build_table_style())
 
         return t
     
-    def build_results_table(self):
-        pass
+    def results_table(self):
+        # Format results data
+        data = [[Paragraph(cell, self.text_style) for cell in row] for row in results_data]
 
+        # Adjust column widths
+        col_widths = [75, 75, 75, 100, 75, 125]
+
+        # Create Results Table using data
+        t = Table(data, colWidths=col_widths, repeatRows=1)
+
+        # Style results table
+        t.setStyle(self.build_table_style())
+
+        return t
+    
     def sentiment_chart(self):
         """Creates a centered sentiment chart that's properly positioned within the document."""
         from reportlab.graphics.shapes import Drawing
@@ -162,16 +257,17 @@ class SentimentReport(SimpleDocTemplate):
         # Create a drawing that's exactly the width of the content area
         # A4 is 8.27 × 11.69 inches, with typical margins of 1 inch
         content_width = A4[0] - 2*inch  # Page width minus margins
+        content_height = A4[1] - 8*inch  # Page height minus margins
         drawing_width = content_width
-        drawing_height = 250
+        drawing_height = content_height
         
         # Chart dimensions - make it slightly smaller than the drawing
         chart_width = drawing_width * 0.8
-        chart_height = 150
+        chart_height = drawing_height * 0.8
         
         # Center the chart within the drawing
         chart_x = (drawing_width - chart_width) / 2
-        chart_y = 50
+        chart_y = (drawing_height - chart_height) / 2
         
         # Create the drawing with exact content width
         drawing = Drawing(drawing_width, drawing_height)
@@ -195,7 +291,7 @@ class SentimentReport(SimpleDocTemplate):
         lp.lines[0].strokeColor = colors.red
         lp.lines[0].strokeWidth = 2
         lp.lines.symbol = makeMarker('FilledCircle')
-        lp.lines[0].symbol.fillColor = colors.red
+        lp.lines[0].symbol.fillColor = colors.blue
         lp.lines[0].symbol.size = 5
 
         # X axis: show axis line and tick marks for each data point
@@ -213,7 +309,7 @@ class SentimentReport(SimpleDocTemplate):
         lp.yValueAxis.valueMax = 1
         lp.yValueAxis.valueStep = 0.1
         lp.yValueAxis.labelTextFormat = '%0.1f'
-        lp.yValueAxis.labels.fontName = 'Times-Roman'
+        lp.yValueAxis.labels.fontName = 'Times-Bold'
         lp.yValueAxis.labels.fontSize = 8
 
         drawing.add(lp)
@@ -225,14 +321,14 @@ class SentimentReport(SimpleDocTemplate):
             x_pos = chart_x + (i * chart_width / n_points)
             lbl.setOrigin(x_pos, chart_y - 10)
             lbl.boxAnchor = 'n'
-            lbl.fontName = 'Times-Roman'
+            lbl.fontName = 'Times-Bold'
             lbl.fontSize = 8
             lbl.setText(date)
             drawing.add(lbl)
 
         # X axis name
         x_axis_label = Label()
-        x_axis_label.setOrigin(chart_x + chart_width/2, chart_y - 30)
+        x_axis_label.setOrigin(chart_x + chart_width/2, chart_y - 20)
         x_axis_label.boxAnchor = 'n'
         x_axis_label.fontName = 'Times-Bold'
         x_axis_label.fontSize = 10
@@ -241,7 +337,7 @@ class SentimentReport(SimpleDocTemplate):
 
         # Y axis name
         y_axis_label = Label()
-        y_axis_label.setOrigin(chart_x - 35, chart_y + chart_height/2)
+        y_axis_label.setOrigin(chart_x - 25, chart_y + chart_height/2)
         y_axis_label.boxAnchor = 'c'
         y_axis_label.angle = 90
         y_axis_label.fontName = 'Times-Bold'
@@ -259,10 +355,6 @@ class SentimentReport(SimpleDocTemplate):
         drawing.add(legend)
 
         return drawing
-
-    def build_sentiment_chart_style(self, chart):
-        """This function is kept for backwards compatibility but no longer used."""
-        pass
 
     def generate_title(self):
         # Add RHCC logo
@@ -310,7 +402,7 @@ class SentimentReport(SimpleDocTemplate):
 
         return text
     
-    def build_tweet_table_style(self):
+    def build_table_style(self):
         style = TableStyle([
             # grid around every cell
             ('GRID',         (0,0), (-1,-1),    0.5, colors.black),
