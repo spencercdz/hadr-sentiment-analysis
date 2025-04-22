@@ -2,7 +2,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, KeepInFrame
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, KeepInFrame, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 from reportlab.lib import colors
@@ -18,14 +18,67 @@ from datetime import datetime
 from reportlab.graphics.charts.textlabels import Label
 
 test_data = {
-    "Background": "On 28 March 2025, a magnitude 7.7–7.9 earthquake struck the Sagaing Region of Myanmar, with an epicenter close to Mandalay, the country's second-largest city. It was the most powerful earthquake to strike Myanmar since 1912, and the second deadliest in Myanmar's modern history, surpassed only by upper estimates of the 1930 Bago earthquake.",
-    "Tweet Overview": "A total of 1026 Tweets were collected as part of this report. These are the 5 most impactful tweets made during this period of time...",
-    "Sentiment Overview": "The chart plot displays the changes in sentiment over time. The table indicates the frequency of requests and its request type reported on the respective days...",
-    "Results": "Overall Sentiment Distribution was negative with an average score of 0.12, whereby 0 indicates the most negative sentiment and 1 indicates the most positive sentiment. Based on request classification, here are the results on a whole...",
-    "Discussion": "Here is an overview of the situation with an understanding on the current sentiment and requirements on the ground...",
-    "Recommendation": "In order to address public concerns, here are recommended solutions that we may consider...",
-    "Summary" : "In overall, this is a holistic view of the sentiment regarding Myanmar Earthquake 2025..."
+    "Background": (
+        "On 28 March 2025, a powerful earthquake with a magnitude between 7.7 and 7.9 struck Myanmar’s Sagaing Region. "
+        "The epicenter was located near Mandalay, the country's second-largest city. This seismic event is considered "
+        "the most powerful earthquake in Myanmar since 1912 and the second deadliest in the nation’s modern history, "
+        "surpassed only by upper estimates of the 1930 Bago earthquake. The quake triggered widespread panic, "
+        "infrastructure collapse, and significant humanitarian impact across urban and rural zones."
+    ),
+
+    "Tweet Overview": (
+        "A total of 1,026 Tweets were collected between 29 March and 6 April 2025. These tweets reflect public discourse, "
+        "emergency calls for help, on-ground observations, and news propagation. Among these, the 5 most impactful tweets "
+        "garnered over 20,000 impressions each, primarily focusing on calls for urgent aid, live footage of the destruction, "
+        "and citizen-led coordination of relief. The data indicates that Twitter served as both an alerting tool and a "
+        "coordinating mechanism among citizens and NGOs during this period."
+    ),
+
+    "Sentiment Overview": (
+        "Sentiment analysis across the tweet dataset reveals a fluctuating pattern of public morale. Initial days showed "
+        "a deep negative sentiment (as low as 0.22 on 01 April), coinciding with aftershocks and casualty updates. "
+        "A moderate rebound was observed on 04 April, reaching a high of 0.51, attributed to the arrival of international aid and "
+        "successful rescues. Nevertheless, the average sentiment over the 9-day period remained low at 0.12, emphasizing a prevailing "
+        "sense of distress. The most frequently reported request types were for Shelter, Food, Water, and Medical Aid, "
+        "indicating critical shortages and basic survival needs."
+    ),
+
+    "Results": (
+        "The overall sentiment remained largely negative throughout the period. The average sentiment score was 0.12, "
+        "indicating high distress and urgency. Over 65% of all tweets contained requests for essential supplies or services. "
+        "The most recurring impacts included infrastructure collapse, transport blockages, refugee displacement, and loss of life. "
+        "Disasters reported included repeated aftershocks, flooding (due to dam damage and ruptured pipelines), and landslides. "
+        "Tweet volumes peaked on 02 and 04 April, correlating with major developments such as a landslide in northern villages "
+        "and the coordinated delivery of international aid convoys."
+    ),
+
+    "Discussion": (
+        "The analysis illustrates the devastating aftermath of the earthquake, both from a humanitarian and communication perspective. "
+        "Social media acted as a real-time reporting and request channel, showing how public sentiment evolved in response to events on the ground. "
+        "The initial trauma and confusion gradually gave way to sporadic optimism as organized relief began to arrive. "
+        "However, persistent requests for shelter and medical aid, coupled with recurring mentions of missing persons, "
+        "highlight that the emergency response was strained and potentially under-resourced. The needs expressed by the public "
+        "suggest gaps in local preparedness and the importance of sustained support over short-term aid."
+    ),
+
+    "Recommendation": (
+        "To address the challenges observed in both sentiment and resource requests, the following actions are recommended:\n"
+        "1. Deploy mobile health and shelter units to high-need zones with confirmed infrastructure damage.\n"
+        "2. Establish a multilingual crisis information portal that consolidates real-time updates and resource availability.\n"
+        "3. Train local leaders and volunteers in digital communication tools to improve accuracy and reach during crisis moments.\n"
+        "4. Increase coordination between governmental, non-profit, and international bodies to reduce redundancy in aid delivery.\n"
+        "5. Launch a long-term psychological support initiative to address trauma resulting from displacement and loss."
+    ),
+
+    "Summary": (
+        "This report provides a comprehensive analysis of public sentiment and need-based communication surrounding the 2025 Myanmar Earthquake. "
+        "Sentiment data reflects a population in distress, with occasional signs of hope as aid begins to arrive. "
+        "Request types reinforce the need for rapid deployment of essential supplies and continued humanitarian focus. "
+        "The digital response underscores the importance of integrating social media monitoring into emergency management "
+        "to ensure timely, relevant, and effective action on the ground."
+    )
 }
+
 
 table_data = [
     [
@@ -69,7 +122,7 @@ table_data = [
 sentiment_over_time = {
     # Sample data for sentiment over time (0-1 range)
     "dates": ["29/03/2025", "30/03/2025", "31/03/2025", "01/04/2025", "02/04/2025", "03/04/2025"],
-    "sentiment": [0.35, 0.42, 0.87, 0.48, 0.55, 0.62]
+    "sentiment": [0.35, 0.42, 0.87, 0.48, 0.41, 0.20]
 }
 
 results_data = [
@@ -210,7 +263,7 @@ class SentimentReport(SimpleDocTemplate):
                     else:
                         # Add Results Chart/Table
                         self.story.append(self.results_table())
-                
+
                 # Add spacing for the next section
                 self.story.append(Spacer(1, 13))
 
@@ -257,7 +310,7 @@ class SentimentReport(SimpleDocTemplate):
         # Create a drawing that's exactly the width of the content area
         # A4 is 8.27 × 11.69 inches, with typical margins of 1 inch
         content_width = A4[0] - 2*inch  # Page width minus margins
-        content_height = A4[1] - 8*inch  # Page height minus margins
+        content_height = A4[1] - 9*inch  # Page height minus margins
         drawing_width = content_width
         drawing_height = content_height
         
