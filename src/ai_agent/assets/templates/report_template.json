@@ -1,0 +1,81 @@
+{
+    "sections": {
+        "Background": "On 28 March 2025, a powerful earthquake with a magnitude of 7.5 struck Myanmar's Sagaing Region at 14:35 UTC. The epicenter was located in Sagaing Region at a depth of 35 km, affecting major areas including Sagaing, Mandalay, Magway, and Chin State. Initial reports indicated 245 dead, 1280 injured, and 53 missing. Infrastructure damage was severe, particularly to buildings, healthcare facilities, schools, water supply, and electricity networks.",
+        "Tweet Overview": "A total of 10 tweets from significant accounts were analyzed from March 28 to April 1, 2025. These tweets originated from relief organizations, journalists, medical teams, and affected residents. The social media conversation reflected the immediate crisis response, critical resource needs, and gradually improving sentiment as aid reached affected communities. Key hashtags included #MyanmarEarthquake and #EmergencyResponse.",
+        "Sentiment Overview": "Sentiment analysis across the dataset revealed a gradual improvement from highly negative (0.15) immediately after the earthquake to cautiously positive (0.45) by April 3. The most negative sentiment correlated with initial reports of casualties and infrastructure damage, while sentiment improved as aid distribution became more effective. Topic analysis showed that infrastructure damage and medical needs generated the most negative sentiment.",
+        "Results": "The earthquake's impact was most severe in the first three days, with sentiment scores below 0.25, indicating widespread distress. By April 1-3, sentiment improved to the 0.38-0.45 range as relief efforts gained momentum. Medical supplies, water, and shelter emerged as the most requested resources across all timeframes. Infrastructure damage was consistently mentioned in 28% of all analyzed content.",
+        "Discussion": "The analysis illustrates the devastating aftermath of the earthquake, with particular challenges in reaching isolated rural communities due to landslides and damaged infrastructure. The gradual improvement in sentiment correlates with the arrival of international aid and deployment of field hospitals. However, water infrastructure damage presents a significant ongoing challenge, with potential public health implications as displacement continues.",
+        "Recommendation": "To address the challenges observed in both sentiment and resource requests, the following actions are recommended:\n1. Deploy mobile health and water purification units to rural Sagaing villages currently isolated by landslides\n2. Establish a multilingual crisis information portal to improve coordination between local and international responders\n3. Prioritize restoration of water infrastructure to prevent waterborne disease outbreaks\n4. Develop transitional shelter solutions with monsoon season approaching\n5. Create dedicated supply chains for critical medical supplies identified in the analysis"
+    },
+    "tweets": [
+        ["Username", "Date", "Retweets", "Tweet"],
+        ["DisasterAlert", "28/03/2025", "543", "BREAKING: Powerful 7.5 magnitude earthquake strikes Myanmar's Sagaing Region. Multiple buildings collapsed. #MyanmarEarthquake #EmergencyResponse"],
+        ["ReliefOrg", "28/03/2025", "312", "We are mobilizing emergency resources to Myanmar following today's devastating earthquake. Immediate needs: medical supplies, water, shelter."],
+        ["LocalJournalist", "29/03/2025", "267", "The situation in rural Sagaing is dire. Roads blocked by landslides, villages cut off. People digging through rubble with bare hands. #MyanmarEarthquake"],
+        ["AidWorker", "29/03/2025", "198", "Working with local partners to establish field hospitals near Sagaing. Critical shortage of medical personnel and supplies. Need air support to reach remote areas."],
+        ["WeatherChannel", "30/03/2025", "175", "Heavy rainfall expected in earthquake-affected regions of Myanmar over next 48 hours. Could complicate rescue efforts and increase landslide risk. #MyanmarEarthquake"],
+        ["UNReliefCoord", "30/03/2025", "421", "UN coordinating international response to Myanmar earthquake. Appeal launched for $25M in emergency funding for immediate humanitarian needs."],
+        ["LocalResident", "31/03/2025", "89", "No water, no electricity for 3 days. My family is sleeping outside because we're afraid of aftershocks. Please send help to Sagaing villages."],
+        ["MedicalTeam", "31/03/2025", "156", "Treating crush injuries, fractures, and respiratory issues. Many patients injured when buildings collapsed. Need more medical supplies urgently."],
+        ["WaterAid", "01/04/2025", "203", "Water infrastructure severely damaged in Sagaing Region. Deploying purification units and distributing clean water. Risk of waterborne diseases rising. #MyanmarEarthquake"],
+        ["ShelterOrg", "01/04/2025", "187", "Distributing 5,000 emergency shelter kits in worst-affected areas. Monsoon season approaching fast - we need more resources to help families without homes."]
+    ],
+    "details": [
+        {
+            "Date": "28/03/2025",
+            "Sentiment": 0.15,
+            "Elements": "Earthquake",
+            "Impact": "Infrastructure, Death, Injury",
+            "Requests": "Medical, Rescue, Information",
+            "Summary": "Initial shock and crisis as earthquake hits, immediate needs for rescue and information"
+        },
+        {
+            "Date": "29/03/2025",
+            "Sentiment": 0.22,
+            "Elements": "Earthquake, Landslides",
+            "Impact": "Infrastructure, Isolation, Death",
+            "Requests": "Medical, Water, Shelter",
+            "Summary": "Scope of disaster becoming clear, rural areas isolated, basic needs emerging as priorities"
+        },
+        {
+            "Date": "30/03/2025",
+            "Sentiment": 0.25,
+            "Elements": "Earthquake, Rain",
+            "Impact": "Infrastructure, Sanitation, Healthcare",
+            "Requests": "Medical, Water, Shelter, Food",
+            "Summary": "Weather complications, growing concern about sanitation and disease"
+        },
+        {
+            "Date": "31/03/2025",
+            "Sentiment": 0.31,
+            "Elements": "Earthquake, Aftershocks",
+            "Impact": "Infrastructure, Healthcare, Utilities",
+            "Requests": "Medical, Water, Power, Shelter",
+            "Summary": "Ongoing utility outages causing distress, aftershocks creating further trauma"
+        },
+        {
+            "Date": "01/04/2025",
+            "Sentiment": 0.38,
+            "Elements": "Earthquake",
+            "Impact": "Water Systems, Healthcare, Housing",
+            "Requests": "Water, Medical, Shelter, Financial",
+            "Summary": "Relief efforts beginning to take effect, water becoming critical concern"
+        },
+        {
+            "Date": "02/04/2025",
+            "Sentiment": 0.42,
+            "Elements": "Earthquake",
+            "Impact": "Housing, Education, Livelihoods",
+            "Requests": "Shelter, Financial, Rebuilding",
+            "Summary": "Shift toward recovery phase, focus on longer-term needs emerges"
+        },
+        {
+            "Date": "03/04/2025",
+            "Sentiment": 0.45,
+            "Elements": "Earthquake",
+            "Impact": "Housing, Livelihoods, Healthcare",
+            "Requests": "Rebuilding, Financial, Medical",
+            "Summary": "Gradual improvement in sentiment as aid reaches affected communities, but substantial needs remain"
+        }
+    ]
+}

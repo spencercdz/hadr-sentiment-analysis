@@ -1,0 +1,13 @@
+streamlit>=1.30.0
+langchain>=0.1.0
+langchain-community>=0.0.15
+langgraph>=0.0.20
+reportlab>=4.0.5
+pydantic>=2.5.0
+faiss-cpu>=1.7.4
+wikipedia>=1.4.0
+duckduckgo-search>=3.9.0
+# Ollama integration for local model inference
+langchain-ollama>=0.0.2
+# Required for Streamlit to work properly
+torch>=2.0.0

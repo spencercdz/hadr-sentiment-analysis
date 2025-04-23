@@ -1,3 +1,4 @@
+from pathlib import Path
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
@@ -17,196 +18,67 @@ from reportlab.graphics.charts.axes import XValueAxis, YValueAxis, AdjYValueAxis
 from datetime import datetime
 from reportlab.graphics.charts.textlabels import Label
 
-test_data = {
-    "Background": (
-        "On 28 March 2025, a powerful earthquake with a magnitude between 7.7 and 7.9 struck Myanmar’s Sagaing Region. "
-        "The epicenter was located near Mandalay, the country's second-largest city. This seismic event is considered "
-        "the most powerful earthquake in Myanmar since 1912 and the second deadliest in the nation’s modern history, "
-        "surpassed only by upper estimates of the 1930 Bago earthquake. The quake triggered widespread panic, "
-        "infrastructure collapse, and significant humanitarian impact across urban and rural zones."
-    ),
+# Function to load data from JSON file
+def load_report_data(json_file_path):
+    """Load report data from a JSON file"""
+    import json
+    from pathlib import Path
+    
+    # Empty structures for initialization
+    default_sections = {}
+    default_tweets = []
+    default_details = []
+    
+    try:
+        json_path = Path(json_file_path)
+        if json_path.exists():
+            with open(json_path, 'r') as f:
+                data = json.load(f)
+                
+                # Extract sections
+                sections = data.get("sections", default_sections)
+                
+                # Extract tweets
+                tweets = data.get("tweets", default_tweets)
+                
+                # Extract details - convert from dict format to table format
+                if "details" in data and isinstance(data["details"], list):
+                    details_list = data["details"]
+                    if details_list and isinstance(details_list[0], dict):
+                        # Create header row
+                        headers = ["Date", "Sentiment", "Elements", "Impact", "Requests", "Summary"]
+                        rows = [headers]
+                        
+                        # Add data rows
+                        for detail in details_list:
+                            row = [
+                                detail.get("Date", ""),
+                                str(detail.get("Sentiment", 0.0)),
+                                detail.get("Elements", ""),
+                                detail.get("Impact", ""),
+                                detail.get("Requests", ""),
+                                detail.get("Summary", "")
+                            ]
+                            rows.append(row)
+                        details = rows
+                    else:
+                        details = default_details
+                else:
+                    details = default_details
+                
+                return sections, tweets, details
+        else:
+            print(f"Warning: JSON file not found: {json_file_path}")
+            print(f"Error: JSON file not found: {json_file_path}")
+            raise FileNotFoundError(f"Required JSON report data file not found: {json_file_path}")
+    except Exception as e:
+        print(f"Error loading JSON data: {e}")
+        raise ValueError(f"Failed to load or parse JSON data: {e}")
 
-    "Tweet Overview": (
-        "A total of 1,026 Tweets were collected between 29 March and 6 April 2025. These tweets reflect public discourse, "
-        "emergency calls for help, on-ground observations, and news propagation. Among these, the 5 most impactful tweets "
-        "garnered over 20,000 impressions each, primarily focusing on calls for urgent aid, live footage of the destruction, "
-        "and citizen-led coordination of relief. The data indicates that Twitter served as both an alerting tool and a "
-        "coordinating mechanism among citizens and NGOs during this period."
-    ),
-
-    "Sentiment Overview": (
-        "Sentiment analysis across the tweet dataset reveals a fluctuating pattern of public morale. Initial days showed "
-        "a deep negative sentiment (as low as 0.22 on 01 April), coinciding with aftershocks and casualty updates. "
-        "A moderate rebound was observed on 04 April, reaching a high of 0.51, attributed to the arrival of international aid and "
-        "successful rescues. Nevertheless, the average sentiment over the 9-day period remained low at 0.12, emphasizing a prevailing "
-        "sense of distress. The most frequently reported request types were for Shelter, Food, Water, and Medical Aid, "
-        "indicating critical shortages and basic survival needs."
-    ),
-
-    "Results": (
-        "The overall sentiment remained largely negative throughout the period. The average sentiment score was 0.12, "
-        "indicating high distress and urgency. Over 65% of all tweets contained requests for essential supplies or services. "
-        "The most recurring impacts included infrastructure collapse, transport blockages, refugee displacement, and loss of life. "
-        "Disasters reported included repeated aftershocks, flooding (due to dam damage and ruptured pipelines), and landslides. "
-        "Tweet volumes peaked on 02 and 04 April, correlating with major developments such as a landslide in northern villages "
-        "and the coordinated delivery of international aid convoys."
-    ),
-
-    "Discussion": (
-        "The analysis illustrates the devastating aftermath of the earthquake, both from a humanitarian and communication perspective. "
-        "Social media acted as a real-time reporting and request channel, showing how public sentiment evolved in response to events on the ground. "
-        "The initial trauma and confusion gradually gave way to sporadic optimism as organized relief began to arrive. "
-        "However, persistent requests for shelter and medical aid, coupled with recurring mentions of missing persons, "
-        "highlight that the emergency response was strained and potentially under-resourced. The needs expressed by the public "
-        "suggest gaps in local preparedness and the importance of sustained support over short-term aid."
-    ),
-
-    "Recommendation": (
-        "To address the challenges observed in both sentiment and resource requests, the following actions are recommended:\n"
-        "1. Deploy mobile health and shelter units to high-need zones with confirmed infrastructure damage.\n"
-        "2. Establish a multilingual crisis information portal that consolidates real-time updates and resource availability.\n"
-        "3. Train local leaders and volunteers in digital communication tools to improve accuracy and reach during crisis moments.\n"
-        "4. Increase coordination between governmental, non-profit, and international bodies to reduce redundancy in aid delivery.\n"
-        "5. Launch a long-term psychological support initiative to address trauma resulting from displacement and loss."
-    ),
-
-    "Summary": (
-        "This report provides a comprehensive analysis of public sentiment and need-based communication surrounding the 2025 Myanmar Earthquake. "
-        "Sentiment data reflects a population in distress, with occasional signs of hope as aid begins to arrive. "
-        "Request types reinforce the need for rapid deployment of essential supplies and continued humanitarian focus. "
-        "The digital response underscores the importance of integrating social media monitoring into emergency management "
-        "to ensure timely, relevant, and effective action on the ground."
-    )
-}
-
-
-table_data = [
-    [
-        "Username",
-        "Date",
-        "Retweets",
-        "Tweet"
-    ],
-    [
-        "Myanmar Now",
-        "29/03/2025",
-        "133",
-        "Yesterday's #earthquakes in #Myanmar and #Thailand killed/injured many hundreds and destroyed several homes and civilian buildings. They need your urgent help and how can you help those affected. Share this post and Donate now 💌 https://t.co/8fSxe6XcmC #Myanmarquake https://t.co/Pkpt3em0ip",
-    ],
-    [
-        "Myanmar Now",
-        "29/03/2025",
-        "133",
-        "Yesterday's #earthquakes in #Myanmar and #Thailand killed/injured many hundreds and destroyed several homes and civilian buildings. They need your urgent help and how can you help those affected. Share this post and Donate now 💌 https://t.co/8fSxe6XcmC #Myanmarquake https://t.co/Pkpt3em0ip",
-    ],
-    [
-        "Myanmar Now",
-        "29/03/2025",
-        "133",
-        "Yesterday's #earthquakes in #Myanmar and #Thailand killed/injured many hundreds and destroyed several homes and civilian buildings. They need your urgent help and how can you help those affected. Share this post and Donate now 💌 https://t.co/8fSxe6XcmC #Myanmarquake https://t.co/Pkpt3em0ip",
-    ],
-    [
-        "Myanmar Now",
-        "29/03/2025",
-        "133",
-        "Yesterday's #earthquakes in #Myanmar and #Thailand killed/injured many hundreds and destroyed several homes and civilian buildings. They need your urgent help and how can you help those affected. Share this post and Donate now 💌 https://t.co/8fSxe6XcmC #Myanmarquake https://t.co/Pkpt3em0ip",
-    ],
-    [
-        "Myanmar Now",
-        "29/03/2025",
-        "133",
-        "Yesterday's #earthquakes in #Myanmar and #Thailand killed/injured many hundreds and destroyed several homes and civilian buildings. They need your urgent help and how can you help those affected. Share this post and Donate now 💌 https://t.co/8fSxe6XcmC #Myanmarquake https://t.co/Pkpt3em0ip",
-    ],
-]
-
-sentiment_over_time = {
-    # Sample data for sentiment over time (0-1 range)
-    "dates": ["29/03/2025", "30/03/2025", "31/03/2025", "01/04/2025", "02/04/2025", "03/04/2025"],
-    "sentiment": [0.35, 0.42, 0.87, 0.48, 0.41, 0.20]
-}
-
-results_data = [
-    [
-        "Date",
-        "Sentiment",
-        "Elements",
-        "Impact",
-        "Requests",
-        "Summary"
-    ],
-    [
-        "29/03/2025",
-        "0.28",
-        "Earthquake, Flood",
-        "Infrastructure, Transport, Refugees, Death",
-        "Food, Water, Shelter",
-        "Public sentiment is low amid significant damage and urgent humanitarian needs."
-    ],
-    [
-        "30/03/2025",
-        "0.35",
-        "Earthquake, Flood",
-        "Infrastructure, Transport, Refugees, Death",
-        "Food, Water, Shelter",
-        "Requests for essentials dominate social media discussions."
-    ],
-    [
-        "31/03/2025",
-        "0.42",
-        "Flood",
-        "Transport, Refugees",
-        "Water, Shelter",
-        "Slight improvement in public mood as floodwaters stabilize. Still high demand for shelter and clean water."
-    ],
-    [
-        "01/04/2025",
-        "0.22",
-        "Earthquake",
-        "Infrastructure, Death",
-        "Shelter, Medical",
-        "Renewed fears after fresh tremors. Public sentiment dips to a low point with rising casualties and infrastructural collapse."
-    ],
-    [
-        "02/04/2025",
-        "0.47",
-        "Flood, Landslide",
-        "Infrastructure, Transport, Missing People, Death",
-        "Food, Water",
-        "Despite new disasters, coordinated relief brings slight optimism. However, missing persons remain a key concern."
-    ],
-    [
-        "03/04/2025",
-        "0.38",
-        "Earthquake, Flood",
-        "Refugees, Death",
-        "Medical Aid, Food, Shelter",
-        "Fluctuating sentiment as aid arrives but challenges persist. Refugee numbers grow, straining local resources."
-    ],
-    [
-        "04/04/2025",
-        "0.51",
-        "Flood",
-        "Transport, Infrastructure",
-        "Water, Shelter, Clothing, Medical Supplies",
-        "Public morale sees a boost with increased aid distribution and improving communication channels."
-    ],
-    [
-        "05/04/2025",
-        "0.43",
-        "Earthquake",
-        "Infrastructure, Refugees",
-        "Shelter, Medical",
-        "Steady efforts in rebuilding help ease public anxiety, but the need for shelter remains critical."
-    ],
-    [
-        "06/04/2025",
-        "0.31",
-        "Flood, Earthquake",
-        "Missing People, Refugees, Transport, Death, Other Infrastructure",
-        "Food, Water, Shelter",
-        "A sobering reminder of the crisis’ scale as new reports highlight unresolved tragedies. Public sentiment dips again."
-    ],
-]
+# Initialize global variables that will be set by generate_report
+test_data = {}
+table_data = []
+results_data = []
 
 stylesheets = getSampleStyleSheet()
 
@@ -220,7 +92,32 @@ class SentimentReport(SimpleDocTemplate):
 
         # Initialize titles and footings
         self.title = (f"CHANGI RHCC SENTIMENT REPORT (CAA: {datetime.now().strftime('%d%b%Y').upper()}, 2359HRS)")
-        self.logo = Image("../assets/rhcc.jpg", width=85, height=85)
+        # Try to find logo using multiple potential paths
+        try:
+            script_dir = Path(__file__).parent
+            # Try different potential paths for the logo
+            potential_logo_paths = [
+                Path("ai_agent/agents/assets/icons/rhcc.jpg"),  # Path provided by user
+                script_dir / "../assets/icons/rhcc.jpg",       # Relative from script
+                script_dir / "../../assets/icons/rhcc.jpg",    # Up two levels
+                script_dir / "../assets/icons/rhcc.jpg"        # Another variation
+            ]
+            
+            logo_path = None
+            for path in potential_logo_paths:
+                if path.exists():
+                    print(f"Found logo at: {path}")
+                    logo_path = str(path)
+                    break
+            
+            if logo_path:
+                self.logo = Image(logo_path, width=85, height=85)
+            else:
+                print("Warning: Logo image not found, skipping logo")
+                self.logo = None
+        except Exception as e:
+            print(f"Warning: Could not load logo image: {e}")
+            self.logo = None
         self.classification = "OFFICIAL (OPEN)"
         self.classification_width = pdfmetrics.stringWidth(self.classification, "Times-Roman", 14)
 
@@ -325,13 +222,33 @@ class SentimentReport(SimpleDocTemplate):
         # Create the drawing with exact content width
         drawing = Drawing(drawing_width, drawing_height)
 
-        # Prepare data
-        if sentiment_over_time and 'sentiment' in sentiment_over_time and 'dates' in sentiment_over_time:
-            sentiments = sentiment_over_time['sentiment']
-            dates = sentiment_over_time['dates']
-        else:
-            sentiments = [0.35, 0.42, 0.51, 0.48, 0.55]
-            dates = [str(i+1) for i in range(len(sentiments))]
+        # Extract sentiment data from the details section (results_data)
+        sentiments = []
+        dates = []
+        
+        # Skip the header row (index 0)
+        if len(results_data) > 1:
+            for row in results_data[1:]:  # Skip header row
+                try:
+                    # Date is at index 0, Sentiment at index 1 in each row
+                    date = row[0] if len(row) > 0 else '01/01/2025'
+                    sentiment_str = row[1] if len(row) > 1 else '0.5'
+                    
+                    # Convert sentiment to float
+                    try:
+                        sentiment = float(sentiment_str)
+                    except (ValueError, TypeError):
+                        sentiment = 0.5  # Default if conversion fails
+                    
+                    dates.append(date)
+                    sentiments.append(sentiment)
+                except Exception as e:
+                    print(f"Error processing sentiment data: {e}")
+        
+        # If no data was extracted, raise an exception - we don't want to use hardcoded defaults
+        if not sentiments:
+            print("Error: No sentiment data available for chart")
+            raise ValueError("No sentiment data available for chart")
         data_points = [(i+1, val) for i, val in enumerate(sentiments)]
 
         # Plot
@@ -410,8 +327,9 @@ class SentimentReport(SimpleDocTemplate):
         return drawing
 
     def generate_title(self):
-        # Add RHCC logo
-        self.story.append(self.logo)
+        # Add RHCC logo if available
+        if self.logo is not None:
+            self.story.append(self.logo)
 
         # Add spacing
         self.story.append(Spacer(1, 24))
@@ -489,7 +407,47 @@ class SentimentReport(SimpleDocTemplate):
         canvas_obj.drawString((A4[0] - page_number_width) / 2, 35 + 12, f"{doc.page}")
         canvas_obj.restoreState()
 
-if __name__ == "__main__":
-    report = SentimentReport()
+def generate_report(json_file_path=None, output_pdf_path=None):
+    """Generate a PDF report using data from a JSON file
+    
+    Args:
+        json_file_path (str): Path to the JSON file containing report data
+        output_pdf_path (str): Path where the PDF should be saved
+        
+    Returns:
+        str: Path to the generated PDF file
+    """
+    global test_data, table_data, results_data
+    
+    # Set default paths if not provided
+    if json_file_path is None:
+        json_file_path = "../assets/outputs/latest_report_data.json"
+    
+    if output_pdf_path is None:
+        output_pdf_path = "../assets/outputs/report.pdf"
+    
+    try:
+        # Load the data from the specified JSON file
+        test_data, table_data, results_data = load_report_data(json_file_path)
+    except Exception as e:
+        raise ValueError(f"Error loading report data from {json_file_path}: {str(e)}")
+
+    # Create the report
+    report = SentimentReport(output_pdf_path)
     report.add_data(test_data)
     report.generate_report()
+    
+    return output_pdf_path
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 2:
+        # Accept input JSON file and output PDF file as command line arguments
+        input_json = sys.argv[1]
+        output_pdf = sys.argv[2]
+        generate_report(input_json, output_pdf)
+    else:
+        # Use default paths
+        report = SentimentReport()
+        report.add_data(test_data)
+        report.generate_report()
