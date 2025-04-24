@@ -11,3 +11,7 @@ duckduckgo-search>=3.9.0
 langchain-ollama>=0.0.2
 # Required for Streamlit to work properly
 torch>=2.0.0
+pandas>=2.0.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+python-dotenv>=1.0.0

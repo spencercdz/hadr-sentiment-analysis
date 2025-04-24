@@ -8,14 +8,23 @@ import streamlit as st
 import os
 import time
 import sys
+import logging
 from pathlib import Path
 
-# Ensure agents directory is in path if it's not already
-AGENTS_DIR = Path(__file__).parent / "agents"
-sys.path.append(str(AGENTS_DIR))
+# Ensure the module path is correct
+SRC_DIR = Path(__file__).parent.parent
+if str(SRC_DIR) not in sys.path:
+    sys.path.append(str(SRC_DIR))
 
-# Import build_workflow from agents.workflows
-from agents.workflows import build_workflow
+# Import the HADR agent
+from ai_agent.agents.hadr_agent import process_query
+
+# Set up logging for the app
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("hadr_app")
 
 # Set page configuration
 st.set_page_config(
@@ -25,12 +34,11 @@ st.set_page_config(
 )
 
 # Define paths
-ASSETS_PATH = Path(__file__).parent / "agents" / "assets"
+ASSETS_PATH = Path(__file__).parent / "assets"
+OUTPUTS_PATH = ASSETS_PATH / "outputs"
+OUTPUTS_PATH.mkdir(exist_ok=True, parents=True)
 
 # Initialize session state variables
-if "workflow" not in st.session_state:
-    st.session_state.workflow = build_workflow().compile()
-
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -42,8 +50,8 @@ if "reports" not in st.session_state:
 
 # Helper function to check for report files
 def check_for_reports():
-    """Check the assets folder for PDF reports."""
-    reports = list(ASSETS_PATH.glob("*.pdf"))
+    """Check the outputs folder for PDF reports."""
+    reports = list(OUTPUTS_PATH.glob("*.pdf"))
     return [report for report in reports if report.is_file()]
 
 # Helper function to get relative path
@@ -54,10 +62,11 @@ def get_relative_path(path):
     except ValueError:
         return path
 
-# Function to process user query through workflow
-def process_query(query):
-    """Process the user query through the LangGraph workflow."""
+# Function to handle user queries
+def handle_query(query):
+    """Process the user query through the HADR agent."""
     st.session_state.processing = True
+    logger.info(f"Processing query: {query}")
 
     # Create a placeholder for the "thinking" animation
     thinking_placeholder = st.empty()
@@ -72,8 +81,8 @@ def process_query(query):
         # Before processing, check existing reports
         before_reports = check_for_reports()
         
-        # Run the workflow
-        result = st.session_state.workflow.invoke({"query": query})
+        # Use the HADR agent to process the query
+        result = process_query(query)
         
         # After processing, check for new reports
         after_reports = check_for_reports()
@@ -82,16 +91,25 @@ def process_query(query):
         # Add new reports to session state
         for report in new_reports:
             st.session_state.reports.append(report)
+            logger.info(f"New report generated: {report}")
+        
+        # Also check if there's a report path in the result
+        if "report_path" in result and result["report_path"]:
+            report_path = Path(result["report_path"])
+            if report_path.exists() and report_path not in st.session_state.reports:
+                st.session_state.reports.append(report_path)
+                logger.info(f"Added report from result: {report_path}")
         
         thinking_placeholder.empty()
         return result.get("response", "I couldn't generate a response. Please try again.")
     except Exception as e:
+        logger.error(f"Error processing query: {e}")
         thinking_placeholder.empty()
         return f"Error processing query: {str(e)}"
     finally:
         st.session_state.processing = False
 
-# Custom CSS
+# Custom CSS for UI styling
 st.markdown("""
 <style>
 .chat-message {
@@ -133,11 +151,35 @@ st.markdown("""
 # App title
 st.title("🌍 HADR Sentiment Analysis System")
 st.markdown("Ask questions or request reports about humanitarian assistance and disaster relief situations, including projected future events.")
-st.markdown("*Note: All events are analyzed as real scenarios requiring immediate assessment, regardless of date.*")
+st.markdown("*Example query: 'Generate a report about the Myanmar earthquake 2025'*")
 
 # Sidebar for reports
 with st.sidebar:
     st.header("📊 Generated Reports")
+    
+    # System Status Section
+    with st.expander("System Information", expanded=False):
+        st.markdown("### About This System")
+        st.markdown("""
+        This HADR (Humanitarian Assistance and Disaster Relief) Sentiment Analysis system uses:
+        
+        - **LangGraph** for agent workflow orchestration
+        - **Twitter data analysis** for real-time information
+        - **Search and Wikipedia integration** for comprehensive context
+        - **Automated report generation** with actionable insights
+        """)
+        
+        # Show available toolsets
+        st.markdown("### Available Toolsets")
+        tools = [
+            "Twitter Data Analysis", 
+            "DuckDuckGo Search", 
+            "Wikipedia Research",
+            "PDF Report Generation"
+        ]
+        for tool in tools:
+            st.markdown(f"🔧 {tool}")
+    
     if st.session_state.reports:
         for i, report_path in enumerate(st.session_state.reports):
             with st.expander(f"Report {i+1}: {report_path.name}"):
@@ -176,7 +218,7 @@ if user_input := st.chat_input("What would you like to know about HADR situation
         st.markdown(user_input)
     
     # Process the query and get response
-    response = process_query(user_input)
+    response = handle_query(user_input)
     
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response})
@@ -198,4 +240,4 @@ if user_input := st.chat_input("What would you like to know about HADR situation
 
 # Footer
 st.markdown("---")
-st.markdown("Powered by LangGraph and DeepSeek-r1:8b model. Built for HADR Sentiment Analysis.")
+st.markdown("Powered by LangGraph. Built for HADR Sentiment Analysis.")

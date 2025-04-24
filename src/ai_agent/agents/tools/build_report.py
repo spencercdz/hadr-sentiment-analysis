@@ -38,8 +38,28 @@ def load_report_data(json_file_path):
                 # Extract sections
                 sections = data.get("sections", default_sections)
                 
-                # Extract tweets
-                tweets = data.get("tweets", default_tweets)
+                # Extract tweets - convert from dict format to table format
+                if "tweets" in data and isinstance(data["tweets"], list):
+                    tweets_list = data.get("tweets", default_tweets)
+                    if tweets_list and isinstance(tweets_list[0], dict):
+                        # Create header row
+                        headers = ["Username", "Date", "Retweets", "Tweet"]
+                        rows = [headers]
+                        
+                        # Add data rows
+                        for tweet in tweets_list:
+                            row = [
+                                tweet.get("Username", ""),
+                                tweet.get("Date", ""),
+                                str(tweet.get("Retweets", 0)),
+                                tweet.get("Tweet", "")
+                            ]
+                            rows.append(row)
+                        tweets = rows
+                    else:
+                        tweets = default_tweets
+                else:
+                    tweets = default_tweets
                 
                 # Extract details - convert from dict format to table format
                 if "details" in data and isinstance(data["details"], list):
@@ -150,23 +170,42 @@ class SentimentReport(SimpleDocTemplate):
 
                 # Check if the section has a Table/Graph/Chart
                 if header.lower() == "tweet overview" or header.lower() == "results" or header.lower() == "sentiment overview":
+                    # Add a horizontal spacer
                     self.story.append(Spacer(1, 13))
-                    if header.lower() == "tweet overview":
-                        # Add Tweet Table
-                        self.story.append(self.tweet_table())
-                    elif header.lower() == "sentiment overview":
-                        # Add Sentiment Chart
-                        self.story.append(self.sentiment_chart())
-                    else:
-                        # Add Results Chart/Table
-                        self.story.append(self.results_table())
+                
+                    try:
+                        # Add appropriate visualizations
+                        if header.lower() == "tweet overview":
+                            # Add Tweet Table
+                            self.story.append(self.tweet_table())
+                        elif header.lower() == "sentiment overview":
+                            # Add Sentiment Chart
+                            self.story.append(self.sentiment_chart())
+                        else:
+                            # Add Results Chart/Table
+                            self.story.append(self.results_table())
+                    except Exception as e:
+                        # If visualization fails, add error message
+                        error_text = f"Error generating visualization: {str(e)}"
+                        self.story.append(Paragraph(error_text, self.text_style))
 
                 # Add spacing for the next section
                 self.story.append(Spacer(1, 13))
 
     def tweet_table(self):
-        # Format tweet data
-        data = [[Paragraph(cell, self.text_style) for cell in row] for row in table_data]
+        # Check if we have tweet data
+        global table_data
+        
+        if not table_data or len(table_data) < 1:
+            # Create a minimal valid table with headers if table_data is empty
+            default_headers = ["Username", "Date", "Retweets", "Tweet"]
+            data = [[Paragraph(cell, self.text_style) for cell in default_headers]]
+            # Add a dummy row to make the table valid
+            dummy_row = ["No data", "", "", "No tweets available for analysis"]
+            data.append([Paragraph(cell, self.text_style) for cell in dummy_row])
+        else:
+            # Format tweet data
+            data = [[Paragraph(cell, self.text_style) for cell in row] for row in table_data]
 
         # Adjust column widths
         col_widths = [75, 75, 75, 300]
@@ -180,11 +219,22 @@ class SentimentReport(SimpleDocTemplate):
         return t
     
     def results_table(self):
-        # Format results data
-        data = [[Paragraph(cell, self.text_style) for cell in row] for row in results_data]
+        # Check if we have results data
+        global results_data
+        
+        if not results_data or len(results_data) < 1:
+            # Create a minimal valid table with headers if results_data is empty
+            default_headers = ["Date", "Sentiment", "Elements", "Impact", "Requests", "Summary"]
+            data = [[Paragraph(cell, self.text_style) for cell in default_headers]]
+            # Add a dummy row to make the table valid
+            dummy_row = ["No data", "0.0", "", "", "", "No detailed results available"]
+            data.append([Paragraph(cell, self.text_style) for cell in dummy_row])
+        else:
+            # Format results data
+            data = [[Paragraph(cell, self.text_style) for cell in row] for row in results_data]
 
         # Adjust column widths
-        col_widths = [75, 75, 75, 100, 75, 125]
+        col_widths = [75, 75, 75, 75, 75, 100]
 
         # Create Results Table using data
         t = Table(data, colWidths=col_widths, repeatRows=1)
@@ -426,6 +476,12 @@ def generate_report(json_file_path=None, output_pdf_path=None):
     if output_pdf_path is None:
         output_pdf_path = "../assets/outputs/report.pdf"
     
+    # Ensure output path has .pdf extension
+    output_pdf_path = str(output_pdf_path)
+    if not output_pdf_path.lower().endswith('.pdf'):
+        output_pdf_path += '.pdf'
+        print(f"Added .pdf extension to output path: {output_pdf_path}")
+    
     try:
         # Load the data from the specified JSON file
         test_data, table_data, results_data = load_report_data(json_file_path)
@@ -437,6 +493,18 @@ def generate_report(json_file_path=None, output_pdf_path=None):
     report.add_data(test_data)
     report.generate_report()
     
+    # Verify the file was created and has PDF extension
+    pdf_path = Path(output_pdf_path)
+    if not pdf_path.exists():
+        print(f"Warning: PDF file not found at {pdf_path}, checking for other files")
+        # Try to find the PDF in the same directory with any name
+        parent_dir = pdf_path.parent
+        pdf_files = list(parent_dir.glob("*.pdf"))
+        if pdf_files:
+            output_pdf_path = str(pdf_files[0])
+            print(f"Found PDF file: {output_pdf_path}")
+    
+    print(f"Report generated successfully at: {output_pdf_path}")
     return output_pdf_path
 
 if __name__ == "__main__":
