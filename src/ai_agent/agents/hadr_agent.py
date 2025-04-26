@@ -6,6 +6,7 @@ import sys
 import json
 import csv
 import pandas as pd
+import numpy as np
 import logging
 from pathlib import Path
 from typing import Dict, List, Any, TypedDict, Annotated, Union
@@ -85,7 +86,7 @@ def init_llm():
     """Initialize LLM for agent operations"""
     try:
         # For local use without API keys
-        return Ollama(model="deepseek-r1:8b")
+        return Ollama(model="qwen2.5-coder:14b") # original: deepseek-r1:8b
     except Exception as e:
         logger.error(f"Error initializing LLM: {e}")
         # Fallback to a model with reasonable performance
@@ -146,14 +147,14 @@ def extract_disaster_info(query: str) -> Dict[str, str]:
     # Initialize LLM for extraction
     llm = init_llm()
     
-    # Get current year
-    current_year = "2025"
+    # Get current time
+    current_year = datetime.now()
     
     # Define prompt template
     template = """
     Extract the disaster type, location, and date from the following query.
-    IMPORTANT: The current year is 2025 and any events referenced for 2025 HAVE ALREADY OCCURRED. Do not treat them as future or hypothetical events.
-    If a specific date isn't mentioned but the current year (2025) is, use today's date in 2025.
+    IMPORTANT: The current time is {current_year} and any events referenced for {current_year} HAVE ALREADY OCCURRED. Do not treat them as future or hypothetical events.
+    If a specific date isn't mentioned but the current year ({current_year}) is, use today's date in {current_year}.
     
     Query: {query}
     
@@ -165,12 +166,12 @@ def extract_disaster_info(query: str) -> Dict[str, str]:
     }}
     """
     
-    prompt = PromptTemplate(template=template, input_variables=["query"])
+    prompt = PromptTemplate(template=template, input_variables=["query", "current_year"])
     extraction_chain = LLMChain(llm=llm, prompt=prompt)
     
     try:
         # Extract disaster information
-        response = extraction_chain.run(query=query)
+        response = extraction_chain.run(query=query, current_year=current_year)
         logger.info(f"Extraction response: {response}")
         
         # Parse JSON response
@@ -235,19 +236,8 @@ def load_twitter_data(query: str, disaster_info: Dict[str, str]) -> List[Dict[st
         # Load data
         df = pd.read_csv(csv_file)
         
-        # Filter tweets based on disaster info if possible
-        filtered_df = df
-        if disaster_info["disaster_type"]:
-            filtered_df = filtered_df[filtered_df["text"].str.contains(disaster_info["disaster_type"], case=False, na=False)]
-        if disaster_info["disaster_location"]:
-            filtered_df = filtered_df[filtered_df["text"].str.contains(disaster_info["disaster_location"], case=False, na=False)]
-        
-        # If filtered data is too small, use original data
-        if len(filtered_df) < 1000:
-            filtered_df = df
-        
         # Convert to list of dictionaries
-        for _, row in filtered_df.iterrows():
+        for _, row in df.iterrows():
             tweet = {
                 "Username": row["username"],
                 "Date": row["time"].split("_")[0] if "_" in row["time"] else row["time"],
@@ -366,9 +356,12 @@ def analyze_sentiment(twitter_data: List[Dict[str, Any]]) -> List[Dict[str, Any]
                 tweet = batch[j]
                 text = tweet.get('text', '').lower()
                 
-                # Calculate sentiment score (-1 to 1 scale)
-                # Convert from [neg, neutral, pos] to a single score
-                sentiment_value = float(sentiment_scores[2] - sentiment_scores[0])  # pos - neg
+                # Calculate binary sentiment (0 or 1)
+                # 0 for negative, 1 for positive
+                # Using highest probability class
+                sentiment_class = int(np.argmax(sentiment_scores))
+                # Map to binary where 0=negative, 1=positive (ignoring neutral)
+                sentiment_value = 1 if sentiment_class == 2 else 0
                 
                 # Determine genre based on username and content
                 username = tweet.get('username', '').lower()
@@ -430,14 +423,19 @@ def _simulate_sentiment_analysis(twitter_data: List[Dict[str, Any]]) -> List[Dic
         has_offer_words = any(word in text for word in ["providing", "sending", "donate", "distributing", "offering", "deployed", "mobilizing"])
         
         # Basic sentiment calculation - negative words decrease score, positive words increase it
+        # but we'll use argmax for final classification
         base_sentiment = 0.5  # Neutral starting point
         if has_negative_words:
             base_sentiment -= 0.2
         if has_positive_words:
             base_sentiment += 0.15
             
-        # Add some randomness but keep within 0-1 range
-        sentiment_score = max(0.1, min(0.9, base_sentiment + random.uniform(-0.1, 0.1)))
+        # Simulate sentiment classification (0=negative, 1=positive)
+        probs = [random.uniform(0, 0.4), random.uniform(0, 0.4), random.uniform(0, 0.4)]
+        probs = [p/sum(probs) for p in probs]  # Normalize
+        sentiment_class = int(np.argmax(probs))
+        # Map to binary where 0=negative, 1=positive (ignoring neutral)
+        sentiment_value = 1 if sentiment_class == 2 else 0
         
         # Determine genre based on username and content
         username = tweet.get("Username", "").lower()
@@ -466,7 +464,7 @@ def _simulate_sentiment_analysis(twitter_data: List[Dict[str, Any]]) -> List[Dic
         
         # Create a comprehensive prediction structure matching TunedLLM output format
         prediction = {
-            "sentiment": sentiment_score,
+            'sentiment': sentiment_value,
             "genre": genre,
             "related": related,
             "aid_related": aid_related,
@@ -493,6 +491,41 @@ def _simulate_sentiment_analysis(twitter_data: List[Dict[str, Any]]) -> List[Dic
     logger.info(f"Simulated sentiment analysis for {len(result)} tweets with multi-task classification")
     return result
 
+def extract_and_repair_json(text):
+    """Extract valid JSON from text and attempt to repair if necessary"""
+    import re
+    import json
+    
+    # First try finding JSON between first { and last }
+    start_idx = text.find('{')
+    end_idx = text.rfind('}')
+    
+    if start_idx != -1 and end_idx != -1 and start_idx < end_idx:
+        json_str = text[start_idx:end_idx+1]
+        try:
+            # Try parsing as is
+            return json.loads(json_str)
+        except json.JSONDecodeError as e:
+            logger.warning(f"Initial JSON parse failed: {e}, attempting repair")
+            
+            # Try fixing common issues:
+            # 1. Fix trailing commas before closing brackets
+            json_str = re.sub(r',\s*}', '}', json_str)
+            json_str = re.sub(r',\s*]', ']', json_str)
+            
+            # 2. Fix missing quotes around keys
+            json_str = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', json_str)
+            
+            # 3. Fix unescaped quotes in strings
+            # (This is complex and might need more sophisticated handling)
+            
+            try:
+                return json.loads(json_str)
+            except json.JSONDecodeError:
+                logger.error("JSON repair failed")
+                return None
+    return None
+
 def generate_report_data(
     query: str, 
     disaster_info: Dict[str, str], 
@@ -504,21 +537,36 @@ def generate_report_data(
     """Generate structured report data in the required format"""
     # Define the LLM chain for report generation
     llm = init_llm()
+
+    # Current Time
+    current_time = datetime.now()
     
-    # Create prompt template for report data generation
     # Calculate sentiment statistics from sentiment_analysis
     tweet_count = len(sentiment_analysis)
-    positive_count = sum(1 for item in sentiment_analysis if item.get('sentiment', 0) > 0.2)
-    negative_count = sum(1 for item in sentiment_analysis if item.get('sentiment', 0) < -0.2)
+    positive_count = sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 1)
+    negative_count = sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 0)
     request_count = sum(1 for item in sentiment_analysis if item.get('request', False))
     offer_count = sum(1 for item in sentiment_analysis if item.get('offer', False))
     
     template = """
-    You are a humanitarian assistance and disaster relief (HADR) analyst. You need to create a structured report about a disaster 
-    based on the available information. Format your output as a valid JSON object.
+    You are an expert humanitarian assistance and disaster relief (HADR) analyst. You need to create a structured report about a disaster, while maintaining high contextual knowledge with the information provided to you.
+
+    CRITICAL: Your output MUST be valid JSON without any explanation text before or after. Your response will not include markdown code blocks, explanations, thought process, or any other text - ONLY return the exact JSON object.
+
+    Based on the available information and tweets, you should only consider the information and tweets that lie within a time period close to the disaster.
+
+    YOU CANNOT ADD NEW KEYS TO THE JSON OBJECT, AND CAN ONLY USE THE DEFINED KEYS FOR EACH SECTION OF THE JSON.
     
-    IMPORTANT: The current year is 2025 and any events referenced for 2025 HAVE ALREADY OCCURRED. 
+    IMPORTANT: The current year is {current_year} and any events referenced for {current_year} HAVE ALREADY OCCURRED. 
     This is not a hypothetical or future scenario - the disaster has already happened.
+
+    When it comes to "tweets", you will mention the entire length of the available tweet data that has been analyzed. However, you will only store the information for the 10 tweets, and you will pick the 10 tweets with the most retweets. These tweets must be directly related to the disaster and the location of the disaster. You will also store the username, retweets, and tweet from the original tweet data.
+    
+    YOU ARE NOT TO REPHRASE THE USERNAME, RETWEETS, OR TWEET FROM THE ORIGINAL TWEET DATA.
+
+    When it comes to "details", you will review every single tweet in the available tweet data. You will store a result for every date that is available in the dataset as long as it is approximately within the time range of the disaster. If more than one tweet is available for a date, you are to summarize all the information for the day and summarize it into an inclusive overview. Sentiment score is a float value that can lie on any value between 0 and 1 up to two decimal places, where 0 is negative and 1 is positive, and the average sentiment score is the average of all the sentiment scores for that day.
+
+    YOU MUST REVIEW EVERY SINGLE TWEET AND EVALUATE IT ACCORDINGLY.
     
     QUERY: {query}
     
@@ -526,6 +574,9 @@ def generate_report_data(
     DISASTER LOCATION: {disaster_location}
     DISASTER DATE: {disaster_date}
     
+    ALL AVAILABLE TWEET DATA TO ANALYZE:
+    {twitter_data}
+
     WEB SEARCH RESULTS: 
     {search_results}
     
@@ -539,37 +590,44 @@ def generate_report_data(
     - Requests for help: {request_count} tweets
     - Offers of assistance: {offer_count} tweets
     
-    Create a comprehensive report with the following JSON structure:
+    Create a COMPLETE JSON object with the structure based on this template:
     {{
         "sections": {{
-            "Background": "A 2-3 paragraph summary of the disaster situation, including the type, location, timing, and key impacts. Remember this disaster has already happened and is current news in 2025.",
-            "Tweet Overview": "...",
-            "Sentiment Overview": "...",
-            "Results": "Details about the affected population, including labels of affected, displaced, injured, and deceased individuals if available.",
-            "Discussion": "Information about ongoing response efforts, including organizations involved and current priorities.",
-            "Recommendation": "A brief assessment of the most critical actions to take based on the available information.",
+            "Background": "String output of a lengthy 2-3 paragraph summary of the disaster situation, including the type, location, timing, and key impacts. Remember this disaster has already happened and is current news in {current_year}...",
+            "Tweet Overview": "String output of a short summary of the tweets, including the total number of tweets in the original dataset and the main themes...",
+            "Sentiment Overview": "String output of a short summary of the sentiment analysis, including the number of tweets with positive or negative sentiments, and the main themes of the data...",
+            "Results": "String output of a short summary about the affected population, including labels of affected, displaced, injured, and deceased individuals if available...",
+            "Discussion": "String output of a lengthy detailed information about ongoing response efforts, including organizations involved and current priorities...",
+            "Recommendation": "String output of a lengthy detailed assessment of the most critical actions to take based on the available information, including recommendations for humanitarian assistance and disaster relief..."
         }},
         "tweets": [
-            ["Username", "Date", "Retweets", "Tweet"],
-            ["...", "...", "...", "..."],
+            {{
+                "Username": "String output of the username...",
+                "Date": "String output of the date...",
+                "Retweets": "String output of the retweet number...",
+                "Tweet": "String output of the tweet..."
+            }},
             ...
         ],
         "details": [
             {{
-                "Date": "...",
-                "Sentiment": 0.XX,
-                "Elements": "...",
-                "Impact": "...",
-                "Requests": "...",
-                "Summary": "...",
+                "Date": "String output of the date...",
+                "Sentiment": Float output of the average sentiment score in the format of 0.XX,
+                "Elements": "String output of the elements...",
+                "Impact": "String output of the impact...",
+                "Requests": "String output of the requests...",
+                "Summary": "String output of the summary..."
             }},
             ...
         ]
-    }}
+    }} 
     
-    Make the report comprehensive, factual, and helpful for disaster response planning.
-    Incorporate the sentiment analysis results to identify trends in emotional responses over time.
-    Use precision, recall, and F1 metrics when discussing confidence in the classification results.
+    Instructions:
+    - Do not speculate or invent facts.
+    - Do not omit any sections or information.
+    - If a section cannot be completed due to missing data, explicitly state this.
+    - Incorporate sentiment analysis to identify trends in emotional responses over time.
+    - Use precision, recall, and F1 metrics when discussing classification confidence.
     
     Your JSON output:
     """
@@ -577,7 +635,21 @@ def generate_report_data(
     # Create the prompt
     prompt = PromptTemplate(
         template=template, 
-        input_variables=["disaster_type", "disaster_location", "twitter_data", "sentiment_analysis", "search_results", "wikipedia_results"]
+        input_variables=[
+            "current_year",
+            "query",
+            "disaster_type",
+            "disaster_location",
+            "disaster_date",
+            "search_results",
+            "wikipedia_results",
+            "tweet_count",
+            "positive_count",
+            "negative_count",
+            "request_count",
+            "offer_count",
+            "twitter_data",
+        ]
     )
     
     # Create the report generation chain
@@ -603,54 +675,46 @@ def generate_report_data(
             # Take top 10 tweets
             for tweet in sorted_tweets[:10]:
                 tweet_data = {
-                    "Username": tweet.get("username", ""),
-                    "Date": tweet.get("date", ""),
-                    "Retweets": tweet.get("retweets", 0),
-                    "Tweet": tweet.get("text", "")
+                    "Username": tweet.get("Username", ""),
+                    "Date": tweet.get("Date", ""),
+                    "Retweets": tweet.get("Retweets", 0),
+                    "Tweet": tweet.get("Tweet", "")
                 }
                 sample_tweets.append(tweet_data)
         
         # Prepare the input for the LLM chain
+        current_time = datetime.now()
         chain_input = {
+            "current_year": current_time.year,
             "query": query,
+            "twitter_data": twitter_data,
             "disaster_type": disaster_info.get("disaster_type", ""),
             "disaster_location": disaster_info.get("disaster_location", ""),
             "disaster_date": disaster_info.get("disaster_date", ""),
             "tweet_count": tweet_count,
-            "positive_count": positive_count,
-            "negative_count": negative_count,
+            "positive_count": sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 1),
+            "negative_count": sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 0),
             "request_count": request_count,
             "offer_count": offer_count,
             "search_results": "\n\n".join(search_results),
-            "wikipedia_results": "\n\n".join(wikipedia_results)
+            "wikipedia_results": "\n\n".join(wikipedia_results),
         }
         
         # Generate the report
-        report_json_str = report_chain.run(
-            disaster_type=disaster_type,
-            disaster_location=disaster_location,
-            twitter_data=json.dumps(twitter_sample, indent=2),
-            sentiment_analysis=json.dumps(sentiment_sample, indent=2),
-            search_results=chain_input["search_results"],
-            wikipedia_results=chain_input["wikipedia_results"]
-        )
+        report_json_str = report_chain.run(**chain_input)
+        print("Report JSON:", report_json_str)
         
         # Parse the JSON response
         # Find the first occurrence of '{' and the last occurrence of '}'
-        start_idx = report_json_str.find('{')
-        end_idx = report_json_str.rfind('}')
+        repaired_json = extract_and_repair_json(report_json_str)
+        if repaired_json:
+            logger.info("Successfully extracted and repaired JSON")
+            return repaired_json
+        else:
+            logger.error("Could not parse or repair JSON, using template")
         
-        if start_idx != -1 and end_idx != -1:
-            json_str = report_json_str[start_idx:end_idx+1]
-            try:
-                report_data = json.loads(json_str)
-                logger.info("Successfully generated report data")
-                return report_data
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON decode error: {e}")
-        
-        logger.error("Could not parse report JSON, using template")
         # If parsing fails, load the template file
+        # Report template
         template_path = TEMPLATES_DIR / "report_template.json"
         if template_path.exists():
             with open(template_path, 'r') as f:
@@ -669,7 +733,14 @@ def generate_report_data(
                 "Discussion": "Interpretation",
                 "Recommendation": "Recommendations"
             },
-            "tweets": [["Username", "Date", "Retweets", "Tweet"]] + sample_tweets,
+            "tweets": [
+                {
+                    "Username": "Error",
+                    "Date": "Error",
+                    "Retweets": "Error",
+                    "Tweet": "Error"
+                }
+            ],
             "details": [
                 {
                     "Date": datetime.now().strftime("%d/%m/%Y"),
@@ -696,8 +767,20 @@ def generate_report_data(
                 "Discussion": "Error occurred during report generation",
                 "Recommendation": "Error occurred during report generation"
             },
-            "tweets": [["Username", "Date", "Retweets", "Tweet"]],
-            "details": []
+            "tweets": [{
+                "Username": "Error",
+                "Date": "Error",
+                "Retweets": "Error",
+                "Tweet": "Error"
+            }],
+            "details": [{
+                "Date": "Error",
+                "Sentiment": 0.5,
+                "Elements": "Error",
+                "Impact": "Error",
+                "Requests": "Error",
+                "Summary": "Error"
+            }]
         }
 
 

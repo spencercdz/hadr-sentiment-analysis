@@ -8,17 +8,66 @@
         "Recommendation": "To address the challenges observed in both sentiment and resource requests, the following actions are recommended:\n1. Deploy mobile health and water purification units to rural Sagaing villages currently isolated by landslides\n2. Establish a multilingual crisis information portal to improve coordination between local and international responders\n3. Prioritize restoration of water infrastructure to prevent waterborne disease outbreaks\n4. Develop transitional shelter solutions with monsoon season approaching\n5. Create dedicated supply chains for critical medical supplies identified in the analysis"
     },
     "tweets": [
-        ["Username", "Date", "Retweets", "Tweet"],
-        ["DisasterAlert", "28/03/2025", "543", "BREAKING: Powerful 7.5 magnitude earthquake strikes Myanmar's Sagaing Region. Multiple buildings collapsed. #MyanmarEarthquake #EmergencyResponse"],
-        ["ReliefOrg", "28/03/2025", "312", "We are mobilizing emergency resources to Myanmar following today's devastating earthquake. Immediate needs: medical supplies, water, shelter."],
-        ["LocalJournalist", "29/03/2025", "267", "The situation in rural Sagaing is dire. Roads blocked by landslides, villages cut off. People digging through rubble with bare hands. #MyanmarEarthquake"],
-        ["AidWorker", "29/03/2025", "198", "Working with local partners to establish field hospitals near Sagaing. Critical shortage of medical personnel and supplies. Need air support to reach remote areas."],
-        ["WeatherChannel", "30/03/2025", "175", "Heavy rainfall expected in earthquake-affected regions of Myanmar over next 48 hours. Could complicate rescue efforts and increase landslide risk. #MyanmarEarthquake"],
-        ["UNReliefCoord", "30/03/2025", "421", "UN coordinating international response to Myanmar earthquake. Appeal launched for $25M in emergency funding for immediate humanitarian needs."],
-        ["LocalResident", "31/03/2025", "89", "No water, no electricity for 3 days. My family is sleeping outside because we're afraid of aftershocks. Please send help to Sagaing villages."],
-        ["MedicalTeam", "31/03/2025", "156", "Treating crush injuries, fractures, and respiratory issues. Many patients injured when buildings collapsed. Need more medical supplies urgently."],
-        ["WaterAid", "01/04/2025", "203", "Water infrastructure severely damaged in Sagaing Region. Deploying purification units and distributing clean water. Risk of waterborne diseases rising. #MyanmarEarthquake"],
-        ["ShelterOrg", "01/04/2025", "187", "Distributing 5,000 emergency shelter kits in worst-affected areas. Monsoon season approaching fast - we need more resources to help families without homes."]
+        {
+            "Username": "DisasterAlert",
+            "Date": "28/03/2025",
+            "Retweets": "543",
+            "Tweet": "BREAKING: Powerful 7.5 magnitude earthquake strikes Myanmar's Sagaing Region. Multiple buildings collapsed. #MyanmarEarthquake #EmergencyResponse"
+          },
+          {
+            "Username": "ReliefOrg",
+            "Date": "28/03/2025",
+            "Retweets": "312",
+            "Tweet": "We are mobilizing emergency resources to Myanmar following today's devastating earthquake. Immediate needs: medical supplies, water, shelter."
+          },
+          {
+            "Username": "LocalJournalist",
+            "Date": "29/03/2025",
+            "Retweets": "267",
+            "Tweet": "The situation in rural Sagaing is dire. Roads blocked by landslides, villages cut off. People digging through rubble with bare hands. #MyanmarEarthquake"
+          },
+          {
+            "Username": "AidWorker",
+            "Date": "29/03/2025",
+            "Retweets": "198",
+            "Tweet": "Working with local partners to establish field hospitals near Sagaing. Critical shortage of medical personnel and supplies. Need air support to reach remote areas."
+          },
+          {
+            "Username": "WeatherChannel",
+            "Date": "30/03/2025",
+            "Retweets": "175",
+            "Tweet": "Heavy rainfall expected in earthquake-affected regions of Myanmar over next 48 hours. Could complicate rescue efforts and increase landslide risk. #MyanmarEarthquake"
+          },
+          {
+            "Username": "UNReliefCoord",
+            "Date": "30/03/2025",
+            "Retweets": "421",
+            "Tweet": "UN coordinating international response to Myanmar earthquake. Appeal launched for $25M in emergency funding for immediate humanitarian needs."
+          },
+          {
+            "Username": "LocalResident",
+            "Date": "31/03/2025",
+            "Retweets": "89",
+            "Tweet": "No water, no electricity for 3 days. My family is sleeping outside because we're afraid of aftershocks. Please send help to Sagaing villages."
+          },
+          {
+            "Username": "MedicalTeam",
+            "Date": "31/03/2025",
+            "Retweets": "156",
+            "Tweet": "Treating crush injuries, fractures, and respiratory issues. Many patients injured when buildings collapsed. Need more medical supplies urgently."
+          },
+          {
+            "Username": "WaterAid",
+            "Date": "01/04/2025",
+            "Retweets": "203",
+            "Tweet": "Water infrastructure severely damaged in Sagaing Region. Deploying purification units and distributing clean water. Risk of waterborne diseases rising. #MyanmarEarthquake"
+          },
+          {
+            "Username": "ShelterOrg",
+            "Date": "01/04/2025",
+            "Retweets": "187",
+            "Tweet": "Distributing 5,000 emergency shelter kits in worst-affected areas. Monsoon season approaching fast - we need more resources to help families without homes."
+          }
     ],
     "details": [
         {

@@ -49,10 +49,10 @@ def load_report_data(json_file_path):
                         # Add data rows
                         for tweet in tweets_list:
                             row = [
-                                tweet.get("Username", ""),
-                                tweet.get("Date", ""),
-                                str(tweet.get("Retweets", 0)),
-                                tweet.get("Tweet", "")
+                                tweet.get("Username", tweet.get("username", "")),
+                                tweet.get("Date", tweet.get("date", "")),
+                                str(tweet.get("Retweets", tweet.get("retweets", 0))),
+                                tweet.get("Tweet", tweet.get("tweet", ""))
                             ]
                             rows.append(row)
                         tweets = rows
@@ -72,12 +72,12 @@ def load_report_data(json_file_path):
                         # Add data rows
                         for detail in details_list:
                             row = [
-                                detail.get("Date", ""),
-                                str(detail.get("Sentiment", 0.0)),
-                                detail.get("Elements", ""),
-                                detail.get("Impact", ""),
-                                detail.get("Requests", ""),
-                                detail.get("Summary", "")
+                                detail.get("Date", detail.get("date", "")),
+                                str(detail.get("Sentiment", detail.get("sentiment", 0.0))),
+                                detail.get("Elements", detail.get("elements", "")),
+                                detail.get("Impact", detail.get("impact", "")),
+                                detail.get("Requests", detail.get("requests", "")),
+                                detail.get("Summary", detail.get("summary", ""))
                             ]
                             rows.append(row)
                         details = rows
@@ -227,7 +227,7 @@ class SentimentReport(SimpleDocTemplate):
             default_headers = ["Date", "Sentiment", "Elements", "Impact", "Requests", "Summary"]
             data = [[Paragraph(cell, self.text_style) for cell in default_headers]]
             # Add a dummy row to make the table valid
-            dummy_row = ["No data", "0.0", "", "", "", "No detailed results available"]
+            dummy_row = ["No data", "0.0", "No data", "No data", "No data", "No detailed results available"]
             data.append([Paragraph(cell, self.text_style) for cell in dummy_row])
         else:
             # Format results data
