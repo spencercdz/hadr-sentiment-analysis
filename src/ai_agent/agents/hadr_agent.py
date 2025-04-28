@@ -371,7 +371,7 @@ def search_wikipedia(query: str, disaster_info: Dict[str, str]) -> List[str]:
 
 def analyze_sentiment(twitter_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Analyze sentiment of tweets using the roberta-twitter-sentiment model with optimized performance
-    and aggregate results by date with average sentiment scores and label counts"""
+    and aggregate results by date with average sentiment scores and label counts for all available labels"""
     if not twitter_data:
         return []
     
@@ -392,13 +392,15 @@ def analyze_sentiment(twitter_data: List[Dict[str, Any]]) -> List[Dict[str, Any]
     if model is not None and hasattr(model, 'batch_size'):
         model.batch_size = model_config['batch_size']
     
+    # Get all available labels from labels.py
+    all_labels = get_all_labels()
     logger.info(f"Analyzing sentiment for {len(twitter_data)} tweets with batch size {model_config['batch_size']}")
     
     # If no model is available, use simulated sentiment
     if model is None:
         logger.warning("No sentiment model available, using simulated sentiment")
         raw_results = _simulate_sentiment_analysis(twitter_data)
-        return _aggregate_results_by_date(raw_results)
+        return _aggregate_results_by_date(raw_results, all_labels)
     
     try:
         # Pre-allocate results list for better memory efficiency
@@ -480,17 +482,120 @@ def analyze_sentiment(twitter_data: List[Dict[str, Any]]) -> List[Dict[str, Any]
                     # Map predictions to results - use direct indexing instead of append for better performance
                     for j, pred in enumerate(batch_preds):
                         tweet = batch[j]
+
+                        # Extract sentiment score properly from model prediction
+                        sentiment_data = pred.get('sentiment', {})
                         
-                        # Create result dictionary with minimal required fields to reduce memory usage
+                        # Handle different possible formats of sentiment data
+                        if isinstance(sentiment_data, dict):
+                            # Format: {'prediction': value, 'scores': {0: score0, 1: score1, 2: score2}}
+                            scores = sentiment_data.get('scores', {})
+                            
+                            # For sentiment, typically: 0=negative, 1=neutral, 2=positive
+                            # Calculate weighted sentiment score (0-1 range)
+                            if scores and isinstance(scores, dict):
+                                # Convert string keys to integers if needed
+                                normalized_scores = {}
+                                for k, v in scores.items():
+                                    try:
+                                        key = int(k) if isinstance(k, str) and k.isdigit() else k
+                                        normalized_scores[key] = float(v)
+                                    except (ValueError, TypeError):
+                                        pass
+                                
+                                # Calculate weighted score if we have the expected keys
+                                if 0 in normalized_scores and 2 in normalized_scores:
+                                    # Convert from -1 to 1 scale to 0 to 1 scale
+                                    # Negative (0) = 0.0, Neutral (1) = 0.5, Positive (2) = 1.0
+                                    neg_score = normalized_scores.get(0, 0)
+                                    neu_score = normalized_scores.get(1, 0)
+                                    pos_score = normalized_scores.get(2, 0)
+                                    
+                                    # Calculate weighted average
+                                    sentiment = (0 * neg_score + 0.5 * neu_score + 1.0 * pos_score) / max(neg_score + neu_score + pos_score, 1e-6)
+                                else:
+                                    # Try other formats
+                                    pos_score = normalized_scores.get('positive', normalized_scores.get('yes', normalized_scores.get(2, 0)))
+                                    neg_score = normalized_scores.get('negative', normalized_scores.get('no', normalized_scores.get(0, 0)))
+                                    
+                                    if pos_score > 0 or neg_score > 0:
+                                        sentiment = pos_score / max(pos_score + neg_score, 1e-6)
+                                    else:
+                                        sentiment = 0.5  # Neutral if no clear scores
+                            else:
+                                # If no scores, try to use prediction directly
+                                pred_value = sentiment_data.get('prediction')
+                                if isinstance(pred_value, (int, float)):
+                                    # Normalize to 0-1 range if it's a numeric prediction
+                                    if 0 <= pred_value <= 1:
+                                        sentiment = float(pred_value)
+                                    elif pred_value == 2:
+                                        sentiment = 1.0  # Positive
+                                    elif pred_value == 1:
+                                        sentiment = 0.5  # Neutral
+                                    elif pred_value == 0:
+                                        sentiment = 0.0  # Negative
+                                    else:
+                                        sentiment = 0.5  # Default to neutral
+                                elif isinstance(pred_value, str):
+                                    # Handle string predictions
+                                    if pred_value.lower() in ['positive', 'yes']:
+                                        sentiment = 1.0
+                                    elif pred_value.lower() in ['negative', 'no']:
+                                        sentiment = 0.0
+                                    else:
+                                        sentiment = 0.5  # Neutral for other values
+                                else:
+                                    sentiment = 0.5  # Default to neutral
+                        elif isinstance(sentiment_data, (int, float)):
+                            # Direct numeric value
+                            if 0 <= sentiment_data <= 1:
+                                sentiment = float(sentiment_data)
+                            elif sentiment_data == 2:
+                                sentiment = 1.0  # Positive
+                            elif sentiment_data == 1:
+                                sentiment = 0.5  # Neutral
+                            elif sentiment_data == 0:
+                                sentiment = 0.0  # Negative
+                            else:
+                                sentiment = 0.5  # Default to neutral
+                        else:
+                            # Default fallback
+                            sentiment = 0.5  # Neutral
+
+                        # Create result dictionary with all labels from the prediction
                         result = {
                             **tweet,  # Include all original tweet data
-                            'sentiment': pred.get('sentiment', 0),
-                            'related': pred.get('related', {}).get('prediction', 'no'),
-                            'genre': pred.get('genre', {}).get('prediction', 'social media'),
-                            'request': pred.get('request', {}).get('prediction', 'no'),
-                            'medical_help': pred.get('medical_help', {}).get('prediction', 'no'),
-                            'aid_related': pred.get('aid_related', {}).get('prediction', 'no')
+                            'sentiment': sentiment  # Add the normalized sentiment score
                         }
+                        
+                        # Add all available labels from the prediction
+                        for label_category in all_labels.keys():
+                            # Skip sentiment as we've already processed it
+                            if label_category == 'sentiment':
+                                continue
+                                
+                            # Get the prediction for this label category
+                            label_data = pred.get(label_category, {})
+                            
+                            # Extract the prediction value
+                            if isinstance(label_data, dict):
+                                # Format: {'prediction': value, 'scores': {...}}
+                                pred_value = label_data.get('prediction', 'no')
+                            elif isinstance(label_data, (str, bool, int, float)):
+                                # Direct value
+                                pred_value = label_data
+                            else:
+                                # Default fallback
+                                pred_value = 'no'
+                            
+                            # Normalize boolean values
+                            if isinstance(pred_value, bool):
+                                pred_value = 'yes' if pred_value else 'no'
+                            
+                            # Add to result
+                            result[label_category] = pred_value
+                        
                         raw_results[i + j] = result
                     
                     # Implement smarter memory management
@@ -549,24 +654,50 @@ def analyze_sentiment(twitter_data: List[Dict[str, Any]]) -> List[Dict[str, Any]
         return raw_results
 
 
-def _aggregate_results_by_date(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Aggregate sentiment analysis results by date
+def _aggregate_results_by_date(results: List[Dict[str, Any]], all_labels: Dict[str, Dict[int, str]] = None) -> List[Dict[str, Any]]:
+    """Aggregate sentiment analysis results by date with comprehensive label tracking
     
     Args:
         results: List of sentiment analysis results for individual tweets
-        
+        all_labels: Dictionary of all available labels from labels.py
     Returns:
-        List of aggregated results by date with average sentiment scores and label counts
+        List of aggregated results by date with average sentiment scores, label counts,
+        and categorized elements, impact, and requests fields
     """
     if not results:
         return []
     
-    # Group tweets by date
+    # If all_labels not provided, try to get them
+    if all_labels is None:
+        try:
+            all_labels = get_all_labels()
+        except Exception as e:
+            logger.warning(f"Could not get all labels: {e}")
+            all_labels = {}
+    
     tweets_by_date = {}
     
+    # Define label categories for organizing the report
+    element_labels = [
+        'earthquake', 'floods', 'storm', 'fire', 'cold', 'other_weather', 
+        'weather_related', 'buildings', 'electricity', 'water', 'transport'
+    ]
+    
+    impact_labels = [
+        'death', 'missing_people', 'refugees', 'infrastructure_related', 
+        'hospitals', 'shops', 'aid_centers', 'other_infrastructure'
+    ]
+    
+    request_labels = [
+        'request', 'offer', 'aid_related', 'medical_help', 'medical_products', 
+        'search_and_rescue', 'security', 'military', 'child_alone', 'food', 
+        'shelter', 'clothing', 'money', 'other_aid'
+    ]
+    
     for tweet in results:
-        # Extract date from tweet
-        date = tweet.get('time', '')
+        # Normalize keys for robustness
+        tweet_norm = {k.lower(): v for k, v in tweet.items()}
+        date = tweet_norm.get('date', '') or tweet_norm.get('time', '')
         if not date:
             continue
             
@@ -576,82 +707,574 @@ def _aggregate_results_by_date(results: List[Dict[str, Any]]) -> List[Dict[str, 
                 'tweets': [],
                 'sentiment_sum': 0,
                 'count': 0,
-                'request_count': 0,
-                'medical_help_count': 0,
-                'aid_related_count': 0
+                'label_counts': {},
+                'sentiment_counts': {'negative': 0, 'neutral': 0, 'positive': 0},
+                'sentiment_scores': []  # Store all individual scores for statistical analysis
             }
+            
+            # Initialize counts for all labels
+            for label_category, labels in all_labels.items():
+                tweets_by_date[date]['label_counts'][label_category] = {}
+                for label_id, label_text in labels.items():
+                    tweets_by_date[date]['label_counts'][label_category][label_text] = 0
             
         # Add tweet to the appropriate date group
         tweets_by_date[date]['tweets'].append(tweet)
-        tweets_by_date[date]['sentiment_sum'] += float(tweet.get('sentiment', 0))
-        tweets_by_date[date]['count'] += 1
         
-        # Count label occurrences
-        if tweet.get('request', 'no') == 'yes':
-            tweets_by_date[date]['request_count'] += 1
+        # Get sentiment as a numerical value (0-1 range)
+        sentiment_value = float(tweet_norm.get('sentiment', 0.5))
+        tweets_by_date[date]['sentiment_sum'] += sentiment_value
+        tweets_by_date[date]['count'] += 1
+        tweets_by_date[date]['sentiment_scores'].append(sentiment_value)  # Store individual score
+        
+        # Count sentiment categories for backward compatibility
+        # These are now derived from the numerical score
+        if sentiment_value >= 0.7:
+            tweets_by_date[date]['sentiment_counts']['positive'] += 1
+        elif sentiment_value <= 0.3:
+            tweets_by_date[date]['sentiment_counts']['negative'] += 1
+        else:
+            tweets_by_date[date]['sentiment_counts']['neutral'] += 1
+        
+        # Count all label occurrences
+        for label_category in all_labels.keys():
+            label_value = tweet_norm.get(label_category, 'no')
             
-        if tweet.get('medical_help', 'no') == 'yes':
-            tweets_by_date[date]['medical_help_count'] += 1
+            # Handle different formats of label values
+            if isinstance(label_value, bool):
+                label_text = 'yes' if label_value else 'no'
+            elif isinstance(label_value, str):
+                label_text = label_value.lower()
+            elif isinstance(label_value, (int, float)):
+                # For sentiment, we've already handled it above
+                if label_category == 'sentiment':
+                    continue
+                else:
+                    # For other numeric labels, use the value as is
+                    label_text = str(int(label_value))
+            else:
+                # Default fallback
+                label_text = 'no'
             
-        if tweet.get('aid_related', 'no') == 'yes':
-            tweets_by_date[date]['aid_related_count'] += 1
+            # Increment the count for this label
+            if label_category in tweets_by_date[date]['label_counts']:
+                label_dict = tweets_by_date[date]['label_counts'][label_category]
+                if label_text in label_dict:
+                    label_dict[label_text] += 1
+                elif label_text == 'yes':
+                    # Special case for binary labels
+                    if 'yes' in label_dict:
+                        label_dict['yes'] += 1
     
     # Create aggregated results
     aggregated_results = []
+    day_by_day_data = []
     
     for date, data in tweets_by_date.items():
         # Calculate average sentiment score
-        avg_sentiment = 0
+        avg_sentiment = 0.5  # Default neutral
         if data['count'] > 0:
             avg_sentiment = data['sentiment_sum'] / data['count']
         
-        # Create aggregated result entry
+        # Calculate threshold for significant labels (5% of tweets on this day)
+        threshold = max(1, int(data['count'] * 0.05))
+        
+        # Identify significant elements based on threshold
+        significant_elements = []
+        for label in element_labels:
+            if label in all_labels:
+                for label_text, count in data['label_counts'].get(label, {}).items():
+                    if label_text == 'yes' and count >= threshold:
+                        significant_elements.append(label)
+        
+        # Identify significant impacts based on threshold
+        significant_impacts = []
+        for label in impact_labels:
+            if label in all_labels:
+                for label_text, count in data['label_counts'].get(label, {}).items():
+                    if label_text == 'yes' and count >= threshold:
+                        significant_impacts.append(label)
+        
+        # Identify significant requests based on threshold
+        significant_requests = []
+        for label in request_labels:
+            if label in all_labels:
+                for label_text, count in data['label_counts'].get(label, {}).items():
+                    if label_text == 'yes' and count >= threshold:
+                        significant_requests.append(label)
+        
+        # Format the elements, impacts, and requests as comma-separated strings
+        elements_str = ", ".join([label.replace('_', ' ').title() for label in significant_elements]) or "None identified"
+        impacts_str = ", ".join([label.replace('_', ' ').title() for label in significant_impacts]) or "None identified"
+        requests_str = ", ".join([label.replace('_', ' ').title() for label in significant_requests]) or "None identified"
+        
+        # Generate summary for this date using LLM
+        summary = _generate_date_summary(date, data, avg_sentiment, significant_elements, significant_impacts, significant_requests)
+        
+        # Store day-by-day data for overall summary generation
+        day_by_day_data.append({
+            'date': date,
+            'sentiment': avg_sentiment,
+            'tweet_count': data['count'],
+            'sentiment_counts': data['sentiment_counts'],
+            'elements': significant_elements,
+            'impacts': significant_impacts,
+            'requests': significant_requests
+        })
+        
+        # Create aggregated result entry with all the data
         aggregated_result = {
             'date': date,
-            'sentiment': round(avg_sentiment, 2),  # Round to 2 decimal places
+            'sentiment': round(avg_sentiment, 2),  # Store numerical sentiment score (0-1 range)
+            'sentiment_score': round(avg_sentiment, 2),  # Explicit numerical score for clarity
             'tweet_count': data['count'],
-            'request_count': data['request_count'],
-            'medical_help_count': data['medical_help_count'],
-            'aid_related_count': data['aid_related_count']
+            'Elements': elements_str,
+            'Impact': impacts_str,
+            'Requests': requests_str,
+            'Summary': summary,
+            # Include all label counts for reference
+            'label_counts': data['label_counts'],
+            'sentiment_counts': data['sentiment_counts']
         }
         
         aggregated_results.append(aggregated_result)
     
     # Sort results by date
     aggregated_results.sort(key=lambda x: x['date'])
+    day_by_day_data.sort(key=lambda x: x['date'])
     
-    logger.info(f"Aggregated sentiment analysis results for {len(aggregated_results)} dates")
+    # Generate overall summary if we have multiple days
+    if len(day_by_day_data) > 1:
+        overall_summary = _generate_overall_summary(day_by_day_data)
+        # Add overall summary to the first result
+        if aggregated_results:
+            aggregated_results[0]['overall_summary'] = overall_summary
+    
+    logger.info(f"Aggregated sentiment analysis results for {len(aggregated_results)} dates with comprehensive label tracking")
     return aggregated_results
 
+
+def _generate_date_summary(date, data, sentiment_score, elements, impacts, requests):
+    """Generate a summary for a specific date based on tweet data and identified categories
+    
+    Args:
+        date: The date being summarized
+        data: The aggregated data for this date
+        sentiment_score: The average sentiment score for this date (0-1 range)
+        elements: List of significant disaster elements identified
+        impacts: List of significant impacts identified
+        requests: List of significant requests identified
+    
+    Returns:
+        A generated summary string for this date with numerical sentiment analysis
+    """
+    try:
+        # Initialize LLM for summary generation
+        llm = init_llm()
+        
+        # Format sentiment as text for human readability
+        # But keep the numerical score as the primary data point
+        sentiment_text = "neutral"
+        if sentiment_score >= 0.7:
+            sentiment_text = "positive"
+        elif sentiment_score <= 0.3:
+            sentiment_text = "negative"
+        
+        # Calculate additional sentiment statistics if we have individual scores
+        sentiment_stats = ""
+        if 'sentiment_scores' in data and data['sentiment_scores']:
+            scores = data['sentiment_scores']
+            if len(scores) > 1:
+                # Calculate standard deviation to measure sentiment variability
+                import numpy as np
+                std_dev = np.std(scores)
+                # Calculate min and max to show sentiment range
+                min_score = min(scores)
+                max_score = max(scores)
+                # Add these statistics to the prompt
+                sentiment_stats = f"\nSentiment variability (std dev): {std_dev:.2f}\nSentiment range: {min_score:.2f} to {max_score:.2f}"
+        
+        # Create a prompt for the LLM
+        template = """
+        Generate a concise, factual summary of social media activity for {date} during a disaster event.
+        
+        Tweet count: {tweet_count}
+        Average sentiment score: {sentiment_score:.2f} (on a scale of 0-1, where 0=negative, 0.5=neutral, 1=positive)
+        Sentiment breakdown: Positive: {positive_count}, Neutral: {neutral_count}, Negative: {negative_count}{sentiment_stats}
+        
+        Disaster elements mentioned: {elements}
+        Impacts reported: {impacts}
+        Requests/offers identified: {requests}
+        
+        Write a 2-3 sentence summary that captures the key information for this date, focusing on:
+        1. The overall sentiment score and volume of social media activity
+        2. The main disaster elements being discussed
+        3. The primary impacts and requests/needs being expressed
+        
+        Keep your summary factual, concise, and based solely on the data provided.
+        Reference the numerical sentiment score in your summary.
+        Include the sentiment variability if it's significant (std dev > 0.2).
+        """
+        
+        prompt = PromptTemplate(
+            template=template,
+            input_variables=["date", "tweet_count", "sentiment_score", 
+                           "positive_count", "neutral_count", "negative_count",
+                           "sentiment_stats", "elements", "impacts", "requests"]
+        )
+        
+        # Create the summary generation chain
+        summary_chain = LLMChain(llm=llm, prompt=prompt)
+        
+        # Get sentiment counts
+        sentiment_counts = data.get('sentiment_counts', {'positive': 0, 'neutral': 0, 'negative': 0})
+        
+        # Generate the summary
+        summary = summary_chain.run(
+            date=date,
+            tweet_count=data['count'],
+            sentiment_score=sentiment_score,  # Pass the numerical score directly
+            positive_count=sentiment_counts.get('positive', 0),
+            neutral_count=sentiment_counts.get('neutral', 0),
+            negative_count=sentiment_counts.get('negative', 0),
+            sentiment_stats=sentiment_stats,  # Include sentiment statistics
+            elements=elements,
+            impacts=impacts,
+            requests=requests
+        )
+        
+        # Clean up the summary
+        summary = summary.strip()
+        
+        return summary
+    except Exception as e:
+        logger.error(f"Error generating date summary: {e}")
+        return f"Summary of {data['count']} tweets on {date} with sentiment score of {sentiment_score:.2f}."
+
+
+def _generate_overall_summary(day_by_day_data: List[Dict[str, Any]]) -> str:
+    """Generate an overall summary based on day-by-day sentiment data
+    
+    Args:
+        day_by_day_data: List of daily aggregated data with sentiment trends
+        
+    Returns:
+        A comprehensive summary string analyzing sentiment trends over time
+    """
+    try:
+        # Initialize LLM for summary generation
+        llm = init_llm()
+        
+        # Calculate overall statistics
+        total_tweets = sum(day['tweet_count'] for day in day_by_day_data)
+        avg_sentiment = sum(day['sentiment'] * day['tweet_count'] for day in day_by_day_data) / total_tweets if total_tweets > 0 else 0.5
+        
+        # Identify sentiment trend
+        sentiment_trend = "stable"
+        if len(day_by_day_data) > 1:
+            first_day = day_by_day_data[0]['sentiment']
+            last_day = day_by_day_data[-1]['sentiment']
+            if last_day - first_day > 0.15:
+                sentiment_trend = "improving"
+            elif first_day - last_day > 0.15:
+                sentiment_trend = "worsening"
+        
+        # Aggregate all elements, impacts, and requests across days
+        all_elements = set()
+        all_impacts = set()
+        all_requests = set()
+        
+        for day in day_by_day_data:
+            all_elements.update(day.get('elements', []))
+            all_impacts.update(day.get('impacts', []))
+            all_requests.update(day.get('requests', []))
+        
+        # Format as comma-separated strings
+        elements_str = ", ".join([element.replace('_', ' ').title() for element in all_elements]) or "None identified"
+        impacts_str = ", ".join([impact.replace('_', ' ').title() for impact in all_impacts]) or "None identified"
+        requests_str = ", ".join([request.replace('_', ' ').title() for request in all_requests]) or "None identified"
+        
+        # Create a prompt for the LLM
+        template = """
+        Generate a comprehensive summary of social media sentiment analysis during a disaster event over {num_days} days.
+        
+        Total tweets analyzed: {total_tweets}
+        Average sentiment: {avg_sentiment:.2f} (0=negative, 0.5=neutral, 1=positive)
+        Sentiment trend: {sentiment_trend}
+        
+        Disaster elements mentioned across all days: {elements}
+        Impacts reported across all days: {impacts}
+        Requests/offers identified across all days: {requests}
+        
+        Write a 3-5 sentence summary that captures the key information across the entire period, focusing on:
+        1. The overall sentiment trend and volume of social media activity
+        2. How sentiment changed over time (improved, worsened, or remained stable)
+        3. The main disaster elements, impacts, and requests/needs being expressed
+        4. Any notable patterns or insights from the data
+        
+        Keep your summary factual, concise, and based solely on the data provided.
+        """
+        
+        prompt = PromptTemplate(
+            template=template,
+            input_variables=["num_days", "total_tweets", "avg_sentiment", "sentiment_trend", 
+                           "elements", "impacts", "requests"]
+        )
+        
+        # Create the summary generation chain
+        summary_chain = LLMChain(llm=llm, prompt=prompt)
+        
+        # Generate the summary
+        summary = summary_chain.run(
+            num_days=len(day_by_day_data),
+            total_tweets=total_tweets,
+            avg_sentiment=avg_sentiment,
+            sentiment_trend=sentiment_trend,
+            elements=elements_str,
+            impacts=impacts_str,
+            requests=requests_str
+        )
+        
+        # Clean up the summary
+        summary = summary.strip()
+        
+        return summary
+    except Exception as e:
+        logger.error(f"Error generating overall summary: {e}")
+        return f"Summary of {sum(day['tweet_count'] for day in day_by_day_data)} tweets over {len(day_by_day_data)} days with average sentiment {avg_sentiment:.2f}."
+
 def _simulate_sentiment_analysis(twitter_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Simulate sentiment analysis when the real model is not available"""
+    """Simulate sentiment analysis when the real model is not available
+    Generates predictions for all labels defined in labels.py"""
     import random
+    
+    # Get all available labels
+    try:
+        all_labels = get_all_labels()
+    except Exception as e:
+        logger.warning(f"Could not get all labels: {e}")
+        all_labels = {}
+    
+    # Get all available labels
+    try:
+        all_labels = get_all_labels()
+    except Exception as e:
+        logger.warning(f"Could not get all labels: {e}")
+        all_labels = {}
     
     result = []
     for tweet in twitter_data:
         # Extract text content to determine simulated classifications more intelligently
         text = tweet.get("Tweet", "").lower()
         
-        # Generate intelligent sentiment scores based on content
-        has_negative_words = any(word in text for word in ["damage", "death", "casualties", "injured", "trapped", "crisis", "emergency"])
-        has_positive_words = any(word in text for word in ["rescue", "aid", "help", "support", "recovery", "saved", "distribute"])
-        has_request_words = any(word in text for word in ["need", "send", "please", "urgently", "required", "necessary", "help us"])
-        has_offer_words = any(word in text for word in ["providing", "sending", "donate", "distributing", "offering", "deployed", "mobilizing"])
-        
-        # Basic sentiment calculation - negative words decrease score, positive words increase it
-        # but we'll use argmax for final classification
+        # Generate numerical sentiment scores based on content (0-1 range)
         base_sentiment = 0.5  # Neutral starting point
+        
+        # Count negative and positive signals
+        neg_signals = 0
+        pos_signals = 0
+        
+        # Define word lists for different categories
+        negative_words = ["damage", "death", "casualties", "injured", "trapped", "crisis", "emergency", 
+                         "disaster", "died", "killed", "missing", "collapsed", "destroyed", "devastated",
+                         "suffering", "pain", "loss", "terrible", "awful", "sad", "tragic"]
+        
+        positive_words = ["rescue", "aid", "help", "support", "recovery", "saved", "distribute",
+                         "assist", "donate", "volunteer", "relief", "rebuild", "hope", "survive", 
+                         "safe", "found", "reunited", "healing", "progress"]
+        
+        request_words = ["need", "please", "help", "require", "send", "urgent", "emergency", 
+                        "assistance", "support", "request", "asking"]
+        
+        offer_words = ["offering", "provide", "giving", "donate", "sending", "available", 
+                      "can help", "will assist", "contribution"]
+        
+        # Define word lists for all label categories
+        label_word_lists = {
+            'genre': {
+                'direct': ["i", "me", "my", "we", "our", "us", "please", "help", "need"],
+                'news': ["report", "bulletin", "news", "update", "official", "announced", "authorities"],
+                'social media': ["sharing", "retweet", "rt", "follow", "trending"]
+            },
+            'related': {
+                'yes': ["disaster", "emergency", "crisis", "earthquake", "flood", "hurricane", "tornado", "wildfire"],
+                'no': ["unrelated", "nothing", "irrelevant"]
+            },
+            'request': {
+                'yes': request_words,
+                'no': []
+            },
+            'offer': {
+                'yes': offer_words,
+                'no': []
+            },
+            'aid_related': {
+                'yes': ["aid", "help", "assist", "relief", "support", "donation", "supplies", "resource"],
+                'no': []
+            },
+            'medical_help': {
+                'yes': ["medical", "doctor", "nurse", "hospital", "medicine", "treatment", "injury", "wound", "health"],
+                'no': []
+            },
+            'medical_products': {
+                'yes': ["medicine", "bandage", "drug", "antibiotic", "vaccine", "medical supply", "equipment"],
+                'no': []
+            },
+            'search_and_rescue': {
+                'yes': ["search", "rescue", "find", "locate", "missing", "trapped", "survivor", "sar"],
+                'no': []
+            },
+            'security': {
+                'yes': ["security", "police", "safety", "protection", "guard", "patrol", "safe", "danger"],
+                'no': []
+            },
+            'military': {
+                'yes': ["military", "army", "soldier", "troop", "navy", "air force", "marine", "national guard"],
+                'no': []
+            },
+            'child_alone': {
+                'yes': ["child alone", "orphan", "unaccompanied", "separated", "lost child"],
+                'no': []
+            },
+            'water': {
+                'yes': ["water", "drink", "thirst", "hydration", "clean water", "bottled water", "well"],
+                'no': []
+            },
+            'food': {
+                'yes': ["food", "hungry", "starving", "meal", "nutrition", "eat", "feeding", "ration"],
+                'no': []
+            },
+            'shelter': {
+                'yes': ["shelter", "housing", "roof", "tent", "camp", "accommodation", "homeless"],
+                'no': []
+            },
+            'clothing': {
+                'yes': ["clothing", "clothes", "blanket", "jacket", "coat", "shoe", "dress", "warm"],
+                'no': []
+            },
+            'money': {
+                'yes': ["money", "cash", "fund", "donation", "financial", "dollar", "payment", "cost"],
+                'no': []
+            },
+            'missing_people': {
+                'yes': ["missing", "disappeared", "lost", "whereabouts", "looking for", "find", "locate"],
+                'no': []
+            },
+            'refugees': {
+                'yes': ["refugee", "displaced", "evacuee", "fled", "escape", "asylum", "migrant"],
+                'no': []
+            },
+            'death': {
+                'yes': ["death", "dead", "died", "killed", "fatality", "casualty", "body", "deceased"],
+                'no': []
+            },
+            'other_aid': {
+                'yes': ["other aid", "assistance", "support", "help", "relief"],
+                'no': []
+            },
+            'infrastructure_related': {
+                'yes': ["infrastructure", "building", "road", "bridge", "facility", "structure"],
+                'no': []
+            },
+            'transport': {
+                'yes': ["transport", "vehicle", "car", "bus", "train", "plane", "airport", "road", "traffic"],
+                'no': []
+            },
+            'buildings': {
+                'yes': ["building", "house", "apartment", "office", "structure", "construction", "collapse"],
+                'no': []
+            },
+            'electricity': {
+                'yes': ["electricity", "power", "outage", "blackout", "grid", "generator", "energy"],
+                'no': []
+            },
+            'tools': {
+                'yes': ["tool", "equipment", "machinery", "device", "gear", "supply"],
+                'no': []
+            },
+            'hospitals': {
+                'yes': ["hospital", "clinic", "medical center", "healthcare", "facility", "emergency room"],
+                'no': []
+            },
+            'shops': {
+                'yes': ["shop", "store", "market", "business", "mall", "supermarket", "retail"],
+                'no': []
+            },
+            'aid_centers': {
+                'yes': ["aid center", "relief center", "distribution", "shelter", "camp", "assistance center"],
+                'no': []
+            },
+            'other_infrastructure': {
+                'yes': ["infrastructure", "facility", "public", "service", "utility"],
+                'no': []
+            },
+            'weather_related': {
+                'yes': ["weather", "storm", "rain", "wind", "flood", "hurricane", "tornado", "temperature"],
+                'no': []
+            },
+            'floods': {
+                'yes': ["flood", "water", "submerged", "rising water", "overflow", "inundation", "deluge"],
+                'no': []
+            },
+            'storm': {
+                'yes': ["storm", "hurricane", "typhoon", "cyclone", "wind", "gale", "thunder", "lightning"],
+                'no': []
+            },
+            'fire': {
+                'yes': ["fire", "burn", "flame", "smoke", "wildfire", "forest fire", "blaze", "heat"],
+                'no': []
+            },
+            'earthquake': {
+                'yes': ["earthquake", "quake", "tremor", "seismic", "aftershock", "epicenter", "magnitude"],
+                'no': []
+            },
+            'cold': {
+                'yes': ["cold", "freezing", "snow", "ice", "winter", "frost", "temperature", "chill"],
+                'no': []
+            },
+            'other_weather': {
+                'yes': ["weather", "climate", "meteorological", "atmospheric", "condition"],
+                'no': []
+            },
+            'direct_report': {
+                'yes': ["i saw", "i heard", "i feel", "i am", "we are", "my", "our", "personally"],
+                'no': []
+            }
+        }
+        
+        # Check for presence of word categories
+        has_negative_words = any(word in text for word in negative_words)
+        has_positive_words = any(word in text for word in positive_words)
+        has_request_words = any(word in text for word in request_words)
+        has_offer_words = any(word in text for word in offer_words)
+        
+        # Negative signals
         if has_negative_words:
-            base_sentiment -= 0.2
-        if has_positive_words:
-            base_sentiment += 0.15
+            neg_signals += 1
+        if "disaster" in text or "emergency" in text or "crisis" in text:
+            neg_signals += 1
+        if "death" in text or "died" in text or "killed" in text:
+            neg_signals += 2
+        if "injured" in text or "trapped" in text or "missing" in text:
+            neg_signals += 1
             
-        # Simulate sentiment classification (0=negative, 1=positive)
-        probs = [random.uniform(0, 0.4), random.uniform(0, 0.4), random.uniform(0, 0.4)]
-        probs = [p/sum(probs) for p in probs]  # Normalize
-        sentiment_class = int(np.argmax(probs))
-        # Map to binary where 0=negative, 1=positive (ignoring neutral)
-        sentiment_value = 1 if sentiment_class == 2 else 0
+        # Positive signals
+        if has_positive_words:
+            pos_signals += 1
+        if "rescue" in text or "saved" in text or "recovered" in text:
+            pos_signals += 2
+        if "help" in text or "aid" in text or "assist" in text:
+            pos_signals += 1
+        if "donate" in text or "volunteer" in text or "support" in text:
+            pos_signals += 1
+            
+        # Calculate sentiment score with randomization for variety
+        # Formula: base + (positive - negative) signals with scaling and noise
+        signal_diff = pos_signals - neg_signals
+        sentiment_value = base_sentiment + (signal_diff * 0.1) + random.uniform(-0.15, 0.15)
+        
+        # Ensure the value is between 0.1 and 0.9 (avoid extremes)
+        sentiment_value = max(0.1, min(0.9, sentiment_value))
         
         # Determine genre based on username and content
         username = tweet.get("Username", "").lower()
@@ -660,48 +1283,66 @@ def _simulate_sentiment_analysis(twitter_data: List[Dict[str, Any]]) -> List[Dic
         elif any(name in username for name in ["resident", "local", "citizen", "survivor"]):
             genre = "direct"
         else:
-            genre = "social"
+            genre = "social media"  # Match expected format
             
         # Determine if content is related to the disaster
-        related = "yes" if any(word in text for word in ["earthquake", "disaster", "emergency", "damage", "victim", "rescue"]) else "maybe"
-        
-        # Determine aid-related status
-        aid_related = has_negative_words or has_positive_words or has_request_words or has_offer_words
-        
-        # Determine request/offer status
-        is_request = has_request_words and not has_offer_words
-        is_offer = has_offer_words and not has_request_words
-        
-        # Additional binary classifications based on content
-        affected_individuals = "affected_individuals" in text or "victims" in text or "people" in text
-        infrastructure_damage = "infrastructure" in text or "buildings" in text or "roads" in text
-        medical_help = "medical" in text or "hospital" in text or "injuries" in text
-        water = "water" in text or "drinking" in text or "thirst" in text
+        related = "yes" if any(word in text for word in ["earthquake", "disaster", "emergency", "damage", "victim", "rescue"]) else "no"
         
         # Create a comprehensive prediction structure matching TunedLLM output format
         prediction = {
-            'sentiment': sentiment_value,
-            "genre": genre,
-            "related": related,
-            "aid_related": aid_related,
-            "request": is_request,
-            "offer": is_offer,
-            "affected_individuals": affected_individuals,
-            "infrastructure_damage": infrastructure_damage,
-            "medical_help": medical_help,
-            "water": water,
-            "f1_score": 0.89,  # Simulated performance metrics
-            "precision": 0.92,
-            "recall": 0.87
+            'sentiment': {
+                'prediction': sentiment_value,
+                'scores': {
+                    0: max(0.1, 0.5 - sentiment_value),  # Negative score
+                    1: max(0.1, 1 - abs(sentiment_value - 0.5) * 2),  # Neutral score
+                    2: max(0.1, sentiment_value)  # Positive score
+                }
+            }
         }
         
-        # Add sentiment information to the tweet data
+        # Generate predictions for all labels based on word lists
+        for label_category, label_options in label_word_lists.items():
+            # Skip sentiment as we've already handled it
+            if label_category == 'sentiment':
+                continue
+                
+            # Determine the most likely label based on word presence
+            max_matches = 0
+            best_label = 'no'  # Default to 'no' for binary labels
+            
+            for label_value, words in label_options.items():
+                if not words:  # Skip empty word lists
+                    continue
+                    
+                # Count how many words from this label's list appear in the text
+                matches = sum(1 for word in words if word in text)
+                
+                # If this label has more matches than previous best, make it the new best
+                if matches > max_matches:
+                    max_matches = matches
+                    best_label = label_value
+            
+            # Add some randomness to avoid deterministic results
+            # For binary yes/no labels, occasionally flip the result
+            if best_label in ['yes', 'no'] and random.random() < 0.1:  # 10% chance to flip
+                best_label = 'yes' if best_label == 'no' else 'no'
+            
+            # Add the prediction to the result
+            prediction[label_category] = {
+                'prediction': best_label,
+                'scores': {}  # Empty scores for simplicity
+            }
+        
+        # Add sentiment information to the tweet data (flattened for aggregation)
         sentiment_data = {
-            "Tweet": tweet.get("Tweet", ""),
-            "Username": tweet.get("Username", ""),
-            "Date": tweet.get("Date", ""),
-            "sentiment_prediction": prediction
+            **tweet,
+            "sentiment": sentiment_value  # Store the calculated sentiment value directly
         }
+        
+        # Add all label predictions to the flattened data
+        for label_category, label_data in prediction.items():
+            if label_category != 'sentiment':  # Skip sentiment as we've already added it
+                sentiment_data[label_category] = label_data.get('prediction', 'no')
         result.append(sentiment_data)
     
     logger.info(f"Simulated sentiment analysis for {len(result)} tweets with multi-task classification")
@@ -757,10 +1398,18 @@ def generate_report_data(
     # Current Time
     current_time = datetime.now()
     
-    # Calculate sentiment statistics from sentiment_analysis
+    # Calculate sentiment statistics from sentiment_analysis with numerical scores
     tweet_count = len(sentiment_analysis)
-    positive_count = sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 1)
-    negative_count = sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 0)
+    
+    # Calculate sentiment counts using numerical thresholds
+    positive_count = sum(1 for item in sentiment_analysis if float(item.get('sentiment', 0.5)) >= 0.7)
+    negative_count = sum(1 for item in sentiment_analysis if float(item.get('sentiment', 0.5)) <= 0.3)
+    neutral_count = sum(1 for item in sentiment_analysis if 0.3 < float(item.get('sentiment', 0.5)) < 0.7)
+    
+    # Calculate average sentiment score
+    avg_sentiment = sum(float(item.get('sentiment', 0.5)) for item in sentiment_analysis) / max(1, len(sentiment_analysis))
+    
+    # Calculate other statistics
     request_count = sum(1 for item in sentiment_analysis if item.get('request', False))
     medical_help_count = sum(1 for item in sentiment_analysis if item.get('medical_help', False))
     
@@ -801,7 +1450,9 @@ def generate_report_data(
     
     TWEET SENTIMENT ANALYSIS SUMMARY:
     - Total tweets analyzed: {tweet_count}
+    - Average sentiment score: {avg_sentiment:.2f} (0-1 scale, where 0=negative, 0.5=neutral, 1=positive)
     - Positive sentiment: {positive_count} tweets
+    - Neutral sentiment: {neutral_count} tweets
     - Negative sentiment: {negative_count} tweets
     - Requests for help: {request_count} tweets
     - Request for medical assistance: {medical_help_count} tweets
@@ -811,7 +1462,7 @@ def generate_report_data(
         "sections": {{
             "Background": "String output of a lengthy 2-3 paragraph summary of the disaster situation, including the type, location, timing, and key impacts. Remember this disaster has already happened and is current news in {current_year}...",
             "Tweet Overview": "String output of a short summary of the tweets, including the total number of tweets in the original dataset and highlighting the most influential personnel or characters involved...",
-            "Sentiment Overview": "String output of a slightly detailed summary of the sentiment analysis, including the number of tweets with positive or negative sentiments, and the main themes of the data...",
+            "Sentiment Overview": "String output of a detailed summary of the sentiment analysis, including the numerical sentiment scores (0-1 scale), the number of tweets with positive, neutral, or negative sentiments, sentiment trends over time, and the main themes identified in the data. Include both the raw numerical scores and their interpretations...",
             "Results": "String output of a slightly detailed summary about the affected population, including a deeper analysis on the labels of affected, displaced, injured, and deceased individuals...",
             "Discussion": "String output of a long detailed discussion about ongoing response efforts, including organizations involved and current priorities. Include a projection of the following days, based on the current knowledge and understanding of how the situation has been evolving over the days...",
             "Recommendation": "String output of a lengthy detailed assessment of the most critical actions to take based on the available information, including recommendations for humanitarian assistance and disaster relief. Spend more effort on providing highly intelligent and deeper insights derived from all the provided data..."
@@ -828,7 +1479,7 @@ def generate_report_data(
         "details": [
             {{
                 "Date": "String output of the formatted date in day_by_day_data...",
-                "Sentiment": Float output of the average sentiment score in the format of 0.XX,
+                "Sentiment": Float output of the average sentiment score in the format of 0.XX (0-1 scale where 0=completely negative and 1=completely positive),
                 "Elements": "String output of the elements...",
                 "Impact": "String output of the impact...",
                 "Requests": "String output of the requests...",
@@ -860,7 +1511,9 @@ def generate_report_data(
             "search_results",
             "wikipedia_results",
             "tweet_count",
+            "avg_sentiment",
             "positive_count",
+            "neutral_count",
             "negative_count",
             "request_count",
             "medical_help_count",
@@ -881,27 +1534,28 @@ def generate_report_data(
         # Use sentiment_analysis as the reference data source for all tweet analysis
         # This ensures we're working with tweets that have sentiment scores attached
         
-        # Extract top 10 tweets sorted by retweet count
+        # Extract top 10 tweets sorted by retweet count (robust to key capitalization)
         top_tweets = []
         if sentiment_analysis and len(sentiment_analysis) > 0:
-            # Sort tweets by retweet count (highest first)
-            sorted_tweets = sorted(sentiment_analysis, 
-                                key=lambda x: int(x.get('Retweets', x.get('retweets', 0))), 
-                                reverse=True)
-            
-            # Take top 10 tweets, preserving original metadata
+            def get_retweets(x):
+                return int(x.get('Retweets') or x.get('retweets') or 0)
+            sorted_tweets = sorted(sentiment_analysis, key=get_retweets, reverse=True)
             for tweet in sorted_tweets[:10]:
-                tweet_data = {
-                    "Username": tweet.get("username", ""),
-                    "Date": tweet.get("date", ""),  # Keep original date format
-                    "Retweets": tweet.get("retweets", "0"),  # Keep as string to preserve original format
-                    "Tweet": tweet.get("tweet", "")
-                }
-                top_tweets.append(tweet_data)
+                # Normalize keys for robust extraction
+                tweet_norm = {k.lower(): v for k, v in tweet.items()}
+                top_tweets.append({
+                    "Username": tweet.get("Username") or tweet.get("username") or tweet_norm.get("username", ""),
+                    "Date": tweet.get("Date") or tweet.get("date") or tweet_norm.get("date", ""),
+                    "Retweets": str(tweet.get("Retweets") or tweet.get("retweets") or tweet_norm.get("retweets", "0")),
+                    "Tweet": tweet.get("Tweet") or tweet.get("tweet") or tweet_norm.get("tweet", "")
+                })
         
         # Get day-by-day aggregated sentiment data
         day_by_day_data = _aggregate_results_by_date(sentiment_analysis)
 
+        print("sentiment_analysis: ", sentiment_analysis)
+        print()
+        print()
         print("top_tweets: ", top_tweets)
         print()
         print()
@@ -917,8 +1571,8 @@ def generate_report_data(
             "disaster_location": disaster_info.get("disaster_location", ""),
             "disaster_date": disaster_info.get("disaster_date", ""),
             "tweet_count": tweet_count,
-            "positive_count": sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 1),
-            "negative_count": sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 0),
+            "positive_count": sum(1 for item in sentiment_analysis if float(item.get('sentiment', 0.5)) >= 0.7),
+            "negative_count": sum(1 for item in sentiment_analysis if float(item.get('sentiment', 0.5)) <= 0.3),
             "request_count": request_count,
             "medical_help_count": medical_help_count,
             "search_results": "\n\n".join(search_results),

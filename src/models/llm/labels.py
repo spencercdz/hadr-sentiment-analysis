@@ -45,7 +45,8 @@ def get_all_labels() -> Dict[str, Dict[int, str]]:
         'earthquake': get_earthquake_labels(),
         'cold': get_cold_labels(),
         'other_weather': get_other_weather_labels(),
-        'direct_report': get_direct_report_labels()
+        'direct_report': get_direct_report_labels(),
+        'sentiment': get_sentiment_labels()
     }
 
 def get_genre_labels() -> Dict[int, str]:
@@ -568,4 +569,20 @@ def get_direct_report_labels() -> Dict[int, str]:
     return {
         0: 'no',
         1: 'yes'
+    }
+
+def get_sentiment_labels() -> Dict[int, str]:
+    """
+    Get mappings of sentiment label ids to human-readable labels.
+    
+    Returns:
+        Dict[int, str]:
+            - 0: 'negative' (negative sentiment)
+            - 1: 'neutral' (neutral sentiment)
+            - 2: 'positive' (positive sentiment)
+    """
+    return {
+        0: 'negative',
+        1: 'neutral',
+        2: 'positive'
     }
