@@ -8,6 +8,7 @@ import csv
 import pandas as pd
 import numpy as np
 import logging
+import gc
 from pathlib import Path
 from typing import Dict, List, Any, TypedDict, Annotated, Union
 import traceback
@@ -18,6 +19,7 @@ from langchain.chains import LLMChain
 from langchain.agents import Tool
 from langchain.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
+from tqdm import tqdm
 
 # Configure paths
 current_dir = Path(__file__).parent
@@ -29,6 +31,13 @@ project_root = current_dir.parent.parent.parent
 models_dir = project_root / "src" / "models"
 sys.path.append(str(project_root))
 sys.path.append(str(models_dir))
+
+# Import Untuned LLM class
+llm_dir = project_root / "src" / "models" / "llm"
+sys.path.append(str(llm_dir))
+
+# Import directly with full path to avoid custom class registry issues
+from models.llm.untuned import UntunedLLM
 
 # Import sentiment analysis packages for Twitter sentiment analysis
 try:
@@ -86,27 +95,82 @@ def init_llm():
     """Initialize LLM for agent operations"""
     try:
         # For local use without API keys
-        return Ollama(model="qwen2.5-coder:14b") # original: deepseek-r1:8b
+        return Ollama(model="qwen2.5-coder:14b", temperature = 0) # original: deepseek-r1:8b  #  qwen2.5-coder:14b
     except Exception as e:
         logger.error(f"Error initializing LLM: {e}")
         # Fallback to a model with reasonable performance
         logger.info("Falling back to default LLM")
-        return Ollama(model="llama2")
+        return Ollama(model="llama2", temperature = 0)
 
 def init_sentiment_model():
-    """Initialize the sentiment analysis model"""
+    """Initialize the sentiment analysis model with performance optimizations"""
+    
     if not HAS_SENTIMENT_MODEL:
         logger.info("No torch/transformers available, using simulated sentiment")
         return None
         
     try:
-        # Use the roberta-twitter-sentiment model
+        # Initialize the model with highly optimized batch size and settings
+        # Dynamically adjust batch size based on available GPU memory
+        if torch.cuda.is_available():
+            # Get available GPU memory and adjust batch size accordingly
+            try:
+                free_memory = torch.cuda.get_device_properties(0).total_memory - torch.cuda.memory_allocated(0)
+                free_memory_gb = free_memory / (1024**3)  # Convert to GB
+                
+                # Scale batch size based on available memory
+                # Use larger batches with more available memory
+                if free_memory_gb > 8:
+                    optimal_batch_size = 256
+                elif free_memory_gb > 4:
+                    optimal_batch_size = 128
+                elif free_memory_gb > 2:
+                    optimal_batch_size = 64
+                else:
+                    optimal_batch_size = 32
+                    
+                logger.info(f"Dynamically set batch size to {optimal_batch_size} based on {free_memory_gb:.2f}GB available GPU memory")
+            except Exception as e:
+                logger.warning(f"Could not determine GPU memory, using default batch size: {e}")
+                optimal_batch_size = 128
+        else:
+            # On CPU, use a smaller batch size
+            optimal_batch_size = 32
+            
+        model_config = {
+            'preprocessing': {
+                'max_length': 128,
+                'padding': 'max_length',
+                'truncation': True
+            },
+            'batch_size': optimal_batch_size  # Dynamically adjusted batch size
+        }
+
+        # Load model
         model_name = "spencercdz/roberta-twitter-sentiment"
-        model = AutoModelForSequenceClassification.from_pretrained(model_name)
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        print(f"Loading model {model_name} for sentiment analysis with optimized settings")
+
+        # Initialize PyTorch properly before creating model
+        if torch.cuda.is_available():
+            # Clear CUDA cache
+            torch.cuda.empty_cache()
+            
+            # Set optimal CUDA settings for faster inference
+            torch.backends.cudnn.benchmark = True
+            torch.backends.cudnn.deterministic = False
+            
+            logger.info("CUDA available: Enabling performance optimizations")
+        
+        # Create model with proper initialization
+        model = UntunedLLM(
+            model_name='spencercdz/roberta-twitter-sentiment',
+            model_config=model_config
+        )
         
         logger.info(f"Successfully loaded {model_name} for sentiment analysis")
-        return {"model": model, "tokenizer": tokenizer}
+
+        # Return model object
+        return model
     except Exception as e:
         logger.error(f"Error initializing sentiment model: {e}")
         logger.error(traceback.format_exc())
@@ -306,106 +370,258 @@ def search_wikipedia(query: str, disaster_info: Dict[str, str]) -> List[str]:
         return wikipedia_results
 
 def analyze_sentiment(twitter_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Analyze sentiment of tweets using the roberta-twitter-sentiment model"""
+    """Analyze sentiment of tweets using the roberta-twitter-sentiment model with optimized performance
+    and aggregate results by date with average sentiment scores and label counts"""
     if not twitter_data:
         return []
     
-    # Initialize sentiment model
-    sentiment_model = init_sentiment_model()
+    # Initialize sentiment model with larger batch size
+    model_config = {
+        'preprocessing': {
+            'max_length': 128,
+            'padding': 'max_length',
+            'truncation': True
+        },
+        'batch_size': 128  # Increased batch size for better throughput
+    }
     
-    logger.info(f"Analyzing sentiment for {len(twitter_data)} tweets")
+    # Initialize model or use cached version
+    model = init_sentiment_model()
+    
+    # Update batch size if model was already initialized
+    if model is not None and hasattr(model, 'batch_size'):
+        model.batch_size = model_config['batch_size']
+    
+    logger.info(f"Analyzing sentiment for {len(twitter_data)} tweets with batch size {model_config['batch_size']}")
     
     # If no model is available, use simulated sentiment
-    if sentiment_model is None:
+    if model is None:
         logger.warning("No sentiment model available, using simulated sentiment")
-        return _simulate_sentiment_analysis(twitter_data)
+        raw_results = _simulate_sentiment_analysis(twitter_data)
+        return _aggregate_results_by_date(raw_results)
     
     try:
-        results = []
-        model = sentiment_model["model"]
-        tokenizer = sentiment_model["tokenizer"]
+        # Pre-allocate results list for better memory efficiency
+        raw_results = [None] * len(twitter_data)
         
-        # Put model in evaluation mode and get device
-        model.eval()
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model.to(device)
-        
-        # Process in batches
-        batch_size = 16  # Smaller batch size for memory efficiency
+        # Begin prediction
         start_time = datetime.now()
+        print(f"\nGenerating predictions at {start_time}...")
         
-        for i in range(0, len(twitter_data), batch_size):
-            batch = twitter_data[i:i+batch_size]
-            texts = [tweet.get('text', '') for tweet in batch]
+        # Enable mixed precision if available for faster computation
+        if torch.cuda.is_available():
+            # Clear GPU memory before starting
+            torch.cuda.empty_cache()
             
-            # Tokenize inputs
-            encoded_inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True, max_length=128)
-            encoded_inputs = {k: v.to(device) for k, v in encoded_inputs.items()}
-            
-            # Get predictions
-            with torch.no_grad():
-                outputs = model(**encoded_inputs)
-                predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
-            
-            # Convert predictions to sentiment values
-            # RoBERTa outputs: [negative, neutral, positive]
-            sentiments = predictions.cpu().numpy()
-            
-            # Map predictions to results
-            for j, sentiment_scores in enumerate(sentiments):
-                tweet = batch[j]
-                text = tweet.get('text', '').lower()
-                
-                # Calculate binary sentiment (0 or 1)
-                # 0 for negative, 1 for positive
-                # Using highest probability class
-                sentiment_class = int(np.argmax(sentiment_scores))
-                # Map to binary where 0=negative, 1=positive (ignoring neutral)
-                sentiment_value = 1 if sentiment_class == 2 else 0
-                
-                # Determine genre based on username and content
-                username = tweet.get('username', '').lower()
-                if any(source in username for source in ["news", "cnn", "bbc", "reuters", "ap", "report"]):
-                    genre = "news"
-                elif any(name in username for name in ["resident", "local", "citizen", "survivor"]):
-                    genre = "direct"
-                else:
-                    genre = "social"
-                
-                # Determine if content is related to the disaster
-                disaster_keywords = ["earthquake", "disaster", "emergency", "damage", "victim", "rescue", 
-                                    "myanmar", "burma", "debris", "aftershock", "trapped", "quake"]
-                related = "yes" if any(word in text for word in disaster_keywords) else "maybe"
-                
-                # Check for specific content patterns
-                has_request_words = any(word in text for word in ["need", "help", "please", "urgent", "require", "assistance"])
-                has_offer_words = any(word in text for word in ["offer", "provide", "donate", "giving", "available", "support"])
-                
-                # Determine request/offer status
-                is_request = has_request_words and not has_offer_words
-                is_offer = has_offer_words and not has_request_words
-                aid_related = is_request or is_offer or "aid" in text or "relief" in text or "help" in text
-                
-                result = {
-                    **tweet,
-                    'sentiment': sentiment_value,
-                    'related': related,
-                    'genre': genre,
-                    'request': is_request,
-                    'offer': is_offer,
-                    'aid_related': aid_related
-                }
-                results.append(result)
+            # Enable automatic mixed precision for faster inference
+            amp_enabled = True
+            logger.info("Using automatic mixed precision for faster inference")
+        else:
+            amp_enabled = False
+            logger.info("CUDA not available, using CPU for inference")
         
+        # Process data in batches with optimized memory usage
+        batch_size = model.batch_size
+        
+        # Pre-process all texts in parallel to reduce overhead
+        from concurrent.futures import ThreadPoolExecutor
+        
+        def extract_and_preprocess_text(tweet):
+            # Extract text with fallback options
+            text = tweet.get('Tweet', tweet.get('text', ''))
+            # Apply any preprocessing needed
+            return text
+        
+        # Use parallel processing to extract and preprocess all texts
+        with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() * 4)) as executor:
+            all_texts = list(executor.map(extract_and_preprocess_text, twitter_data))
+        
+        logger.info(f"Preprocessed {len(all_texts)} tweets in parallel")
+        
+        # Process in optimized batches with automatic fallback for OOM errors
+        current_batch_size = batch_size
+        i = 0
+        
+        with tqdm(total=len(twitter_data), desc="Predicting") as pbar:
+            while i < len(twitter_data):
+                try:
+                    # Get current batch slice with current batch size
+                    end_idx = min(i + current_batch_size, len(twitter_data))
+                    batch_indices = slice(i, end_idx)
+                    batch = twitter_data[batch_indices]
+                    texts = all_texts[batch_indices]
+                    
+                    # Track progress
+                    batch_size_to_process = end_idx - i
+            
+                    # Use mixed precision context if available
+                    # Implement caching to avoid redundant predictions
+                    cache_key = tuple(texts)
+                    
+                    # Check if we have a prediction cache initialized
+                    if not hasattr(analyze_sentiment, 'prediction_cache'):
+                        analyze_sentiment.prediction_cache = {}
+                    
+                    # Check if this batch is in cache
+                    if cache_key in analyze_sentiment.prediction_cache:
+                        batch_preds = analyze_sentiment.prediction_cache[cache_key]
+                        logger.debug(f"Using cached predictions for batch")
+                    else:
+                        # Run prediction with appropriate acceleration
+                        if amp_enabled:
+                            with torch.cuda.amp.autocast(enabled=True):
+                                batch_preds = model.predict(texts)
+                        else:
+                            batch_preds = model.predict(texts)
+                        
+                        # Store in cache for potential reuse
+                        analyze_sentiment.prediction_cache[cache_key] = batch_preds
+                    
+                    # Map predictions to results - use direct indexing instead of append for better performance
+                    for j, pred in enumerate(batch_preds):
+                        tweet = batch[j]
+                        
+                        # Create result dictionary with minimal required fields to reduce memory usage
+                        result = {
+                            **tweet,  # Include all original tweet data
+                            'sentiment': pred.get('sentiment', 0),
+                            'related': pred.get('related', {}).get('prediction', 'no'),
+                            'genre': pred.get('genre', {}).get('prediction', 'social media'),
+                            'request': pred.get('request', {}).get('prediction', 'no'),
+                            'medical_help': pred.get('medical_help', {}).get('prediction', 'no'),
+                            'aid_related': pred.get('aid_related', {}).get('prediction', 'no')
+                        }
+                        raw_results[i + j] = result
+                    
+                    # Implement smarter memory management
+                    # Only perform garbage collection every few batches to balance performance and memory usage
+                    if i % (current_batch_size * 3) == 0:  # Every 3 batches
+                        if torch.cuda.is_available():
+                            torch.cuda.empty_cache()
+                        gc.collect()
+                    
+                    # Update progress bar and move to next batch
+                    pbar.update(batch_size_to_process)
+                    i += batch_size_to_process
+                    
+                    # If we've successfully processed a batch with reduced size, try to increase it again
+                    if current_batch_size < batch_size and i % (current_batch_size * 5) == 0:
+                        current_batch_size = min(current_batch_size * 2, batch_size)
+                        logger.info(f"Increasing batch size to {current_batch_size}")
+                        
+                except RuntimeError as e:
+                    # Handle out-of-memory errors by reducing batch size and retrying
+                    if "CUDA out of memory" in str(e) or "out of memory" in str(e):
+                        # Cut batch size in half and try again
+                        current_batch_size = max(current_batch_size // 2, 1)
+                        logger.warning(f"CUDA out of memory, reducing batch size to {current_batch_size}")
+                        
+                        # Force garbage collection
+                        if torch.cuda.is_available():
+                            torch.cuda.empty_cache()
+                        gc.collect()
+                        
+                        # Clear cache to free memory
+                        if hasattr(analyze_sentiment, 'prediction_cache'):
+                            analyze_sentiment.prediction_cache.clear()
+                    else:
+                        # For other errors, re-raise
+                        raise
+                
+                    # Limit cache size to prevent memory leaks
+                    if hasattr(analyze_sentiment, 'prediction_cache') and len(analyze_sentiment.prediction_cache) > 10:
+                        # Keep only the most recent entries
+                        cache_keys = list(analyze_sentiment.prediction_cache.keys())
+                        for old_key in cache_keys[:-10]:  # Remove all but the 10 most recent entries
+                            del analyze_sentiment.prediction_cache[old_key]
+                        logger.debug(f"Trimmed prediction cache to {len(analyze_sentiment.prediction_cache)} entries")
+        
+        # End prediction
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
         logger.info(f"Sentiment analysis completed in {duration:.2f} seconds for {len(twitter_data)} items")
         
-        return results
+        return raw_results
     except Exception as e:
         logger.error(f"Error analyzing sentiment: {e}")
         logger.error(traceback.format_exc())
-        return _simulate_sentiment_analysis(twitter_data)
+        raw_results = _simulate_sentiment_analysis(twitter_data)
+        return raw_results
+
+
+def _aggregate_results_by_date(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Aggregate sentiment analysis results by date
+    
+    Args:
+        results: List of sentiment analysis results for individual tweets
+        
+    Returns:
+        List of aggregated results by date with average sentiment scores and label counts
+    """
+    if not results:
+        return []
+    
+    # Group tweets by date
+    tweets_by_date = {}
+    
+    for tweet in results:
+        # Extract date from tweet
+        date = tweet.get('time', '')
+        if not date:
+            continue
+            
+        # Initialize date entry if it doesn't exist
+        if date not in tweets_by_date:
+            tweets_by_date[date] = {
+                'tweets': [],
+                'sentiment_sum': 0,
+                'count': 0,
+                'request_count': 0,
+                'medical_help_count': 0,
+                'aid_related_count': 0
+            }
+            
+        # Add tweet to the appropriate date group
+        tweets_by_date[date]['tweets'].append(tweet)
+        tweets_by_date[date]['sentiment_sum'] += float(tweet.get('sentiment', 0))
+        tweets_by_date[date]['count'] += 1
+        
+        # Count label occurrences
+        if tweet.get('request', 'no') == 'yes':
+            tweets_by_date[date]['request_count'] += 1
+            
+        if tweet.get('medical_help', 'no') == 'yes':
+            tweets_by_date[date]['medical_help_count'] += 1
+            
+        if tweet.get('aid_related', 'no') == 'yes':
+            tweets_by_date[date]['aid_related_count'] += 1
+    
+    # Create aggregated results
+    aggregated_results = []
+    
+    for date, data in tweets_by_date.items():
+        # Calculate average sentiment score
+        avg_sentiment = 0
+        if data['count'] > 0:
+            avg_sentiment = data['sentiment_sum'] / data['count']
+        
+        # Create aggregated result entry
+        aggregated_result = {
+            'date': date,
+            'sentiment': round(avg_sentiment, 2),  # Round to 2 decimal places
+            'tweet_count': data['count'],
+            'request_count': data['request_count'],
+            'medical_help_count': data['medical_help_count'],
+            'aid_related_count': data['aid_related_count']
+        }
+        
+        aggregated_results.append(aggregated_result)
+    
+    # Sort results by date
+    aggregated_results.sort(key=lambda x: x['date'])
+    
+    logger.info(f"Aggregated sentiment analysis results for {len(aggregated_results)} dates")
+    return aggregated_results
 
 def _simulate_sentiment_analysis(twitter_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Simulate sentiment analysis when the real model is not available"""
@@ -546,25 +762,19 @@ def generate_report_data(
     positive_count = sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 1)
     negative_count = sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 0)
     request_count = sum(1 for item in sentiment_analysis if item.get('request', False))
-    offer_count = sum(1 for item in sentiment_analysis if item.get('offer', False))
+    medical_help_count = sum(1 for item in sentiment_analysis if item.get('medical_help', False))
     
     template = """
-    You are an expert humanitarian assistance and disaster relief (HADR) analyst. You need to create a structured report about a disaster, while maintaining high contextual knowledge with the information provided to you.
+    You are an expert humanitarian assistance and disaster relief (HADR) analyst. You need to create a structured report about a real world disaster, while maintaining high contextual knowledge with the information provided to you.
 
-    CRITICAL: Your output MUST be valid JSON without any explanation text before or after. Your response will not include markdown code blocks, explanations, thought process, or any other text - ONLY return the exact JSON object.
-
-    Based on the available information and tweets, you should only consider the information and tweets that lie within a time period close to the disaster.
-
-    YOU CANNOT ADD NEW KEYS TO THE JSON OBJECT, AND CAN ONLY USE THE DEFINED KEYS FOR EACH SECTION OF THE JSON.
-    
     IMPORTANT: The current year is {current_year} and any events referenced for {current_year} HAVE ALREADY OCCURRED. 
     This is not a hypothetical or future scenario - the disaster has already happened.
 
-    When it comes to "tweets", you will mention the entire length of the available tweet data that has been analyzed. However, you will only store the information for the 10 tweets, and you will pick the 10 tweets with the most retweets. These tweets must be directly related to the disaster and the location of the disaster. You will also store the username, retweets, and tweet from the original tweet data.
-    
-    YOU ARE NOT TO REPHRASE THE USERNAME, RETWEETS, OR TWEET FROM THE ORIGINAL TWEET DATA.
+    CRITICAL: Your output MUST be valid JSON without any explanation text before or after, and can be directly added into a .json file without syntax errors. Your response will not include markdown code blocks, explanations, thought process, or any other text - ONLY return the exact JSON object. YOU CANNOT ADD NEW KEYS TO THE JSON OBJECT, AND CAN ONLY USE THE DEFINED KEYS FOR EACH SECTION OF THE JSON.
 
-    When it comes to "details", you will review every single tweet in the available tweet data. You will store a result for every date that is available in the dataset as long as it is approximately within the time range of the disaster. If more than one tweet is available for a date, you are to summarize all the information for the day and summarize it into an inclusive overview. Sentiment score is a float value that can lie on any value between 0 and 1 up to two decimal places, where 0 is negative and 1 is positive, and the average sentiment score is the average of all the sentiment scores for that day.
+    When it comes to "tweets", you will store every single tweet that is referenced in the top_tweets data. You may only change the formatting of the date, but leave the username, retweet, and tweet text as is. YOU ARE NOT TO REPHRASE THE USERNAME, RETWEETS, OR TWEET FROM THE ORIGINAL TWEET DATA.
+
+    When it comes to "details", you will store every single date and its respective sentiment score in day_by_day data. To complement the Elements, Impact, Requests, Summary fields, you will review every single tweet in twitter_data and evaluate each tweet that falls on the respective date that you are analysing.
 
     YOU MUST REVIEW EVERY SINGLE TWEET AND EVALUATE IT ACCORDINGLY.
     
@@ -577,6 +787,12 @@ def generate_report_data(
     ALL AVAILABLE TWEET DATA TO ANALYZE:
     {twitter_data}
 
+    TOP TEN TWEETS BY RETWEET COUNT:
+    {top_tweets}
+
+    DAY-BY-DAY SENTIMENT ANALYSIS:
+    {day_by_day_data}
+
     WEB SEARCH RESULTS: 
     {search_results}
     
@@ -588,30 +804,30 @@ def generate_report_data(
     - Positive sentiment: {positive_count} tweets
     - Negative sentiment: {negative_count} tweets
     - Requests for help: {request_count} tweets
-    - Offers of assistance: {offer_count} tweets
+    - Request for medical assistance: {medical_help_count} tweets
     
     Create a COMPLETE JSON object with the structure based on this template:
     {{
         "sections": {{
             "Background": "String output of a lengthy 2-3 paragraph summary of the disaster situation, including the type, location, timing, and key impacts. Remember this disaster has already happened and is current news in {current_year}...",
-            "Tweet Overview": "String output of a short summary of the tweets, including the total number of tweets in the original dataset and the main themes...",
-            "Sentiment Overview": "String output of a short summary of the sentiment analysis, including the number of tweets with positive or negative sentiments, and the main themes of the data...",
-            "Results": "String output of a short summary about the affected population, including labels of affected, displaced, injured, and deceased individuals if available...",
-            "Discussion": "String output of a lengthy detailed information about ongoing response efforts, including organizations involved and current priorities...",
-            "Recommendation": "String output of a lengthy detailed assessment of the most critical actions to take based on the available information, including recommendations for humanitarian assistance and disaster relief..."
+            "Tweet Overview": "String output of a short summary of the tweets, including the total number of tweets in the original dataset and highlighting the most influential personnel or characters involved...",
+            "Sentiment Overview": "String output of a slightly detailed summary of the sentiment analysis, including the number of tweets with positive or negative sentiments, and the main themes of the data...",
+            "Results": "String output of a slightly detailed summary about the affected population, including a deeper analysis on the labels of affected, displaced, injured, and deceased individuals...",
+            "Discussion": "String output of a long detailed discussion about ongoing response efforts, including organizations involved and current priorities. Include a projection of the following days, based on the current knowledge and understanding of how the situation has been evolving over the days...",
+            "Recommendation": "String output of a lengthy detailed assessment of the most critical actions to take based on the available information, including recommendations for humanitarian assistance and disaster relief. Spend more effort on providing highly intelligent and deeper insights derived from all the provided data..."
         }},
         "tweets": [
             {{
-                "Username": "String output of the username...",
-                "Date": "String output of the date...",
-                "Retweets": "String output of the retweet number...",
-                "Tweet": "String output of the tweet..."
+                "Username": "String output of the username in top_tweets...",
+                "Date": "String output of the formatted date in top_tweets...",
+                "Retweets": "String output of the retweet number in top_tweets...",
+                "Tweet": "String output of the tweet in top_tweets..."
             }},
             ...
         ],
         "details": [
             {{
-                "Date": "String output of the date...",
+                "Date": "String output of the formatted date in day_by_day_data...",
                 "Sentiment": Float output of the average sentiment score in the format of 0.XX,
                 "Elements": "String output of the elements...",
                 "Impact": "String output of the impact...",
@@ -647,8 +863,10 @@ def generate_report_data(
             "positive_count",
             "negative_count",
             "request_count",
-            "offer_count",
+            "medical_help_count",
             "twitter_data",
+            "top_tweets",
+            "day_by_day_data"
         ]
     )
     
@@ -660,34 +878,41 @@ def generate_report_data(
         disaster_type = disaster_info["disaster_type"] or "disaster"
         disaster_location = disaster_info["disaster_location"] or "affected area"
         
-        # Sample the Twitter data if it's too large
-        twitter_sample = twitter_data[:20] if len(twitter_data) > 20 else twitter_data
-        sentiment_sample = sentiment_analysis[:20] if len(sentiment_analysis) > 20 else sentiment_analysis
+        # Use sentiment_analysis as the reference data source for all tweet analysis
+        # This ensures we're working with tweets that have sentiment scores attached
         
-        # Extract sample tweets and format them for display in the report
-        sample_tweets = []
+        # Extract top 10 tweets sorted by retweet count
+        top_tweets = []
         if sentiment_analysis and len(sentiment_analysis) > 0:
-            # Sort tweets - show most retweeted and most relevant first
+            # Sort tweets by retweet count (highest first)
             sorted_tweets = sorted(sentiment_analysis, 
-                                key=lambda x: (x.get('related', '') == 'yes', x.get('retweets', 0)), 
+                                key=lambda x: int(x.get('Retweets', x.get('retweets', 0))), 
                                 reverse=True)
             
-            # Take top 10 tweets
+            # Take top 10 tweets, preserving original metadata
             for tweet in sorted_tweets[:10]:
                 tweet_data = {
-                    "Username": tweet.get("Username", ""),
-                    "Date": tweet.get("Date", ""),
-                    "Retweets": tweet.get("Retweets", 0),
-                    "Tweet": tweet.get("Tweet", "")
+                    "Username": tweet.get("username", ""),
+                    "Date": tweet.get("date", ""),  # Keep original date format
+                    "Retweets": tweet.get("retweets", "0"),  # Keep as string to preserve original format
+                    "Tweet": tweet.get("tweet", "")
                 }
-                sample_tweets.append(tweet_data)
+                top_tweets.append(tweet_data)
+        
+        # Get day-by-day aggregated sentiment data
+        day_by_day_data = _aggregate_results_by_date(sentiment_analysis)
+
+        print("top_tweets: ", top_tweets)
+        print()
+        print()
+        print("day_by_day_data: ", day_by_day_data)
         
         # Prepare the input for the LLM chain
         current_time = datetime.now()
         chain_input = {
             "current_year": current_time.year,
             "query": query,
-            "twitter_data": twitter_data,
+            "twitter_data": sentiment_analysis,  # Use sentiment-analyzed tweet data as the reference source
             "disaster_type": disaster_info.get("disaster_type", ""),
             "disaster_location": disaster_info.get("disaster_location", ""),
             "disaster_date": disaster_info.get("disaster_date", ""),
@@ -695,9 +920,11 @@ def generate_report_data(
             "positive_count": sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 1),
             "negative_count": sum(1 for item in sentiment_analysis if item.get('sentiment', 0) == 0),
             "request_count": request_count,
-            "offer_count": offer_count,
+            "medical_help_count": medical_help_count,
             "search_results": "\n\n".join(search_results),
             "wikipedia_results": "\n\n".join(wikipedia_results),
+            "top_tweets": top_tweets,
+            "day_by_day_data": day_by_day_data
         }
         
         # Generate the report
