@@ -1,0 +1,282 @@
+{
+    "sections": {
+        "Background": "On March 28, 2025, a significant 7.7-magnitude earthquake struck central Myanmar, with its epicenter near Mandalay, the country's second-largest city. The quake was followed by a strong 6.7-magnitude aftershock approximately eleven minutes later. The disaster caused widespread damage across Myanmar and Thailand, affecting communication networks and electrical infrastructure. Many residents were forced to evacuate their homes due to fears of aftershocks and unstable buildings. In Thailand, Bangkok was declared an emergency area, with mass transit systems temporarily closed.",
+        "Tweet Overview": "The tweet dataset analyzed contains 2049 tweets. The overwhelming majority (2032) express neutral sentiment, reflecting the current state of information sharing and concern among users. There are only 8 positive tweets and 9 negative tweets. All tweets include requests for help, with a specific emphasis on medical assistance.",
+        "Sentiment Overview": "The average sentiment score across all tweets is 0.50, indicating a neutral overall tone. The numerical scores range from 0 (negative) to 1 (positive). The distribution of sentiments is as follows: 8 positive tweets, 2032 neutral tweets, and 9 negative tweets. Sentiment trends over time show a consistent level of concern and urgency without significant shifts in emotional response. The main themes identified in the data are requests for help, particularly medical assistance, with users sharing their experiences and seeking information on safety measures.",
+        "Results": "The affected population includes individuals who are displaced, injured, and deceased. The earthquake has caused widespread displacement, with many residents forced to evacuate their homes due to structural damage and aftershock risks. Injured individuals require immediate medical attention, and the death toll is currently unknown but expected to rise as rescue efforts continue. The data indicates a high demand for humanitarian assistance and disaster relief.",
+        "Discussion": "Ongoing response efforts involve multiple organizations, including local governments, international aid agencies, and non-governmental organizations (NGOs). Priorities include search and rescue operations, providing medical care to the injured, ensuring food and water supplies, and addressing the needs of displaced populations. The situation is expected to evolve over the coming days as rescue teams continue their work and additional information becomes available. Coordination among response agencies will be crucial to ensure an effective and efficient relief effort.",
+        "Recommendation": "Based on the available information, critical actions include prioritizing search and rescue operations in affected areas, providing immediate medical assistance to injured individuals, ensuring access to food and water for displaced populations, and coordinating efforts among local authorities and international aid organizations. Additionally, there is a need for continuous monitoring of aftershock activity and early warning systems to protect the population from further risks. Public information campaigns should focus on safety measures and provide updates on relief efforts to manage public expectations and reduce panic."
+    },
+    "tweets": [
+        {
+            "Username": "Florian Witulski",
+            "Date": "28/03/2025",
+            "Retweets": "20584",
+            "Tweet": "Earthquake sum up 3pm (Mynamar/Thailand) - 7.7 quake hit near Mandalay/Myanmar - Hundreds of homes collapsed (various Myanmar cities) - Strong shocks in Thailand + multiple building collapse in Bangkok - USGS predicts thousands of people dead (Bangkok clips from social media:) https://t.co/kJodTn6BIg"
+        },
+        {
+            "Username": "UDD news \u0e22\u0e39\u0e14\u0e35\u0e14\u0e35\u0e19\u0e34\u0e27\u0e2a\u0e4c",
+            "Date": "04/04/2025",
+            "Retweets": "10820",
+            "Tweet": "'\u0e0a\u0e32\u0e27\u0e44\u0e17\u0e22\u0e02\u0e2d\u0e2a\u0e48\u0e07\u0e40\u0e2a\u0e35\u0e22\u0e07\u0e44\u0e1b\u0e16\u0e36\u0e07 '\u0e21\u0e34\u0e19 \u0e2d\u0e48\u0e2d\u0e07 \u0e2b\u0e25\u0e48\u0e32\u0e22' \u0e41\u0e25\u0e30\u0e19\u0e32\u0e19\u0e32\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e17\u0e31\u0e48\u0e27\u0e42\u0e25\u0e01\u0e27\u0e48\u0e32\u0e04\u0e19\u0e44\u0e17\u0e22\u0e44\u0e21\u0e48\u0e40\u0e2d\u0e32\u0e40\u0e1c\u0e14\u0e47\u0e08\u0e01\u0e32\u0e23' . \u0e19\u0e31\u0e01\u0e28\u0e36\u0e01\u0e29\u0e32\u0e1b\u0e35 1 \u0e01\u0e25\u0e48\u0e32\u0e27\u0e2b\u0e25\u0e31\u0e07\u0e16\u0e39\u0e01\u0e1b\u0e25\u0e48\u0e2d\u0e22\u0e15\u0e31\u0e27 \u0e17\u0e35\u0e48 \u0e2a\u0e19.\u0e22\u0e32\u0e19\u0e19\u0e32\u0e27\u0e32 \u0e40\u0e2b\u0e15\u0e38\u0e1a\u0e38\u0e01\u0e40\u0e14\u0e35\u0e48\u0e22\u0e27\u0e1b\u0e23\u0e30\u0e17\u0e49\u0e27\u0e07\u0e01\u0e32\u0e23\u0e21\u0e32\u0e40\u0e22\u0e37\u0e2d\u0e19\u0e02\u0e2d\u0e07 '\u0e21\u0e34\u0e19\u0e2d\u0e48\u0e2d\u0e07\u0e2b\u0e25\u0e48\u0e32\u0e22' \u0e17\u0e35\u0e48\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e0a\u0e38\u0e21 BIMSTEC #UDDnews #\u0e22\u0e39\u0e14\u0e35\u0e14\u0e35\u0e19\u0e34\u0e27\u0e2a\u0e4c #\u0e21\u0e34\u0e19\u0e2d\u0e48\u0e2d\u0e07\u0e2b\u0e25\u0e48\u0e32\u0e22 #\u0e1e\u0e21\u0e48\u0e32 #\u0e40\u0e21\u0e35\u0e22\u0e19\u0e21\u0e32 #Myanmar #BIMSTEC https://t.co/itCu0oOkJk"
+        },
+        {
+            "Username": "Daily Loud",
+            "Date": "03/04/2025",
+            "Retweets": "7052",
+            "Tweet": "Father jumped across a gap 600 feet in the air to save his wife and child during the Myanmar earthquake https://t.co/XlhmZb8e6j"
+        },
+        {
+            "Username": "BRICS News",
+            "Date": "09/04/2025",
+            "Retweets": "4584",
+            "Tweet": "JUST IN: US tariffs officially go in effect \ud83c\udde8\ud83c\uddf3 China - 104% \ud83c\uddf1\ud83c\uddf8 Lesotho - 50% \ud83c\uddf0\ud83c\udded Cambodia - 49% \ud83c\uddf1\ud83c\udde6 Laos - 48% \ud83c\uddf2\ud83c\uddec Madagascar - 47% \ud83c\uddfb\ud83c\uddf3 Vietnam - 46% \ud83c\uddf2\ud83c\uddf2 Myanmar - 44% \ud83c\uddf1\ud83c\uddf0 Sri Lanka - 44% \ud83c\uddeb\ud83c\uddf0 Falkland Islands - 41% \ud83c\uddf8\ud83c\uddfe Syria - 41% \ud83c\uddf2\ud83c\uddfa Mauritius - 40% \ud83c\uddee\ud83c\uddf6 Iraq - 39% \ud83c\uddec\ud83c\uddfe Guyana - 38% \ud83c\udde7\ud83c\udde9 Bangladesh - 37% \ud83c\udde7\ud83c\uddfc Botswana - 37% \ud83c\uddf1\ud83c\uddee Liechtenstein - 37% \ud83c\uddf7\ud83c\uddf8 Serbia - 37% \ud83c\uddf9\ud83c\udded Thailand - 36% \ud83c\udde7\ud83c\udde6 Bosnia and Herzegovina - 35% \ud83c\uddf2\ud83c\uddf0 North Macedonia - 33% \ud83c\udde6\ud83c\uddf4 Angola - 32% \ud83c\uddeb\ud83c\uddef Fiji - 32% \ud83c\uddee\ud83c\udde9 Indonesia - 32% \ud83c\uddf9\ud83c\uddfc Taiwan - 32% \ud83c\uddf1\ud83c\uddfe Libya - 31% \ud83c\uddf2\ud83c\udde9 Moldova - 31% \ud83c\udde8\ud83c\udded Switzerland - 31% \ud83c\udde9\ud83c\uddff Algeria - 30% \ud83c\uddf3\ud83c\uddf7 Nauru - 30% \ud83c\uddff\ud83c\udde6 South Africa - 30% \ud83c\uddf5\ud83c\uddf0 Pakistan - 29% \ud83c\uddf9\ud83c\uddf3 Tunisia - 28% \ud83c\uddf0\ud83c\uddff Kazakhstan - 27% \ud83c\uddee\ud83c\uddf3 India - 26% \ud83c\uddf0\ud83c\uddf7 South Korea - 25% \ud83c\udde7\ud83c\uddf3 Brunei - 24% \ud83c\uddef\ud83c\uddf5 Japan - 24% \ud83c\uddf2\ud83c\uddfe Malaysia - 24% \ud83c\uddfb\ud83c\uddfa Vanuatu - 22% \ud83c\udde8\ud83c\uddee C\u00f4te d\u2019Ivoire - 21% \ud83c\uddf3\ud83c\udde6 Namibia - 21% \ud83c\uddea\ud83c\uddfa European Union - 20% \ud83c\uddef\ud83c\uddf4 Jordan - 20% \ud83c\uddf3\ud83c\uddee Nicaragua - 18% \ud83c\uddff\ud83c\uddfc Zimbabwe - 18% \ud83c\uddee\ud83c\uddf1 Israel - 17% \ud83c\uddf2\ud83c\uddfc Malawi - 17% \ud83c\uddf5\ud83c\udded Philippines - 17% \ud83c\uddff\ud83c\uddf2 Zambia - 17% \ud83c\uddf2\ud83c\uddff Mozambique - 16% \ud83c\uddf3\ud83c\uddf4 Norway - 15% \ud83c\uddfb\ud83c\uddea Venezuela - 15% \ud83c\uddf3\ud83c\uddec Nigeria - 14% \ud83c\uddf9\ud83c\udde9 Chad - 13% \ud83c\uddec\ud83c\uddf6 Equatorial Guinea - 13% \ud83c\udde8\ud83c\uddf2 Cameroon - 11% \ud83c\udde8\ud83c\udde9 Democratic Republic of the Congo - 11% \ud83c\udde6\ud83c\uddeb Afghanistan - 10% \ud83c\udde6\ud83c\uddf1 Albania - 10% \ud83c\udde6\ud83c\udde9 Andorra - 10% \ud83c\udde6\ud83c\uddee Anguilla - 10% \ud83c\udde6\ud83c\uddec Antigua and Barbuda - 10% \ud83c\udde6\ud83c\uddf7 Argentina - 10% \ud83c\udde6\ud83c\uddf2 Armenia - 10% \ud83c\udde6\ud83c\uddfc Aruba - 10% \ud83c\udde6\ud83c\uddfa Australia - 10% \ud83c\udde6\ud83c\uddff Azerbaijan - 10% \ud83c\udde7\ud83c\uddf8 Bahamas - 10% \ud83c\udde7\ud83c\udded Bahrain - 10% \ud83c\udde7\ud83c\udde7 Barbados - 10% \ud83c\udde7\ud83c\uddff Belize - 10% \ud83c\udde7\ud83c\uddef Benin - 10% \ud83c\udde7\ud83c\uddf2 Bermuda - 10% \ud83c\udde7\ud83c\uddf9 Bhutan - 10% \ud83c\udde7\ud83c\uddf4 Bolivia - 10% \ud83c\udde7\ud83c\uddf7 Brazil - 10% \ud83c\uddee\ud83c\uddf4 British Indian Ocean Territory - 10% \ud83c\uddfb\ud83c\uddec British Virgin Islands - 10% \ud83c\udde7\ud83c\uddee Burundi - 10% \ud83c\udde8\ud83c\uddfb Cabo Verde - 10% \ud83c\uddf0\ud83c\uddfe Cayman Islands - 10% \ud83c\udde8\ud83c\uddeb Central African Republic - 10% \ud83c\udde8\ud83c\uddf1 Chile - 10% \ud83c\udde8\ud83c\uddfd Christmas Island - 10% \ud83c\udde8\ud83c\udde8 Cocos (Keeling) Islands - 10% \ud83c\udde8\ud83c\uddf4 Colombia - 10% \ud83c\uddf0\ud83c\uddf2 Comoros - 10% \ud83c\udde8\ud83c\uddf0 Cook Islands - 10% \ud83c\udde8\ud83c\uddf7 Costa Rica - 10% \ud83c\udde8\ud83c\uddfc Cura\u00e7ao - 10% \ud83c\udde9\ud83c\uddef Djibouti - 10% \ud83c\udde9\ud83c\uddf2 Dominica - 10% \ud83c\udde9\ud83c\uddf4 Dominican Republic - 10% \ud83c\uddea\ud83c\udde8 Ecuador - 10% \ud83c\uddea\ud83c\uddec Egypt - 10% \ud83c\uddf8\ud83c\uddfb El Salvador - 10% \ud83c\uddea\ud83c\uddf7 Eritrea - 10% \ud83c\uddf8\ud83c\uddff Eswatini - 10% \ud83c\uddea\ud83c\uddf9 Ethiopia - 10% \ud83c\uddec\ud83c\uddeb French Guiana - 10% \ud83c\uddf5\ud83c\uddeb French Polynesia - 10% \ud83c\uddec\ud83c\udde6 Gabon - 10% \ud83c\uddec\ud83c\uddf2 Gambia - 10% \ud83c\uddec\ud83c\uddea Georgia - 10% \ud83c\uddec\ud83c\udded Ghana - 10% \ud83c\uddec\ud83c\uddee Gibraltar - 10% \ud83c\uddec\ud83c\udde9 Grenada - 10% \ud83c\uddec\ud83c\uddf5 Guadeloupe - 10% \ud83c\uddec\ud83c\uddf9 Guatemala - 10% \ud83c\uddec\ud83c\uddf3 Guinea - 10% \ud83c\uddec\ud83c\uddfc Guinea-Bissau - 10% \ud83c\udded\ud83c\uddf9 Haiti - 10% \ud83c\udded\ud83c\uddf2 Heard and McDonald Islands - 10% \ud83c\udded\ud83c\uddf3 Honduras - 10% \ud83c\uddee\ud83c\uddf8 Iceland - 10% \ud83c\uddee\ud83c\uddf7 Iran - 10% \ud83c\uddef\ud83c\uddf2 Jamaica - 10% \ud83c\uddf0\ud83c\uddea Kenya - 10% \ud83c\uddf0\ud83c\uddee Kiribati - 10% \ud83c\uddfd\ud83c\uddf0 Kosovo - 10% \ud83c\uddf0\ud83c\uddfc Kuwait - 10% \ud83c\uddf0\ud83c\uddec Kyrgyzstan - 10% \ud83c\uddf1\ud83c\udde7 Lebanon - 10% \ud83c\uddf1\ud83c\uddf7 Liberia - 10% \ud83c\uddf2\ud83c\uddfb Maldives - 10% \ud83c\uddf2\ud83c\uddf1 Mali - 10% \ud83c\uddf2\ud83c\udded Marshall Islands - 10% \ud83c\uddf2\ud83c\uddf6 Martinique - 10% \ud83c\uddf2\ud83c\uddf7 Mauritania - 10% \ud83c\uddfe\ud83c\uddf9 Mayotte - 10% \ud83c\uddeb\ud83c\uddf2 Micronesia - 10% \ud83c\uddf2\ud83c\udde8 Monaco - 10% \ud83c\uddf2\ud83c\uddf3 Mongolia - 10% \ud83c\uddf2\ud83c\uddea Montenegro - 10% \ud83c\uddf2\ud83c\uddf8 Montserrat - 10% \ud83c\uddf2\ud83c\udde6 Morocco - 10% \ud83c\uddf3\ud83c\uddf5 Nepal - 10% \ud83c\uddf3\ud83c\uddff New Zealand - 10% \ud83c\uddf3\ud83c\uddea Niger - 10% \ud83c\uddf3\ud83c\uddeb Norfolk Island - 10% \ud83c\uddf4\ud83c\uddf2 Oman - 10% \ud83c\uddf5\ud83c\udde6 Panama - 10% \ud83c\uddf5\ud83c\uddec Papua New Guinea - 10% \ud83c\uddf5\ud83c\uddfe Paraguay - 10% \ud83c\uddf5\ud83c\uddea Peru - 10% \ud83c\uddf6\ud83c\udde6 Qatar - 10% \ud83c\udde8\ud83c\uddec Republic of the Congo - 10% \ud83c\uddf7\ud83c\uddea R\u00e9union - 10% \ud83c\uddf7\ud83c\uddfc Rwanda - 10% \ud83c\uddf8\ud83c\udded Saint Helena - 10% \ud83c\uddf0\ud83c\uddf3 Saint Kitts and Nevis - 10% \ud83c\uddf1\ud83c\udde8 Saint Lucia - 10% \ud83c\uddf5\ud83c\uddf2 Saint Pierre and Miquelon - 10% \ud83c\uddfb\ud83c\udde8 Saint Vincent and the Grenadines - 10% \ud83c\uddfc\ud83c\uddf8 Samoa - 10% \ud83c\uddf8\ud83c\uddf2 San Marino - 10% \ud83c\uddf8\ud83c\uddf9 S\u00e3o Tom\u00e9 and Pr\u00edncipe - 10% \ud83c\uddf8\ud83c\udde6 Saudi Arabia - 10% \ud83c\uddf8\ud83c\uddf3 Senegal - 10% \ud83c\uddf8\ud83c\uddf1 Sierra Leone - 10% \ud83c\uddf8\ud83c\uddec Singapore - 10% \ud83c\uddf8\ud83c\uddfd Sint Maarten - 10% \ud83c\uddf8\ud83c\udde7 Solomon Islands - 10% \ud83c\uddf8\ud83c\uddf8 South Sudan - 10% \ud83c\uddf8\ud83c\udde9 Sudan - 10% \ud83c\uddf8\ud83c\uddf7 Suriname - 10% \ud83c\uddf8\ud83c\uddef Svalbard and Jan Mayen - 10% \ud83c\uddf9\ud83c\uddef Tajikistan - 10% \ud83c\uddf9\ud83c\uddff Tanzania - 10% \ud83c\uddf9\ud83c\uddf1 Timor-Leste - 10% \ud83c\uddf9\ud83c\uddec Togo - 10% \ud83c\uddf9\ud83c\uddf0 Tokelau - 10% \ud83c\uddf9\ud83c\uddf4 Tonga - 10% \ud83c\uddf9\ud83c\uddf9 Trinidad and Tobago - 10% \ud83c\uddf9\ud83c\uddf7 Turkey - 10% \ud83c\uddf9\ud83c\uddf2 Turkmenistan - 10% \ud83c\uddf9\ud83c\udde8 Turks and Caicos Islands - 10% \ud83c\uddf9\ud83c\uddfb Tuvalu - 10% \ud83c\uddfa\ud83c\uddec Uganda - 10% \ud83c\uddfa\ud83c\udde6 Ukraine - 10% \ud83c\udde6\ud83c\uddea United Arab Emirates - 10% \ud83c\uddec\ud83c\udde7 United Kingdom - 10%"
+        },
+        {
+            "Username": "Lisa Desjardins",
+            "Date": "05/04/2025",
+            "Retweets": "3524",
+            "Tweet": "BREAKING here - U.S. team in quake zone told they are fired, per source. The 3-person disaster assessment team sent to Myanmar for the U.S. received termination notices while staying/sleeping outside \u2014 US AID workers were told on an all hands call today, per a source familiar."
+        },
+        {
+            "Username": "CHOEAEDOL : Kpop ranking and community app",
+            "Date": "04/04/2025",
+            "Retweets": "3444",
+            "Tweet": "\u26d1\ufe0fCHOEAEDOL's Donation Project #StanWithValue Together for Myanmar \ud83d\udd01 10 KRW will be donated per retweet (up to 1 million KRW) \ud83d\uddd3\ufe0f Until April 11 (Fri) 00:00 KST \u2705Retweet this post! The more RTs, the more donations. \ud83d\uddf3 10 KRW will be donated per Themed Pick vote (up to 5 million KRW) \ud83d\uddd3\ufe0f April 8 (Tue) ~ April 10 (Thu) \u2705 Vote in CHOEAEDOL App \u2192 One Pick \u2192 Themed Pick [CHOEAEDOL's Donation Project] *1 vote per day allowed Your participation can help Myanmar. Let's share warmth and solidarity. #CHOEAEDOL #\ucd5c\uc560\ub3cc #StanWithValue #\uac00\uce58\ub355\uc9c8 #Donation #\uae30\ubd80 #\ubbf8\uc580\ub9c8 #Myanmar #PrayForMyanmar #HelpMyanmarRecover #TogetherForMyanmar"
+        },
+        {
+            "Username": "Dara \u00d3 Briain",
+            "Date": "03/04/2025",
+            "Retweets": "2767",
+            "Tweet": "These is something particularly crass and callous about announcing a 44% trade tariff against Myanmar, this week, of all weeks."
+        },
+        {
+            "Username": "POM",
+            "Date": "07/04/2025",
+            "Retweets": "2737",
+            "Tweet": "\ud83c\uddf2\ud83c\uddf2\u0e02\u0e48\u0e32\u0e27\u0e25\u0e48\u0e32\u0e2a\u0e38\u0e14!: \u0e1b\u0e23\u0e30\u0e0a\u0e32\u0e0a\u0e19\u0e01\u0e33\u0e25\u0e31\u0e07\u0e40\u0e1d\u0e49\u0e32\u0e14\u0e39\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e01\u0e23\u0e30\u0e27\u0e19\u0e01\u0e23\u0e30\u0e27\u0e32\u0e22\u0e43\u0e08\u0e01\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e1b\u0e30\u0e17\u0e38\u0e02\u0e2d\u0e07\u0e20\u0e39\u0e40\u0e02\u0e32\u0e44\u0e1f\u0e42\u0e04\u0e25\u0e19\u0e43\u0e01\u0e25\u0e49\u0e2b\u0e21\u0e39\u0e48\u0e1a\u0e49\u0e32\u0e19\u0e19\u0e32\u0e04\u0e32 \u0e15\u0e33\u0e1a\u0e25\u0e40\u0e21\u0e35\u0e22\u0e19\u0e2d\u0e07 \u0e23\u0e31\u0e10\u0e22\u0e30\u0e44\u0e02\u0e48 \u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e40\u0e21\u0e35\u0e22\u0e19\u0e21\u0e32\u0e23\u0e4c (\u0e1e\u0e21\u0e48\u0e32) \u0e21\u0e35\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e27\u0e48\u0e32\u0e20\u0e39\u0e40\u0e02\u0e32\u0e44\u0e1f\u0e42\u0e04\u0e25\u0e19\u0e19\u0e35\u0e49\u0e01\u0e48\u0e2d\u0e15\u0e31\u0e27\u0e02\u0e36\u0e49\u0e19\u0e2b\u0e25\u0e31\u0e07\u0e08\u0e32\u0e01\u0e40\u0e01\u0e34\u0e14\u0e41\u0e1c\u0e48\u0e19\u0e14\u0e34\u0e19\u0e44\u0e2b\u0e27\u0e43\u0e19\u0e1e\u0e37\u0e49\u0e19\u0e17\u0e35\u0e48\u0e14\u0e31\u0e07\u0e01\u0e25\u0e48\u0e32\u0e27 \ud83d\ude31 #Thailand #\u0e44\u0e17\u0e22 #\u0e41\u0e1c\u0e48\u0e19\u0e14\u0e34\u0e19\u0e44\u0e2b\u0e27 #Myanmar #\u0e1e\u0e21\u0e48\u0e32 #\u0e21\u0e31\u0e13\u0e11\u0e30\u0e40\u0e25\u0e22\u0e4c #earthquake https://t.co/OQYqcBK00J"
+        },
+        {
+            "Username": "Inquirer",
+            "Date": "28/03/2025",
+            "Retweets": "2270",
+            "Tweet": "PRAY FOR MYANMAR AND THAILAND \ud83d\ude4f LOOK: A collapsed building at a construction site is seen in Bangkok, Thailand, on Friday, March 28, 2025, following a magnitude 7.7 earthquake in Myanmar. A powerful tremor struck central Myanmar on March 28, buckling roads in the capital, Naypyidaw, damaging buildings, and forcing people to flee into the streets in neighboring Thailand. | \ud83d\udcf7: Lillian Suwanrumpha/AFP READ RELATED STORY: https://t.co/csJLdSoac7"
+        },
+        {
+            "Username": "BBC News Indonesia",
+            "Date": "02/04/2025",
+            "Retweets": "1974",
+            "Tweet": "Ini adalah video palsu buatan AI yang viral setelah gempa melanda Myanmar, pekan lalu. Video ini telah ditonton jutaan orang di TikTok. Jadi, bagaimana kita bisa tahu bahwa ini adalah video palsu? Simak selengkapnya. https://t.co/kpdqiPYkHL"
+        }
+    ],
+    "details": [
+        {
+            "Date": "28/03/2025",
+            "Sentiment": 0.51,
+            "Elements": "Earthquake, Floods, Storm, Cold, Weather Related, Electricity",
+            "Impact": "Missing People, Infrastructure Related, Shops, Aid Centers",
+            "Requests": "Request, Offer, Aid Related, Medical Products, Military, Other Aid",
+            "Summary": "On March 28, 2025, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.51, with 28 tweets recorded. The main disaster elements discussed included earthquakes, floods, storms, cold weather, and electricity issues. The primary impacts reported were missing people, infrastructure damage, closed shops, and aid center operations. Requests for aid, medical products, military support, and other forms of assistance were prevalent among the social media posts. Notably, the sentiment variability was 0.09, indicating a relatively consistent neutral tone across the tweets."
+        },
+        {
+            "Date": "29/03/2025",
+            "Sentiment": 0.5,
+            "Elements": "Earthquake, Floods, Cold, Weather Related, Water, Transport",
+            "Impact": "Death, Missing People, Refugees, Shops, Aid Centers",
+            "Requests": "Request, Aid Related, Medical Products, Security, Food, Clothing",
+            "Summary": "On March 29, 2025, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.50, with 13 tweets recorded. The main disaster elements discussed included earthquakes, floods, cold weather, and transportation issues. Primary impacts reported were deaths, missing people, and damage to shops and aid centers, while requests for aid, medical products, food, clothing, and security remained the key needs expressed by users."
+        },
+        {
+            "Date": "30/03/2025",
+            "Sentiment": 0.49,
+            "Elements": "Earthquake, Floods",
+            "Impact": "None identified",
+            "Requests": "Request, Aid Related, Security",
+            "Summary": "On March 30, 2025, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.49, with a slight positive bias. The primary disaster elements discussed were earthquakes and floods. There were no specific impacts reported, but the main requests and needs expressed included aid-related assistance and security concerns. Sentiment variability was moderate at 0.16, indicating some variation in public opinion during the event."
+        },
+        {
+            "Date": "31/03/2025",
+            "Sentiment": 0.47,
+            "Elements": "Storm",
+            "Impact": "None identified",
+            "Requests": "Request, Aid Related, Child Alone, Money, Other Aid",
+            "Summary": "On March 31, 2025, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.47, with no positive or negative sentiments expressed. The primary disaster element discussed was a storm, and the main requests identified were for aid-related assistance, specifically mentioning child welfare and financial support. The sentiment variability was moderate at 0.08, indicating consistent neutral sentiment across the tweets."
+        },
+        {
+            "Date": "01/04/2025",
+            "Sentiment": 0.5,
+            "Elements": "Earthquake, Floods, Storm, Fire, Other Weather, Weather Related, Electricity, Water",
+            "Impact": "Shops, Aid Centers",
+            "Requests": "Request, Offer, Aid Related, Security, Military, Food, Shelter, Money, Other Aid",
+            "Summary": "On April 1, 2025, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.50, with 336 tweets recorded. The main disaster elements discussed included earthquakes, floods, storms, fires, and other weather-related issues, as well as impacts on shops and aid centers. Requests for aid, food, shelter, and security were the primary needs expressed, indicating a focus on immediate assistance and safety concerns."
+        },
+        {
+            "Date": "02/04/2025",
+            "Sentiment": 0.49,
+            "Elements": "Weather Related",
+            "Impact": "None identified",
+            "Requests": "Request, Aid Related, Medical Products",
+            "Summary": "On 2025-04-02, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.49, with a slight positive bias, as indicated by the low standard deviation of 0.09. The primary focus was on weather-related issues, with minimal reports of specific impacts but numerous requests for aid and medical products."
+        },
+        {
+            "Date": "03/04/2025",
+            "Sentiment": 0.5,
+            "Elements": "Floods, Weather Related",
+            "Impact": "Aid Centers, Other Infrastructure",
+            "Requests": "Request, Aid Related, Child Alone",
+            "Summary": "On 2025-04-03, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.50 across 178 tweets, with minimal sentiment variability (standard deviation of 0.09). The primary disaster elements discussed were floods and weather-related impacts, affecting aid centers and other infrastructure. Users expressed requests for aid and assistance, particularly noting concerns about children being alone in affected areas."
+        },
+        {
+            "Date": "04/04/2025",
+            "Sentiment": 0.49,
+            "Elements": "Weather Related, Electricity",
+            "Impact": "None identified",
+            "Requests": "Request, Aid Related",
+            "Summary": "On 2025-04-04, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.49, with a slight positive bias, as indicated by the low standard deviation of 0.10. The primary disaster elements discussed were weather-related issues and electricity outages, while users primarily expressed requests for aid without reporting specific impacts."
+        },
+        {
+            "Date": "05/04/2025",
+            "Sentiment": 0.51,
+            "Elements": "Weather Related, Electricity, Water",
+            "Impact": "Aid Centers",
+            "Requests": "Request, Aid Related, Medical Products, Military, Child Alone, Food, Shelter",
+            "Summary": "On 2025-04-05, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.51, with 88 tweets reflecting no extreme positive or negative sentiments. The main disaster elements discussed were weather-related issues, electricity outages, and water shortages. Users primarily reported impacts on aid centers and expressed various requests including aid-related assistance, medical products, military support, food, and shelter for those affected by the disaster."
+        },
+        {
+            "Date": "06/04/2025",
+            "Sentiment": 0.48,
+            "Elements": "Earthquake, Floods, Fire, Cold, Other Weather, Weather Related, Buildings, Electricity, Water",
+            "Impact": "Hospitals, Shops",
+            "Requests": "Request, Aid Related, Security, Shelter, Money",
+            "Summary": "On 2025-04-06, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.48, with 88 tweets reflecting a broad range of sentiments from 0.34 to 0.65 (standard deviation of 0.09). The main disaster elements discussed included earthquakes, floods, fires, cold weather, and other weather-related issues affecting buildings, electricity, and water supplies. Primary impacts on hospitals and shops were reported, along with requests for aid, security, shelter, and financial assistance."
+        },
+        {
+            "Date": "07/04/2025",
+            "Sentiment": 0.51,
+            "Elements": "Floods, Storm, Weather Related, Transport",
+            "Impact": "Death, Missing People",
+            "Requests": "Request, Offer, Aid Related, Medical Products, Other Aid",
+            "Summary": "On 2025-04-07, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.51, with 61 tweets reflecting a predominantly calm and informative tone. The main disaster elements discussed included floods, storms, weather-related issues, and transportation disruptions. Reports indicated impacts such as deaths and missing people, alongside requests for aid, medical products, and other assistance. Notably, the sentiment variability was relatively low at 0.11, suggesting consistent public engagement without extreme emotional polarization."
+        },
+        {
+            "Date": "08/04/2025",
+            "Sentiment": 0.5,
+            "Elements": "Floods, Other Weather, Weather Related, Buildings, Electricity, Water, Transport",
+            "Impact": "Refugees, Shops, Aid Centers",
+            "Requests": "Request, Aid Related, Medical Products, Food, Clothing, Money",
+            "Summary": "On 2025-04-08, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.50, with 114 tweets reflecting a broad discussion on various weather-related issues including floods and other weather phenomena. The primary impacts reported were the displacement of refugees and damage to shops and aid centers, while requests for aid encompassed medical products, food, clothing, and financial assistance. Notably, the sentiment variability was moderate at 0.08, indicating a relatively consistent tone across the social media discourse."
+        },
+        {
+            "Date": "09/04/2025",
+            "Sentiment": 0.5,
+            "Elements": "Floods, Fire, Weather Related",
+            "Impact": "Death",
+            "Requests": "Request, Aid Related, Security, Shelter",
+            "Summary": "On 2025-04-09, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.50 across 122 tweets, with a slight sentiment variability of 0.09. The main disaster elements discussed included floods, fire, and weather-related impacts, while the primary reported impact was death. Users expressed requests for aid, security, and shelter, indicating critical needs in the affected areas."
+        },
+        {
+            "Date": "10/04/2025",
+            "Sentiment": 0.52,
+            "Elements": "Floods, Weather Related, Electricity",
+            "Impact": "Death, Shops",
+            "Requests": "Request, Aid Related, Shelter, Clothing",
+            "Summary": "On 2025-04-10, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.52, with 63 tweets reflecting a predominantly calm and informative tone. The main disaster elements discussed included floods, weather-related issues, and electricity outages. Primary impacts reported were deaths and damage to shops, while the primary requests and needs expressed were for aid, shelter, and clothing. Notably, sentiment variability was moderate at 0.10, indicating a relatively consistent public response."
+        },
+        {
+            "Date": "11/04/2025",
+            "Sentiment": 0.5,
+            "Elements": "Storm, Weather Related",
+            "Impact": "Refugees, Shops, Aid Centers",
+            "Requests": "Request, Offer, Aid Related, Shelter, Clothing, Other Aid",
+            "Summary": "On 2025-04-11, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.50, with 68 tweets reflecting a calm and matter-of-fact tone regarding the storm and weather-related impacts. The primary elements discussed were refugees seeking shelter, shops affected by the storm, and aid centers providing assistance, alongside various requests for aid including clothing and other essentials."
+        },
+        {
+            "Date": "12/04/2025",
+            "Sentiment": 0.52,
+            "Elements": "Storm, Cold, Weather Related, Buildings",
+            "Impact": "Death, Refugees, Hospitals, Shops, Aid Centers",
+            "Requests": "Request, Aid Related, Shelter, Clothing, Other Aid",
+            "Summary": "On 2025-04-12, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.52, with 41 tweets reflecting a consistent and moderate level of engagement. The main disaster elements discussed included storm conditions and cold weather, impacting buildings directly. Reports highlighted significant impacts such as deaths, the displacement of refugees, and disruptions to hospitals, shops, and aid centers. Requests for aid focused on shelter, clothing, and other essential supplies, indicating critical needs in the affected areas."
+        },
+        {
+            "Date": "13/04/2025",
+            "Sentiment": 0.49,
+            "Elements": "Cold, Other Weather, Weather Related, Buildings, Water",
+            "Impact": "Missing People, Hospitals, Aid Centers",
+            "Requests": "Request, Aid Related, Search And Rescue",
+            "Summary": "On 2025-04-13, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.49, with 62 tweets reflecting no extreme positive or negative sentiments. The main disaster elements discussed included cold weather, other unspecified weather-related issues, buildings affected by the disaster, and water problems. Primary impacts reported were missing people, hospitals being impacted, and aid centers also affected. Requests and offers focused on general aid, search and rescue efforts, highlighting the community's need for assistance in managing the disaster. The sentiment variability of 0.08 indicates a relatively consistent tone across the social media activity."
+        },
+        {
+            "Date": "14/04/2025",
+            "Sentiment": 0.48,
+            "Elements": "Floods, Storm, Fire, Weather Related, Buildings, Water, Transport",
+            "Impact": "Refugees, Hospitals, Shops, Other Infrastructure",
+            "Requests": "Request, Aid Related, Medical Products, Security, Child Alone, Shelter, Money, Other Aid",
+            "Summary": "On 2025-04-14, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.48, with no extreme positive or negative sentiments expressed. The main disaster elements discussed included floods, storms, fires, and weather-related impacts affecting buildings, water supplies, and transportation. Primary impacts reported were on refugees, hospitals, shops, and other infrastructure, while requests for aid focused on medical products, security, shelter, and financial assistance."
+        },
+        {
+            "Date": "15/04/2025",
+            "Sentiment": 0.48,
+            "Elements": "Earthquake, Floods, Storm, Fire, Cold, Other Weather, Weather Related, Buildings, Electricity, Transport",
+            "Impact": "Death, Missing People, Refugees, Hospitals, Shops, Aid Centers",
+            "Requests": "Request, Aid Related, Medical Products, Military, Child Alone, Food, Money",
+            "Summary": "On 2025-04-15, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.48, with a slight variability of 0.09. The main disaster elements discussed included earthquakes, floods, storms, and fires, among others. Primary impacts reported were deaths, missing people, and damage to hospitals and shops, while requests for aid, medical products, and food were prominently expressed."
+        },
+        {
+            "Date": "16/04/2025",
+            "Sentiment": 0.49,
+            "Elements": "Earthquake, Floods, Storm, Other Weather, Weather Related, Buildings, Electricity, Transport",
+            "Impact": "Missing People, Refugees, Shops, Aid Centers, Other Infrastructure",
+            "Requests": "Request, Offer, Aid Related, Medical Products, Child Alone, Shelter, Other Aid",
+            "Summary": "On 2025-04-16, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.49, with 38 tweets reflecting no extreme positive or negative sentiments. The main disaster elements discussed included earthquakes, floods, storms, and other weather-related issues affecting buildings and electricity. Primary impacts reported were missing people, refugees, damage to shops, and aid centers, while requests for aid, medical products, shelter, and other assistance were prominently expressed."
+        },
+        {
+            "Date": "17/04/2025",
+            "Sentiment": 0.48,
+            "Elements": "Earthquake, Floods, Storm, Fire, Cold, Weather Related, Electricity, Water, Transport",
+            "Impact": "Death, Missing People, Infrastructure Related, Hospitals, Shops",
+            "Requests": "Request, Offer, Aid Related, Medical Help, Medical Products, Search And Rescue, Security, Military, Child Alone, Food, Shelter, Clothing, Money, Other Aid",
+            "Summary": "On 2025-04-17, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.48, with 39 tweets reflecting a broad range of sentiments from 0.37 to 0.65 (standard deviation of 0.08). The main disaster elements discussed included earthquakes, floods, storms, fires, cold weather, and related impacts such as electricity outages, water shortages, and transportation disruptions. Primary impacts reported were deaths, missing people, damage to infrastructure, hospitals, and shops, while requests for aid encompassed medical help, search and rescue operations, food, shelter, clothing, and other essential supplies."
+        },
+        {
+            "Date": "18/04/2025",
+            "Sentiment": 0.5,
+            "Elements": "Floods, Storm, Fire, Cold, Weather Related, Buildings, Electricity, Water, Transport",
+            "Impact": "Death, Missing People, Refugees, Infrastructure Related, Hospitals, Shops, Aid Centers, Other Infrastructure",
+            "Requests": "Request, Aid Related, Medical Help, Medical Products, Search And Rescue, Security, Military, Child Alone, Shelter, Other Aid",
+            "Summary": "On 2025-04-18, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.50, with 37 tweets reflecting a broad range of sentiments from 0.36 to 0.67 (standard deviation of 0.09). The main disaster elements discussed included floods, storms, fires, cold weather, and related impacts on buildings, electricity, water, and transport. Primary impacts reported were deaths, missing people, refugees, and damage to infrastructure such as hospitals and shops, with requests for aid, medical help, search and rescue, security, military support, shelter, and other forms of assistance being prominently expressed."
+        },
+        {
+            "Date": "19/04/2025",
+            "Sentiment": 0.47,
+            "Elements": "Earthquake, Floods, Storm, Fire, Other Weather, Weather Related, Electricity, Transport",
+            "Impact": "Death, Missing People, Refugees, Hospitals, Aid Centers, Other Infrastructure",
+            "Requests": "Request, Offer, Aid Related, Medical Help, Medical Products, Military, Child Alone, Food, Clothing, Money, Other Aid",
+            "Summary": "On 2025-04-19, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.47, with 26 tweets recorded. The main disaster elements discussed included earthquakes, floods, storms, fires, and other weather-related issues affecting electricity and transport infrastructure. Primary impacts reported were deaths, missing people, and the strain on hospitals and aid centers, while requests for aid encompassed medical help, food, clothing, and financial assistance."
+        },
+        {
+            "Date": "20/04/2025",
+            "Sentiment": 0.52,
+            "Elements": "Earthquake, Fire, Cold, Other Weather, Weather Related",
+            "Impact": "Death, Missing People, Hospitals, Other Infrastructure",
+            "Requests": "Request, Offer, Aid Related, Medical Help, Search And Rescue, Military, Shelter, Money",
+            "Summary": "On 2025-04-20, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.52, with 18 tweets reflecting no extreme positive or negative sentiments. The main disaster elements discussed included earthquakes, fires, cold weather, and other weather-related issues. Primary impacts reported were deaths, missing people, hospital operations, and damage to infrastructure, while requests for aid, medical help, search and rescue services, military support, shelter, and financial assistance were prominently expressed."
+        },
+        {
+            "Date": "21/04/2025",
+            "Sentiment": 0.53,
+            "Elements": "Earthquake, Floods, Fire, Cold, Weather Related, Buildings, Transport",
+            "Impact": "Death, Refugees, Infrastructure Related, Hospitals",
+            "Requests": "Request, Aid Related, Search And Rescue, Security, Military, Child Alone, Food, Shelter, Other Aid",
+            "Summary": "On 2025-04-21, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.53, with no extreme positive or negative sentiments expressed. The main disaster elements discussed included earthquakes, floods, fires, cold weather, and related infrastructure impacts. Key impacts reported were deaths, refugee situations, hospital issues, and damage to buildings and transport systems. Requests for aid focused on search and rescue operations, security assistance, military support, food, shelter, and other forms of aid for those affected by the disaster."
+        },
+        {
+            "Date": "22/04/2025",
+            "Sentiment": 0.5,
+            "Elements": "Storm, Cold, Other Weather, Weather Related, Buildings, Electricity, Water, Transport",
+            "Impact": "Death, Missing People, Refugees, Infrastructure Related, Shops, Aid Centers, Other Infrastructure",
+            "Requests": "Request, Aid Related, Medical Help, Search And Rescue, Shelter, Money, Other Aid",
+            "Summary": "On 2025-04-22, social media activity during a disaster event was characterized by a neutral overall sentiment score of 0.50, with 38 tweets reflecting various aspects of the ongoing situation. The main disaster elements discussed included storm conditions and other weather-related issues affecting buildings, electricity, water supply, and transportation infrastructure. Primary impacts reported were deaths, missing people, and damage to shops and aid centers, while requests for aid, medical help, search and rescue operations, shelter, and monetary support were prominently expressed. Notably, the sentiment variability was relatively low at 0.10, indicating a consistent tone across the social media discourse."
+        }
+    ]
+}

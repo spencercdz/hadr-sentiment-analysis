@@ -420,6 +420,7 @@ class SentimentReport(SimpleDocTemplate):
         text.fontSize  = 13
         text.leading   = 14
         text.alignment = TA_JUSTIFY
+        text.wordWrap = 'CJK'
 
         return text
     
