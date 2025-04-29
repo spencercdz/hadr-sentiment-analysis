@@ -10,74 +10,66 @@
     "tweets": [
         {
             "Username": "User1",
-            "Date": "29/04/2025",
+            "Date": "30/04/2025",
             "Retweets": "0",
             "Tweet": "No tweet data available due to error."
         },
         {
             "Username": "User2",
-            "Date": "29/04/2025",
+            "Date": "30/04/2025",
             "Retweets": "0",
             "Tweet": "No tweet data available due to error."
         },
         {
             "Username": "User3",
-            "Date": "29/04/2025",
+            "Date": "30/04/2025",
             "Retweets": "0",
             "Tweet": "No tweet data available due to error."
         },
         {
             "Username": "User4",
-            "Date": "29/04/2025",
+            "Date": "30/04/2025",
             "Retweets": "0",
             "Tweet": "No tweet data available due to error."
         },
         {
             "Username": "User5",
-            "Date": "29/04/2025",
+            "Date": "30/04/2025",
             "Retweets": "0",
             "Tweet": "No tweet data available due to error."
         },
         {
             "Username": "User6",
-            "Date": "29/04/2025",
+            "Date": "30/04/2025",
             "Retweets": "0",
             "Tweet": "No tweet data available due to error."
         },
         {
             "Username": "User7",
-            "Date": "29/04/2025",
+            "Date": "30/04/2025",
             "Retweets": "0",
             "Tweet": "No tweet data available due to error."
         },
         {
             "Username": "User8",
-            "Date": "29/04/2025",
+            "Date": "30/04/2025",
             "Retweets": "0",
             "Tweet": "No tweet data available due to error."
         },
         {
             "Username": "User9",
-            "Date": "29/04/2025",
+            "Date": "30/04/2025",
             "Retweets": "0",
             "Tweet": "No tweet data available due to error."
         },
         {
             "Username": "User10",
-            "Date": "29/04/2025",
+            "Date": "30/04/2025",
             "Retweets": "0",
             "Tweet": "No tweet data available due to error."
         }
     ],
     "details": [
-        {
-            "Date": "29/04/2025",
-            "Sentiment": 0.5,
-            "Elements": "Earthquake",
-            "Impact": "Infrastructure, Death, Injury",
-            "Requests": "Medical, Water, Shelter",
-            "Summary": "Error occurred during report generation"
-        },
         {
             "Date": "30/04/2025",
             "Sentiment": 0.5,
@@ -120,6 +112,14 @@
         },
         {
             "Date": "05/05/2025",
+            "Sentiment": 0.5,
+            "Elements": "Earthquake",
+            "Impact": "Infrastructure, Death, Injury",
+            "Requests": "Medical, Water, Shelter",
+            "Summary": "Error occurred during report generation"
+        },
+        {
+            "Date": "06/05/2025",
             "Sentiment": 0.5,
             "Elements": "Earthquake",
             "Impact": "Infrastructure, Death, Injury",

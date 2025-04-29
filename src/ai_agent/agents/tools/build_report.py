@@ -162,10 +162,14 @@ class SentimentReport(SimpleDocTemplate):
     def build_sections(self):
         if isinstance(self.data, dict):
             for header, content in self.data.items():
-                # Add Header
+                # Add Page Break before if tweet overview, results or sentiment overview
+                if header.lower() == "tweet overview" or header.lower() == "results" or header.lower() == "sentiment overview":
+                    self.story.append(PageBreak())
+
+                # Add Header Text
                 self.story.append(Paragraph(f"{header.upper()}", self.header_style))
 
-                # Add Content
+                # Add Content Text
                 self.story.append(Paragraph(f"{content}", self.text_style))
 
                 # Check if the section has a Table/Graph/Chart
@@ -268,7 +272,7 @@ class SentimentReport(SimpleDocTemplate):
                 data.append(processed_row)
 
         # Adjust column widths
-        col_widths = [75, 75, 75, 75, 75, 100]
+        col_widths = [75, 75, 75, 75, 75, 150]
 
         # Create Results Table using data with row splitting enabled
         t = Table(data, colWidths=col_widths, repeatRows=1, splitByRow=True)
@@ -291,7 +295,7 @@ class SentimentReport(SimpleDocTemplate):
         # Create a drawing that's exactly the width of the content area
         # A4 is 8.27 × 11.69 inches, with typical margins of 1 inch
         content_width = A4[0] - 2*inch  # Page width minus margins
-        content_height = A4[1] - 9*inch  # Page height minus margins
+        content_height = A4[1] - 6*inch  # Page height minus margins
         drawing_width = content_width
         drawing_height = content_height
         
@@ -364,7 +368,7 @@ class SentimentReport(SimpleDocTemplate):
         lp.yValueAxis.valueStep = 0.1
         lp.yValueAxis.labelTextFormat = '%0.1f'
         lp.yValueAxis.labels.fontName = 'Times-Bold'
-        lp.yValueAxis.labels.fontSize = 8
+        lp.yValueAxis.labels.fontSize = 9
 
         drawing.add(lp)
 
@@ -376,8 +380,11 @@ class SentimentReport(SimpleDocTemplate):
             lbl.setOrigin(x_pos, chart_y - 10)
             lbl.boxAnchor = 'n'
             lbl.fontName = 'Times-Bold'
-            lbl.fontSize = 8
+            lbl.fontSize = 9
             lbl.setText(date)
+            lbl.angle = 90
+            lbl.dy = -17
+            lbl.boxAnchor='c'
             drawing.add(lbl)
 
         # X axis name
@@ -387,6 +394,7 @@ class SentimentReport(SimpleDocTemplate):
         x_axis_label.fontName = 'Times-Bold'
         x_axis_label.fontSize = 10
         x_axis_label.setText('Date')
+        x_axis_label.dy = -35
         drawing.add(x_axis_label)
 
         # Y axis name
@@ -404,7 +412,7 @@ class SentimentReport(SimpleDocTemplate):
         legend.x = chart_x + chart_width/2 - 25  # Center legend
         legend.y = chart_y + chart_height + 10
         legend.fontName = 'Times-Roman'
-        legend.fontSize = 8
+        legend.fontSize = 9
         legend.colorNamePairs = [(colors.red, 'Sentiment')]
         drawing.add(legend)
 

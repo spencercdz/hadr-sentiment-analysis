@@ -96,7 +96,7 @@ def init_llm():
     """Initialize LLM for agent operations"""
     try:
         # For local use without API keys
-        return Ollama(model="qwen2.5-coder:14b", temperature = 0) # original: deepseek-r1:8b  #  qwen2.5-coder:14b
+        return Ollama(model="qwen3:14b", temperature = 0) #  qwen2.5-coder:14b   # qwen3:14b
     except Exception as e:
         logger.error(f"Error initializing LLM: {e}")
         # Fallback to a model with reasonable performance
