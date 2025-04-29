@@ -204,15 +204,32 @@ class SentimentReport(SimpleDocTemplate):
             dummy_row = ["No data", "", "", "No tweets available for analysis"]
             data.append([Paragraph(cell, self.text_style) for cell in dummy_row])
         else:
-            # Format tweet data
-            data = [[Paragraph(cell, self.text_style) for cell in row] for row in table_data]
+            # Format tweet data with text wrapping and truncation for long content
+            data = []
+            # Add header row
+            header_row = [Paragraph(cell, self.text_style) for cell in table_data[0]]
+            data.append(header_row)
+            
+            # Process data rows with controlled height
+            for row in table_data[1:]:
+                processed_row = []
+                for i, cell in enumerate(row):
+                    # For the Tweet column (index 3), limit the height
+                    if i == 3 and len(cell) > 300:
+                        # Truncate very long tweets to prevent overflow
+                        truncated_text = cell[:300] + "..."
+                        p = Paragraph(truncated_text, self.text_style)
+                    else:
+                        p = Paragraph(cell, self.text_style)
+                    processed_row.append(p)
+                data.append(processed_row)
 
         # Adjust column widths
         col_widths = [75, 75, 75, 300]
 
-        # Create Tweet Table using data
-        t = Table(data, colWidths=col_widths, repeatRows=1)
-
+        # Create Tweet Table using data with row splitting enabled
+        t = Table(data, colWidths=col_widths, repeatRows=1, splitByRow=True)
+        
         # Style tweet table
         t.setStyle(self.build_table_style())
 
@@ -230,15 +247,32 @@ class SentimentReport(SimpleDocTemplate):
             dummy_row = ["No data", "0.0", "No data", "No data", "No data", "No detailed results available"]
             data.append([Paragraph(cell, self.text_style) for cell in dummy_row])
         else:
-            # Format results data
-            data = [[Paragraph(cell, self.text_style) for cell in row] for row in results_data]
+            # Format results data with text wrapping and truncation for long content
+            data = []
+            # Add header row
+            header_row = [Paragraph(cell, self.text_style) for cell in results_data[0]]
+            data.append(header_row)
+            
+            # Process data rows with controlled height
+            for row in results_data[1:]:
+                processed_row = []
+                for i, cell in enumerate(row):
+                    # For the Summary column (index 5), limit the height
+                    if i == 5 and len(cell) > 200:
+                        # Truncate very long summary to prevent overflow
+                        truncated_text = cell[:200] + "..."
+                        p = Paragraph(truncated_text, self.text_style)
+                    else:
+                        p = Paragraph(cell, self.text_style)
+                    processed_row.append(p)
+                data.append(processed_row)
 
         # Adjust column widths
         col_widths = [75, 75, 75, 75, 75, 100]
 
-        # Create Results Table using data
-        t = Table(data, colWidths=col_widths, repeatRows=1)
-
+        # Create Results Table using data with row splitting enabled
+        t = Table(data, colWidths=col_widths, repeatRows=1, splitByRow=True)
+        
         # Style results table
         t.setStyle(self.build_table_style())
 
@@ -410,6 +444,7 @@ class SentimentReport(SimpleDocTemplate):
         header.fontSize  = 14
         header.leading   = 22
         header.alignment = TA_LEFT
+        header.wordWrap = 'CJK'
         
         return header
 
@@ -439,6 +474,8 @@ class SentimentReport(SimpleDocTemplate):
             ('RIGHTPADDING', (0,0), (-1,-1),     6),
             ('TOPPADDING',   (0,0), (-1,-1),     4),
             ('BOTTOMPADDING',(0,0), (-1,-1),     4),
+            # word wrapping
+            ('WORDWRAP', (0, 0), (-1, -1), True),
         ])
 
         return style

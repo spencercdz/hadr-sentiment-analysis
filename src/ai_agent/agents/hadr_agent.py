@@ -1510,19 +1510,37 @@ def generate_report_data(
     report_chain = LLMChain(llm=llm, prompt=prompt)
     
     try:
-        # Clean text funciton
+        # Clean text function for JSON compatibility and display
         def clean_tweet_text(raw_text):
-            # Decode Unicode escapes
-            decoded_text = raw_text.encode('utf-8').decode('unicode_escape')
-
-            # Optional cleanup
-            #decoded_text = re.sub(r'http\S+', '', decoded_text)
-            #decoded_text = re.sub(r'#\S+', '', decoded_text)
-            #decoded_text = re.sub(r'\s+', ' ', decoded_text).strip()
-
-            # Remove extra spaces
-            decoded_text = re.sub(r'\s+', ' ', decoded_text).strip()
-            return decoded_text
+            if not raw_text or not isinstance(raw_text, str):
+                return ""
+                
+            try:
+                # Decode Unicode escapes
+                decoded_text = raw_text.encode('utf-8').decode('unicode_escape', errors='replace')
+                
+                # Remove problematic characters that might cause display issues
+                # Replace emoji and special characters with their description or simpler form
+                decoded_text = re.sub(r'[\U00010000-\U0010ffff]', '', decoded_text)
+                
+                # Remove URLs to shorten text
+                decoded_text = re.sub(r'http[s]?://\S+', '', decoded_text)
+                
+                # Normalize whitespace (replace tabs, newlines, etc. with spaces)
+                decoded_text = re.sub(r'[\r\n\t]+', ' ', decoded_text)
+                
+                # Remove extra spaces
+                decoded_text = re.sub(r'\s+', ' ', decoded_text).strip()
+                
+                # Limit length to prevent overflow
+                if len(decoded_text) > 500:
+                    decoded_text = decoded_text[:497] + "..."
+                    
+                return decoded_text
+            except Exception as e:
+                logger.warning(f"Error cleaning tweet text: {e}")
+                # Return a safe version of the text
+                return str(raw_text)[:100] + "..." if len(str(raw_text)) > 100 else str(raw_text)
 
         # Run the chain
         disaster_type = disaster_info["disaster_type"] or "disaster"
