@@ -23,7 +23,7 @@ class UntunedLLM(BaseLLM):
         self.project_root = Path(__file__).resolve().parent.parent.parent.parent
         
         # Get configuration values
-        self.batch_size = model_config.get('batch_size', 8)
+        self.batch_size = model_config.get('batch_size', 16)
         self.preprocessing_config = model_config.get('preprocessing', {})
         
         # Initialize models for each task
@@ -119,6 +119,7 @@ class UntunedLLM(BaseLLM):
         
         # Define task contexts (same as in TunedLLM)
         task_contexts = {
+            'sentiment': 'What is the sentiment of this message? (positive/negative/neutral)',
             'genre': "What is the type of this message? (direct/news/social media)",
             'related': "Is this message disaster related? (no/yes/maybe)",
             'request': "Does this message contain a request? (yes/no)",

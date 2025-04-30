@@ -9,6 +9,7 @@ def get_all_labels() -> Dict[str, Dict[int, str]]:
         to its dictionary of label ids and labels.
     """
     return {
+        'sentiment': get_sentiment_labels(),
         'genre': get_genre_labels(),
         'related': get_related_labels(),
         'request': get_request_labels(),
@@ -46,7 +47,6 @@ def get_all_labels() -> Dict[str, Dict[int, str]]:
         'cold': get_cold_labels(),
         'other_weather': get_other_weather_labels(),
         'direct_report': get_direct_report_labels(),
-        'sentiment': get_sentiment_labels()
     }
 
 def get_genre_labels() -> Dict[int, str]:

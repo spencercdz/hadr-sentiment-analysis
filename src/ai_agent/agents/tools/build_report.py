@@ -188,6 +188,9 @@ class SentimentReport(SimpleDocTemplate):
                         else:
                             # Add Results Chart/Table
                             self.story.append(self.results_table())
+
+                            # Add page break
+                            self.story.append(PageBreak())
                     except Exception as e:
                         # If visualization fails, add error message
                         error_text = f"Error generating visualization: {str(e)}"
@@ -383,7 +386,7 @@ class SentimentReport(SimpleDocTemplate):
             lbl.fontSize = 9
             lbl.setText(date)
             lbl.angle = 90
-            lbl.dy = -17
+            lbl.dy = -18
             lbl.boxAnchor='c'
             drawing.add(lbl)
 
@@ -452,7 +455,7 @@ class SentimentReport(SimpleDocTemplate):
         header.fontSize  = 14
         header.leading   = 22
         header.alignment = TA_LEFT
-        header.wordWrap = 'CJK'
+        #header.wordWrap = 'CJK'
         
         return header
 
@@ -463,7 +466,7 @@ class SentimentReport(SimpleDocTemplate):
         text.fontSize  = 13
         text.leading   = 14
         text.alignment = TA_JUSTIFY
-        text.wordWrap = 'CJK'
+        #text.wordWrap = 'CJK'
 
         return text
     
