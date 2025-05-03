@@ -23,11 +23,11 @@ tuned_model:
   model_args:
     num_labels: 2  # non-negative, negative
   
-  # Training hyperparameters
+  # Training hyperparameters - optimized for GTX 1060 6GB
   training:
     lr: 2e-4
-    batch_size: 16  # Change to GPU memory limit
-    epochs: 10
+    batch_size: 8  # Reduced for GTX 1060 6GB
+    epochs: 5  # Reduced for faster training
     output_dir: 'multi-task-disaster-classifier'
     learning_rate: lr
     per_device_train_batch_size: batch_size
@@ -40,11 +40,13 @@ tuned_model:
     metric_for_best_model: avg_accuracy
     greater_is_better: true
     fp16: true
-    gradient_accumulation_steps: 2
+    gradient_accumulation_steps: 4  # Increased to compensate for smaller batch size
     warmup_ratio: 0.1
     weight_decay: 0.01
-    save_total_limit: 2
+    save_total_limit: 1  # Keep only the best model
     report_to: none
+    dataloader_num_workers: 2  # Use multiprocessing for data loading
+    dataloader_pin_memory: true  # Speed up data transfer to GPU
 
   # Preprocessing settings  
   preprocessing:

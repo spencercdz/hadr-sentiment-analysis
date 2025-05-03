@@ -24,13 +24,23 @@ from transformers import (
     Trainer,
     EarlyStoppingCallback,
     DataCollatorWithPadding,
-    AutoConfig
+    AutoConfig,
+    EvalPrediction
 )
+from sklearn.metrics import accuracy_score, f1_score
 from concurrent.futures import ThreadPoolExecutor
 from googletrans import Translator
 from nltk.corpus import wordnet
-from nltk import download
+from nltk import download, data
 from nltk import word_tokenize
+from .multi_head import MultiHeadXLMRoberta
+from .labels import (
+    get_all_labels,
+    get_related_labels,
+    get_genre_labels
+)
+from .utils import format_prediction_output, save_metadata, batch_encode
+from .base import BaseLLM
 
 # Download required NLTK resources
 try:
@@ -40,49 +50,103 @@ try:
 except Exception as e:
     print(f"Warning: Could not download NLTK resources: {str(e)}")
 
-from .labels import (
-    get_all_labels,
-    get_related_labels,
-    get_genre_labels
-)
-from .utils import format_prediction_output, save_metadata, batch_encode
-from .base import BaseLLM
+# Define Focal Loss for handling class imbalance
+class FocalLoss(torch.nn.Module):
+    """Focal Loss implementation for handling imbalanced datasets.
+    
+    Focal loss applies a modulating factor to the standard cross entropy loss,
+    reducing the relative loss for well-classified examples and focusing more
+    on hard, misclassified examples.
+    """
+    
+    def __init__(self, alpha=1, gamma=2, reduction='mean'):
+        super(FocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.reduction = reduction
+        
+    def forward(self, inputs, targets):
+        # For multi-class classification
+        if len(inputs.shape) > 1 and inputs.shape[1] > 1:
+            # Apply softmax and compute cross entropy
+            ce_loss = torch.nn.functional.cross_entropy(inputs, targets, reduction='none')
+            pt = torch.exp(-ce_loss)
+            # Apply focal modulation
+            focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
+        else:
+            # For binary classification
+            bce_loss = torch.nn.functional.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
+            pt = torch.exp(-bce_loss)
+            focal_loss = self.alpha * (1 - pt) ** self.gamma * bce_loss
+        
+        # Apply reduction
+        if self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        else:
+            return focal_loss
 
 class TunedLLM(BaseLLM):
     """Implementation of a fine-tuned LLM model for HADR sentiment analysis.
-    Uses a pretrained model from the Hugging Face model hub and fine-tunes it on the training data."""
+    Uses a pretrained model from the Hugging Face model hub and fine-tunes it on the training data.
+    Supports multi-head fine-tuning by extending a pre-trained sentiment model with additional task heads."""
 
-    def __init__(self, model_name: str, model_config: Dict[str, Any]):
+    def __init__(self, model_name: str, model_config: Dict[str, Any], pretrained_sentiment_model: str = None):
         """Initialize the tuned LLM model.
         
         Args:
             model_name: Name of the pre-trained model to use
             model_config: Configuration dictionary for the model
+            pretrained_sentiment_model: Path or name of a pre-trained sentiment model to extend
         """
         super().__init__(model_name, model_config, torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
         self.project_root = Path(__file__).resolve().parent.parent.parent.parent
         
-        # Get configuration values
-        self.batch_size = model_config.get('batch_size', 32)
+        # Get configuration values - optimize batch size based on GPU memory
+        if torch.cuda.is_available():
+            # Get GPU memory in MB
+            gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024 * 1024)
+            # Adjust batch size based on available memory
+            if gpu_memory < 8000:  # Less than 8GB
+                default_batch = 8
+            elif gpu_memory < 12000:  # Less than 12GB
+                default_batch = 16
+            else:  # 12GB or more
+                default_batch = 32
+        else:
+            default_batch = 8  # Conservative default for CPU
+            
+        self.batch_size = model_config.get('batch_size', default_batch)
         self.preprocessing_config = model_config.get('preprocessing', {})
         self.training_config = model_config.get('training', {})
         self.data_augmentation_config = model_config.get('data_augmentation', {})
         
-        # Initialize translator for back translation
-        self.translator = Translator()
+        # Store the pretrained sentiment model path
+        self.pretrained_sentiment_model = pretrained_sentiment_model
+        
+        # Initialize translator for back translation - but only if needed
+        self.translator = None
+        if self.data_augmentation_config.get('enabled', False) and \
+           self.data_augmentation_config.get('back_translation_prob', 0) > 0:
+            try:
+                self.translator = Translator()
+            except Exception as e:
+                print(f"Warning: Could not initialize translator: {str(e)}")
         
         # Define all tasks - updated to use tasks from the labels
         self.all_tasks = list(get_all_labels().keys())
         
-        # Sentiment task is typically not part of the training since we're predicting it
+        # Sentiment task is typically not part of the training since we're extending a pre-trained sentiment model
         if 'sentiment' in self.all_tasks:
             self.training_tasks = [task for task in self.all_tasks if task != 'sentiment']
         else:
             self.training_tasks = self.all_tasks.copy()
         
-        # Initialize model and tokenizer
-        self.model = None
+        # Initialize model components
+        self.model = None  # Main model with shared encoder
         self.tokenizer = None
+        self.task_heads = {}  # Dictionary to store task-specific classification heads
         
         # Load model using the updated method
         self.load_model()
@@ -91,67 +155,105 @@ class TunedLLM(BaseLLM):
         self.train_path = self.project_root / 'data' / 'raw' / 'test1.csv'
         self.validation_path = self.project_root / 'data' / 'raw' / 'validation1.csv'
         
-    def calculate_num_labels(self):
-        """Calculate the total number of classes for all tasks."""
-        num_labels = 0
+        # Clear GPU cache after initialization
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        # For data augmentation: Check for punkt, wordnet, etc.
+        try:
+            data.find('tokenizers/punkt')
+            data.find('corpora/wordnet')
+            self.nltk_available = True
+        except LookupError:
+            logging.warning("NLTK resources not found: falling back to simple augmentations")
+            self.nltk_available = False
+        
+    def calculate_task_labels(self):
+        """Calculate the number of labels for each task and store in a dictionary."""
+        self.task_label_counts = {}
         all_label_defs = get_all_labels()
         
-        for task in self.training_tasks:
+        # Calculate number of labels for each task
+        for task in self.all_tasks:
             task_label_dict = all_label_defs.get(task, {})
-            num_labels += len(task_label_dict)
+            self.task_label_counts[task] = len(task_label_dict)
+        
+        # Calculate total number of labels (excluding sentiment if using pretrained model)
+        num_labels = 0
+        for task in self.training_tasks:
+            num_labels += self.task_label_counts.get(task, 0)
             
         self.num_labels = num_labels
-        return num_labels
+        return self.task_label_counts
             
     def load_model(self):
-        """Load the pre-trained model and tokenizer, reinitialize classification head."""
+        """Load the pre-trained model and tokenizer, create multi-head architecture.
+        
+        Uses the MultiHeadXLMRoberta architecture with a frozen backbone and separate
+        classification heads for each task.
+        """
         try:
-            # Calculate number of labels
-            self.calculate_num_labels()
+            # Calculate number of labels for each task
+            self.calculate_task_labels()
             
-            # Load the model config first to customize parameters
-            config = AutoConfig.from_pretrained(self.model_name)
-            config.num_labels = self.num_labels
-            config.problem_type = "multi_label_classification"
+            # Determine which model to load as base
+            base_model_name = self.pretrained_sentiment_model if self.pretrained_sentiment_model else self.model_name
+            print(f"Loading base model from: {base_model_name}")
             
-            print(f"Loading model with {self.num_labels} output classes")
+            # Load the tokenizer
+            self.tokenizer = AutoTokenizer.from_pretrained(base_model_name, use_fast=True)
             
-            # Load the pre-trained model with our custom config
-            self.model = AutoModelForSequenceClassification.from_pretrained(
-                self.model_name,
-                config=config,
-                ignore_mismatched_sizes=True
+            # Get freeze_backbone setting from config (default to True)
+            freeze_backbone = self.training_config.get('freeze_backbone', True)
+            
+            # Create the multi-head model
+            print(f"Creating MultiHeadXLMRoberta model with frozen backbone: {freeze_backbone}")
+            self.model = MultiHeadXLMRoberta(
+                model_name=base_model_name,
+                task_labels=self.task_label_counts,
+                freeze_backbone=freeze_backbone
             ).to(self.device)
             
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=True)
+            # Store the task heads for easy access
+            self.task_heads = self.model.heads
             
-            # Customize the model architecture if needed
-            if hasattr(self.model, 'classifier'):
-                old_head = self.model.classifier
-                
-                # Create a more sophisticated classification head
-                new_head = torch.nn.Sequential(
-                    torch.nn.Dropout(config.hidden_dropout_prob),
-                    torch.nn.Linear(config.hidden_size, config.hidden_size),
-                    torch.nn.GELU(),  # Better than Tanh for modern architectures
-                    torch.nn.LayerNorm(config.hidden_size),  # Add layer normalization for stability
-                    torch.nn.Dropout(config.hidden_dropout_prob),
-                    torch.nn.Linear(config.hidden_size, self.num_labels)
-                ).to(self.device)
-                
-                # Initialize new head weights
-                with torch.no_grad():
-                    # Initialize the final layer with Xavier initialization
-                    torch.nn.init.xavier_uniform_(new_head[1].weight)
-                    torch.nn.init.zeros_(new_head[1].bias)
-                    torch.nn.init.xavier_uniform_(new_head[5].weight)
-                    torch.nn.init.zeros_(new_head[5].bias)
-                
-                self.model.classifier = new_head
-                # Update config to match new number of labels
-                config.num_labels = self.num_labels
+            # If we're using a pretrained sentiment model, we might want to initialize
+            # the sentiment head with the pretrained weights
+            if self.pretrained_sentiment_model and 'sentiment' in self.task_label_counts:
+                try:
+                    print(f"Loading pretrained sentiment head from: {self.pretrained_sentiment_model}")
+                    pretrained_model = AutoModelForSequenceClassification.from_pretrained(
+                        self.pretrained_sentiment_model
+                    )
+                    
+                    # Check if the pretrained model has a classifier
+                    if hasattr(pretrained_model, 'classifier'):
+                        # Get the sentiment head from our model
+                        sentiment_head = self.task_heads['sentiment']
+                        
+                        # Check if the architectures are compatible
+                        if isinstance(pretrained_model.classifier, torch.nn.Linear) and isinstance(sentiment_head[-1], torch.nn.Linear):
+                            # Copy the weights and biases of the final layer
+                            with torch.no_grad():
+                                sentiment_head[-1].weight.copy_(pretrained_model.classifier.weight)
+                                sentiment_head[-1].bias.copy_(pretrained_model.classifier.bias)
+                            print(f"Successfully initialized sentiment head with pretrained weights")
+                        else:
+                            print(f"Architectures not compatible for weight transfer")
+                    
+                    # Clean up
+                    del pretrained_model
+                    torch.cuda.empty_cache()
+                    
+                except Exception as e:
+                    print(f"Could not load pretrained sentiment head: {str(e)}")
             
-            print(f"Model loaded successfully: {self.model_name} with {self.num_labels} output classes")
+            # Print model statistics
+            trainable_params = self.model.get_trainable_parameters()
+            total_params = sum(p.numel() for p in self.model.parameters())
+            print(f"Model loaded successfully with {len(self.task_heads)} task heads")
+            print(f"Trainable parameters: {trainable_params:,} / {total_params:,} ({trainable_params/total_params:.2%})")
+            
             return True
             
         except Exception as e:
@@ -285,6 +387,20 @@ class TunedLLM(BaseLLM):
             
         return ''.join(chars)
         
+    def unfreeze_backbone_layers(self, num_layers=None):
+        """Unfreeze specific layers of the backbone for fine-tuning.
+        
+        Args:
+            num_layers: Number of layers to unfreeze from the top. If None, unfreeze all layers.
+        """
+        if isinstance(self.model, MultiHeadXLMRoberta):
+            self.model.unfreeze_backbone(num_layers)
+            trainable_params = self.model.get_trainable_parameters()
+            total_params = sum(p.numel() for p in self.model.parameters())
+            print(f"Unfrozen backbone layers. Trainable parameters: {trainable_params:,} / {total_params:,} ({trainable_params/total_params:.2%})")
+        else:
+            print("Model is not a MultiHeadXLMRoberta instance, cannot unfreeze backbone layers.")
+        
     def _simple_word_dropout(self, text: str) -> str:
         """Simple word dropout augmentation that doesn't require NLTK."""
         # Simple space-based word splitting (not as good as NLTK but works without it)
@@ -303,82 +419,41 @@ class TunedLLM(BaseLLM):
         return ' '.join(result)
 
     def augment_text(self, text: str) -> str:
-        """Apply data augmentation techniques to the input text.
-        
-        This improved version implements multiple robust augmentation techniques
-        and applies them probabilistically based on configuration.
-        """
-        # If data augmentation is disabled, return the original text
         if not self.data_augmentation_config.get('enabled', False):
             return text
-            
-        # Check if text is too short for meaningful augmentation
-        if len(text.split()) < 4:
+        words = text.split()
+        if len(words) < 4:
             return text
-        
-        # Get augmentation probabilities from config
-        synonym_prob = self.data_augmentation_config.get('synonym_replacement_prob', 0.3)
-        deletion_prob = self.data_augmentation_config.get('random_deletion_prob', 0.2)
-        swap_prob = self.data_augmentation_config.get('random_swap_prob', 0.2)
-        insertion_prob = self.data_augmentation_config.get('random_insertion_prob', 0.2)
-        backtrans_prob = self.data_augmentation_config.get('back_translation_prob', 0.1)
-        
-        # Initialize googletrans for back translation if needed
-        if random.random() < backtrans_prob and not hasattr(self, 'translator'):
-            try:
-                from googletrans import Translator
-                self.translator = Translator()
-            except ImportError:
-                print("Warning: googletrans not available for back translation")
-                self.translator = None
-                backtrans_prob = 0
-        
-        # Check if NLTK resources are available
-        nltk_available = True
-        try:
-            from nltk.tokenize import word_tokenize
-            word_tokenize("test")
-        except (ImportError, LookupError):
-            nltk_available = False
-            print("Warning: NLTK tokenization not available, falling back to simple methods")
-        
-        # Define augmentation techniques with their probabilities
+
+        # pull probs out
+        p = self.data_augmentation_config
         techniques = []
-        
-        # Add NLTK-based techniques if available
-        if nltk_available:
-            techniques.extend([
-                (self._synonym_replacement, synonym_prob),
-                (self._random_deletion, deletion_prob),
-                (self._random_swap, swap_prob),
-                (self._random_insertion, insertion_prob)
-            ])
-            
-            # Add back translation if translator is available
-            if hasattr(self, 'translator') and self.translator is not None:
-                techniques.append((self._back_translation, backtrans_prob))
+
+        if self.nltk_available:
+            techniques = [
+                (self._synonym_replacement,    p.get('synonym_replacement_prob', 0.3)),
+                (self._random_deletion,        p.get('random_deletion_prob',    0.2)),
+                (self._random_swap,            p.get('random_swap_prob',        0.2)),
+                (self._random_insertion,       p.get('random_insertion_prob',   0.2)),
+            ]
+            if p.get('back_translation_prob', 0) > 0 and hasattr(self, 'translator'):
+                techniques.append((self._back_translation, p.get('back_translation_prob', 0.1)))
         else:
-            # Simple character-level augmentations as fallback
-            techniques.append((self._simple_char_swap, 0.1))
-            techniques.append((self._simple_word_dropout, 0.1))
-        
-        # Apply augmentation techniques based on their probabilities
-        augmented_text = text
-        aug_applied = False  # Track if any augmentation was applied
-        
-        for technique, prob in techniques:
+            # fallback without NLTK
+            techniques = [
+                (self._simple_char_swap, 0.1),
+                (self._simple_word_dropout, 0.1),
+            ]
+
+        augmented = text
+        for fn, prob in techniques:
             if random.random() < prob:
-                try:
-                    result = technique(augmented_text)
-                    # Only accept the augmentation if it changed the text and isn't empty
-                    if result and result != augmented_text and len(result) > 10:
-                        augmented_text = result
-                        aug_applied = True
-                except Exception as e:
-                    print(f"Error applying augmentation technique {technique.__name__}: {str(e)}")
-        
-        # If no augmentation was applied, return the original text
-        return augmented_text if aug_applied else text
+                out = fn(augmented)
+                # accept any non-empty change
+                if out and out != augmented:
+                    augmented = out
+
+        return augmented
     
     def _synonym_replacement(self, text, n=None):
         """Replace words in the text with their synonyms.
@@ -575,77 +650,89 @@ class TunedLLM(BaseLLM):
     
     def preprocess_function(self, examples):
         """Preprocess and tokenize text data for model training."""
-        # Tokenize the text
+        # 1) tokenize - use a smaller max_length to reduce memory usage
+        max_length = self.preprocessing_config.get('max_length', 128)
+        # Use a more efficient tokenization approach
         tokenized = self.tokenizer(
             examples['text'],
-            padding='max_length',
+            padding=False,  # We'll pad in the data collator
             truncation=True,
             max_length=self.preprocessing_config.get('max_length', 128),
-            return_tensors='pt'
+            return_attention_mask=True,
+            return_tensors=None
         )
-        
-        # Get all task labels
-        all_label_defs = get_all_labels()
-        
-        # Create labels tensor
-        batch_size = len(examples['text'])
-        labels = torch.zeros((batch_size, self.num_labels))
-        
-        # Keep track of the current index in the label space
-        current_idx = 0
-        
-        # For each task, get the corresponding labels and set them in the label tensor
-        for task in self.training_tasks:
-            if task in examples:
-                task_label_dict = all_label_defs.get(task, {})
-                num_classes = len(task_label_dict)
-                
-                for i, label_value in enumerate(examples[task]):
-                    if pd.notna(label_value):
-                        # Convert the label value to an integer index
-                        if isinstance(label_value, str):
-                            try:
-                                label_idx = int(label_value)
-                            except ValueError:
-                                # Handle text labels for tasks like 'related'
-                                if task == 'related':
-                                    if label_value.lower() == 'yes':
-                                        label_idx = 1
-                                    elif label_value.lower() == 'maybe':
-                                        label_idx = 2
-                                    else:
-                                        label_idx = 0
-                                else:
-                                    # For binary tasks
-                                    try:
-                                        label_idx = int(label_value)
-                                    except ValueError:
-                                        label_idx = 1 if label_value.lower() == 'yes' else 0
-                        else:
-                            label_idx = int(label_value)
-                        
-                        # Ensure the label index is valid
-                        if 0 <= label_idx < num_classes:
-                            # Set the corresponding entry in the labels tensor
-                            labels[i, current_idx + label_idx] = 1.0
-                
-                # Move index forward
-                current_idx += num_classes
-        
-        # Add the labels to the tokenized output
-        tokenized['labels'] = labels.tolist()
-        
-        return tokenized
 
+        # 2) prepare empty one‐hot label matrix [batch_size x total_num_labels]
+        all_label_defs = get_all_labels()
+        batch_size = len(examples['text'])
+        labels = torch.zeros((batch_size, self.num_labels), dtype=torch.float)
+
+        current_idx = 0
+        for task in self.training_tasks:
+            if task not in examples:
+                continue
+
+            task_label_dict = all_label_defs.get(task, {})
+            num_classes = len(task_label_dict)
+
+            # build string versions of keys & values for isdigit checks
+            keys_str = [str(k).strip() for k in task_label_dict.keys()]
+            vals_str = [str(v).strip() for v in task_label_dict.values()]
+
+            # decide how to map label‐names → integer IDs
+            if all(vs.isdigit() for vs in vals_str):
+                # values are digit‐strings:  name→id
+                name_to_idx = {
+                    str(k).strip().lower(): int(str(v).strip())
+                    for k, v in task_label_dict.items()
+                }
+            elif all(ks.isdigit() for ks in keys_str):
+                # keys are digit‐strings:  id→name
+                name_to_idx = {
+                    str(v).strip().lower(): int(str(k).strip())
+                    for k, v in task_label_dict.items()
+                }
+            else:
+                # fallback: neither side is numeric, assume values are the label‐names
+                # and enumerate them in insertion order
+                vals = [str(v).strip() for v in task_label_dict.values()]
+                name_to_idx = {lbl.lower(): idx for idx, lbl in enumerate(vals)}
+
+            # now for this batch, fill the one‐hot at the right offsets
+            for i, raw in enumerate(examples[task]):
+                if pd.isna(raw):
+                    continue
+
+                # a) if it’s already numeric, use it
+                if isinstance(raw, (int, float)) or (isinstance(raw, str) and raw.isdigit()):
+                    idx = int(raw)
+                else:
+                    # b) normalize and lookup
+                    idx = name_to_idx.get(str(raw).strip().lower(), 0)
+
+                # c) sanity‐check & write one‐hot
+                if 0 <= idx < num_classes:
+                    labels[i, current_idx + idx] = 1.0
+
+            current_idx += num_classes
+
+        tokenized['labels'] = labels.tolist()
+        return tokenized
+    
     def train(self):
         """Train the model with improved training configuration."""
         try:
+            # Clear GPU cache before loading data
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                
             train_dataset, validation_dataset, class_weights = self.load_data()
             
             steps_per_epoch = len(train_dataset) // self.batch_size
             total_steps = steps_per_epoch * self.training_config.get('epochs', 50)
             warmup_steps = int(total_steps * self.training_config.get('warmup_ratio', 0.1))
             
+            # Optimize training arguments for better performance
             training_args = TrainingArguments(
                 output_dir=str(self.project_root / 'models' / 'tuned' / self.model_name),
                 num_train_epochs=self.training_config.get('epochs', 50),
@@ -666,37 +753,18 @@ class TunedLLM(BaseLLM):
                 fp16=self.training_config.get('fp16', torch.cuda.is_available()),
                 gradient_accumulation_steps=self.training_config.get('gradient_accumulation_steps', 4),
                 learning_rate=self.training_config.get('learning_rate', 2e-5),
+                dataloader_num_workers=2,  # Use multiprocessing for data loading
+                dataloader_pin_memory=True,  # Speed up data transfer to GPU
+                optim="adamw_torch",  # Use PyTorch's AdamW implementation
             )
             
             # Data collator for padding
             data_collator = DataCollatorWithPadding(
                 tokenizer=self.tokenizer,
-                padding='max_length',
-                max_length=self.preprocessing_config.get('max_length', 128),
+                padding=True, # For now pad to the largest text in the batch
+                #max_length=self.preprocessing_config.get('max_length', 128),
                 pad_to_multiple_of=8 if self.training_config.get('fp16', True) else None
             )
-            
-            # Define focal loss for imbalanced classes
-            class FocalLoss(torch.nn.Module):
-                def __init__(self, alpha=1, gamma=2, reduction='mean'):
-                    super(FocalLoss, self).__init__()
-                    self.alpha = alpha
-                    self.gamma = gamma
-                    self.reduction = reduction
-                
-                def forward(self, inputs, targets):
-                    BCE_loss = torch.nn.functional.binary_cross_entropy_with_logits(
-                        inputs, targets, reduction='none'
-                    )
-                    pt = torch.exp(-BCE_loss)
-                    F_loss = self.alpha * (1-pt)**self.gamma * BCE_loss
-                    
-                    if self.reduction == 'mean':
-                        return torch.mean(F_loss)
-                    elif self.reduction == 'sum':
-                        return torch.sum(F_loss)
-                    else:
-                        return F_loss
             
             # Create instances of loss functions
             focal_loss_fn = FocalLoss(gamma=2.0)
@@ -704,6 +772,7 @@ class TunedLLM(BaseLLM):
             
             # Get task definitions
             all_labels_defs = get_all_labels()
+            training_tasks = self.training_tasks
             
             # Task weights to prioritize important tasks
             task_weights = {
@@ -729,61 +798,159 @@ class TunedLLM(BaseLLM):
                     super().__init__(*args, **kwargs)
                 
                 def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-                    labels = inputs.pop("labels")
-                    outputs = model(**inputs)
-                    logits = outputs.logits
-                    
-                    # Check if logits are 3D and reshape if needed
-                    if len(logits.shape) == 3:
-                        # If output is [batch_size, sequence_length, num_classes]
-                        # We'll use the first token's output (similar to CLS token)
-                        logits = logits[:, 0, :]
-                    
-                    if self.focal_loss is not None and self.available_tasks and self.all_labels:
-                        # Apply multi-task loss with task-specific weighting
-                        task_losses = []
-                        current_idx = 0
-                        
-                        for task in self.available_tasks:
-                            task_labels = self.all_labels[task]
-                            num_classes = len(task_labels)
-                            
-                            # Extract task-specific logits and labels
-                            task_logits = logits[:, current_idx:current_idx + num_classes]
-                            task_labels_tensor = labels[:, current_idx:current_idx + num_classes]
-                            
-                            # Get task-specific weighting
-                            task_weight = self.task_weights.get(task, 1.0)
-                            
-                            # Use focal loss for heavily imbalanced binary tasks
-                            if num_classes == 2 and task in ['request', 'offer', 'aid_related', 'direct_report']:
-                                task_loss = self.focal_loss(task_logits, task_labels_tensor)
-                            else:
-                                # Use standard BCE loss for other tasks
-                                loss_fct = torch.nn.functional.binary_cross_entropy_with_logits(
-                                    task_logits, task_labels_tensor, reduction='mean'
-                                )
-                                task_loss = loss_fct
-                            
-                            # Apply task weighting
-                            task_losses.append(task_loss * task_weight)
-                            current_idx += num_classes
-                        
-                        # Combine losses across all tasks
-                        loss = torch.mean(torch.stack(task_losses))
+                    if isinstance(model, MultiHeadXLMRoberta):
+                        return multi_head_compute_loss(model, inputs, return_outputs)
                     else:
-                        # Fallback to standard BCE loss if task info not available
-                        loss = torch.nn.functional.binary_cross_entropy_with_logits(logits, labels)
-                    
-                    return (loss, outputs) if return_outputs else loss
+                        labels = inputs.pop("labels")
+                        outputs = model(**inputs, return_dict=True)
+                        
+                        # Handle different output formats from the model
+                        if isinstance(outputs, dict):
+                            # MultiHeadXLMRoberta returns a dictionary of task outputs
+                            # We need to combine the logits from all tasks
+                            logits = []
+                            for task_name, task_logits in outputs.items():
+                                logits.append(task_logits)
+                            # Concatenate all logits along the last dimension
+                            if logits:
+                                logits = torch.cat(logits, dim=1)
+                            else:
+                                raise ValueError("No task outputs found in model output dictionary")
+                        else:
+                            # Standard model returns an object with logits attribute
+                            logits = outputs.logits
+                        
+                        # Check if logits are 3D and reshape if needed
+                        if len(logits.shape) == 3:
+                            # If output is [batch_size, sequence_length, num_classes]
+                            # We'll use the first token's output (similar to CLS token)
+                            logits = logits[:, 0, :]
+                        
+                        if self.focal_loss is not None and self.available_tasks and self.all_labels:
+                            # Apply multi-task loss with task-specific weighting
+                            task_losses = []
+                            current_idx = 0
+                            
+                            for task in self.available_tasks:
+                                task_labels = self.all_labels[task]
+                                num_classes = len(task_labels)
+                                
+                                # Extract task-specific logits and labels
+                                task_logits = logits[:, current_idx:current_idx + num_classes]
+                                task_labels_tensor = labels[:, current_idx:current_idx + num_classes]
+                                
+                                # Get task-specific weighting
+                                task_weight = self.task_weights.get(task, 1.0)
+                                
+                                # Use focal loss for heavily imbalanced binary tasks
+                                if num_classes == 2 and task in ['request', 'offer', 'aid_related', 'direct_report']:
+                                    task_loss = self.focal_loss(task_logits, task_labels_tensor)
+                                else:
+                                    # Use standard BCE loss for other tasks
+                                    loss_fct = torch.nn.functional.binary_cross_entropy_with_logits(
+                                        task_logits, task_labels_tensor, reduction='mean'
+                                    )
+                                    task_loss = loss_fct
+                                
+                                # Apply task weighting
+                                task_losses.append(task_loss * task_weight)
+                                current_idx += num_classes
+                            
+                            # Combine losses across all tasks
+                            loss = torch.mean(torch.stack(task_losses))
+                        else:
+                            # Fallback to standard BCE loss if task info not available
+                            loss = torch.nn.functional.binary_cross_entropy_with_logits(logits, labels)
+                        
+                        return (loss, outputs) if return_outputs else loss
             
-            # Create the trainer with our custom loss handling
+            # Create a custom compute_loss function for MultiHeadXLMRoberta
+            def multi_head_compute_loss(model, inputs, return_outputs=False):
+                labels = inputs.pop("labels")                      # shape [batch, total_labels]
+                task_losses = []
+                all_outputs = None
+
+                # for each task, run the model with that head and compute its loss
+                for task_idx, task in enumerate(self.training_tasks):
+                    if task not in model.heads:
+                        continue
+
+                    # run only that head
+                    outputs = model(**inputs, task=task, return_dict=True)
+                    logits = outputs.logits                          # shape [batch, num_classes]
+                    if all_outputs is None:
+                        all_outputs = outputs
+
+                    # figure out which slice of the big label vector belongs to this task
+                    start = sum(len(all_labels_defs[t]) for t in self.training_tasks[:task_idx])
+                    end   = start + len(all_labels_defs[task])
+                    label_slice = labels[:, start:end]               # one‐hot
+
+                    num_classes = end - start
+                    weight      = task_weights.get(task, 1.0)
+
+                    if num_classes > 2:
+                        # multi‐class: CE on the full logits
+                        target = torch.argmax(label_slice, dim=1)   # shape [batch]
+                        loss_fct = torch.nn.CrossEntropyLoss()
+                        task_loss = loss_fct(logits, target)
+                    else:
+                        # binary as 2-way classification: CE on 2-logits
+                        target = torch.argmax(label_slice, dim=1)   # shape [batch]
+                        loss_fct = torch.nn.CrossEntropyLoss()
+                        task_loss = loss_fct(logits, target)
+
+                    task_losses.append(weight * task_loss)
+
+                if task_losses:
+                    loss = torch.stack(task_losses).mean()
+                else:
+                    loss = torch.tensor(0.0, device=model.device)
+
+                return (loss, all_outputs) if return_outputs else loss
+
+            def compute_metrics(eval_pred: EvalPrediction):
+                logits, labels = eval_pred.predictions, eval_pred.label_ids
+                # If your model returned a tuple (loss, logits), grab logits[0]
+                if isinstance(logits, tuple):
+                    logits = logits[0]
+
+                all_labels_defs = get_all_labels()
+                metrics = {}
+                offset = 0
+
+                for task in self.available_tasks:              # ← only these
+                    n_classes = len(all_labels_defs[task])
+                    task_logits = logits[:, offset:offset + n_classes]
+                    task_labels = labels[:, offset:offset + n_classes]
+                    offset += n_classes
+
+                    if task_logits.shape[1] == 0:               # nothing to score
+                        continue
+
+                    if n_classes > 2:
+                        preds = np.argmax(task_logits, axis=1)
+                        truth = np.argmax(task_labels, axis=1)
+                        metrics[f"{task}_acc"] = accuracy_score(truth, preds)
+                        metrics[f"{task}_f1"]  = f1_score(truth, preds, average="weighted")
+                    else:
+                        probs = torch.sigmoid(torch.from_numpy(task_logits)).numpy().reshape(-1)
+                        preds = (probs > 0.5).astype(int)
+                        truth = task_labels.reshape(-1).astype(int)
+                        metrics[f"{task}_acc"] = accuracy_score(truth, preds)
+                        metrics[f"{task}_f1"]  = f1_score(truth, preds)
+
+                return metrics
+
+            # Create the trainer with our custom loss handling and optimized settings
             trainer = CustomTrainer(
                 model=self.model,
                 args=training_args,
                 train_dataset=train_dataset,
                 eval_dataset=validation_dataset,
                 data_collator=data_collator,
+                compute_loss_func=multi_head_compute_loss if isinstance(self.model, MultiHeadXLMRoberta) else None,
+                compute_metrics=compute_metrics,
                 focal_loss=focal_loss_fn,
                 task_weights=task_weights,
                 available_tasks=self.available_tasks,
@@ -792,6 +959,9 @@ class TunedLLM(BaseLLM):
                     early_stopping_patience=self.training_config.get('early_stopping_patience', 5)
                 )]
             )
+            
+            # Clear memory before training
+            torch.cuda.empty_cache()
             
             trainer.train()
             
@@ -836,7 +1006,10 @@ class TunedLLM(BaseLLM):
                         print(f"    Scores: {{\n  " + ",\n  ".join([f'\"{k}\": {v}' for k, v in scores.items()]) + "\n}")
     
     def predict(self, texts: List[str], optimize_speed=True):
-        """Generate predictions for all tasks (including sentiment) while including context.
+        """Generate predictions for all tasks using the multi-head model.
+        
+        Uses the MultiHeadXLMRoberta architecture with a frozen backbone and separate
+        classification heads for each task.
         
         Args:
             texts: List of texts to predict
@@ -845,13 +1018,26 @@ class TunedLLM(BaseLLM):
         Returns:
             List of dictionaries containing predictions for each task along with context
         """
-        if optimize_speed:
+        if optimize_speed and not isinstance(self.model, MultiHeadXLMRoberta):
+            # Only use optimized version if not using multi-head architecture
             return self.predict_optimized(texts)
         
         all_labels = get_all_labels()
         predictions = []
         
+        # Convert single text to list for consistent handling
+        if isinstance(texts, str):
+            texts = [texts]
+            single_input = True
+        else:
+            single_input = False
+        
+        # Preprocess texts
+        preprocessed_texts = [self.preprocess_text(text) for text in texts]
+        
+        # Define task contexts
         task_contexts = {
+            'sentiment': "What is the sentiment of this message? (positive/negative/neutral)",
             'genre': "What is the type of this message? (direct/news/social media)",
             'related': "Is this message disaster related? (no/yes/maybe)",
             'request': "Does this message contain a request? (yes/no)",
@@ -888,104 +1074,165 @@ class TunedLLM(BaseLLM):
             'earthquake': "Does this message indicate there was an earthquake? (yes/no)",
             'cold': "Does this message indicate there was cold? (yes/no)",
             'other_weather': "Does this message indicate there were other weather issues? (yes/no)",
-            'direct_report': "Does this show a direct report? (yes/no)",
-            'sentiment': "What is the sentiment of this message? (negative/positive)"
+            'direct_report': "Does this show a direct report? (yes/no)"
         }
         
-        for i in range(0, len(texts), self.batch_size):
-            batch_texts = texts[i:i + self.batch_size]
+        # Check if we're using the multi-head architecture
+        if hasattr(self, 'task_heads') and self.task_heads:
+            # Multi-head prediction approach
+            batch_predictions = [{} for _ in range(len(texts))]
             
-            try:
-                batch_texts = [self.preprocess_text(text) for text in batch_texts]
+            # Tokenize texts once for efficiency
+            encoded_inputs = self.tokenizer(
+                preprocessed_texts,
+                padding=True,
+                truncation=True,
+                max_length=self.preprocessing_config.get('max_length', 512),
+                return_tensors='pt'
+            ).to(self.device)
+            
+            # Process each task with its specific head
+            for task in self.all_tasks:
+                # Skip tasks that don't have a head
+                if task not in self.task_heads:
+                    continue
+                    
+                # Get label dictionary for this task
+                task_labels = all_labels.get(task, {})
                 
-                input_ids = self.tokenizer(
-                    batch_texts,
-                    padding='max_length',
-                    truncation=True,
-                    max_length=self.preprocessing_config.get('max_length', 128),
-                    return_tensors='pt'
-                ).to(self.device)
-                
+                # Run inference with the task-specific head
                 with torch.no_grad():
-                    outputs = self.model(**input_ids)
+                    # Call the model with the task parameter to use the correct head
+                    outputs = self.model(
+                        **encoded_inputs,
+                        task=task,
+                        return_dict=True
+                    )
                     logits = outputs.logits
-                
-                batch_predictions = []
-                
-                for j, text in enumerate(batch_texts):
-                    task_predictions = {}
-                    current_idx = 0
                     
-                    for task in self.all_tasks:
-                        task_labels = all_labels.get(task, {})
-                        num_classes = len(task_labels)
+                    # Process predictions based on task type
+                    if task == 'genre' or task == 'related':
+                        # Multi-class classification
+                        probs = torch.softmax(logits, dim=1).cpu().numpy()
                         
-                        task_logits = logits[j, current_idx:current_idx + num_classes]
-                        
-                        task_probs = torch.nn.functional.softmax(task_logits, dim=0).cpu().numpy()
-                        
-                        task_scores = {}
-                        for label_id, label_name in task_labels.items():
-                            if label_id < len(task_probs):
-                                task_scores[label_name] = float(task_probs[label_id])
-                                
-                        if task == 'related':
-                            if any(isinstance(k, (int, str)) and k in ['0', '1', '2', 0, 1, 2] for k in task_scores.keys()):
-                                text_scores = {}
-                                mapping = {0: 'no', '0': 'no', 1: 'yes', '1': 'yes', 2: 'maybe', '2': 'maybe'}
-                                for k, v in task_scores.items():
-                                    if isinstance(k, (int, str)) and k in mapping:
-                                        text_key = mapping[k]
-                                        text_scores[text_key] = v
-                                    else:
-                                        text_scores[k] = v
-                                task_scores = text_scores
-                        
-                        if task == 'genre' or task == 'related':
-                            max_label = max(task_scores.items(), key=lambda x: x[1]) if task_scores else ('unknown', 0.0)
-                            prediction = max_label[0]
+                        # Process each example in the batch
+                        for i in range(len(texts)):
+                            scores = {}
+                            for label_id, label_name in task_labels.items():
+                                if label_id < probs[i].shape[0]:
+                                    scores[label_name] = float(probs[i][label_id])
                             
-                            if task == 'related':
-                                if prediction in ['0', '1', '2', 0, 1, 2]:
-                                    mapping = {0: 'no', '0': 'no', 1: 'yes', '1': 'yes', 2: 'maybe', '2': 'maybe'}
-                                    prediction = mapping.get(prediction, prediction)
-                        else:
-                            if 'yes' in task_scores and 'no' in task_scores:
-                                prediction = 'yes' if task_scores['yes'] > task_scores['no'] else 'no'
-                            else:
-                                prediction = "unknown"
-                        
-                        task_predictions[task] = {
-                            'scores': task_scores,
-                            'prediction': prediction,
-                            'context': task_contexts.get(task, "")
-                        }
-                        
-                        current_idx += num_classes
-                    
-                    batch_predictions.append(format_prediction_output(task_predictions))
-                
-                del input_ids, outputs, logits
-                torch.cuda.empty_cache()
-                gc.collect()
-                
-            except RuntimeError as e:
-                if "out of memory" in str(e):
-                    print("Out of memory, skipping batch")
-                    for _ in range(len(batch_texts)):
-                        task_predictions = {}
-                        for task in self.all_tasks:
-                            task_labels = all_labels.get(task, {})
-                            default_scores = {label_name: 1.0/len(task_labels) for label_id, label_name in task_labels.items()}
-                            task_predictions[task] = {
-                                'scores': default_scores,
-                                'prediction': list(task_labels.values())[0] if task_labels else "unknown",
+                            # Get prediction based on highest score
+                            prediction = max(scores.items(), key=lambda x: x[1])[0] if scores else list(task_labels.values())[0]
+                            
+                            # Store prediction and scores
+                            batch_predictions[i][task] = {
+                                'prediction': prediction,
+                                'scores': scores,
                                 'context': task_contexts.get(task, "")
                             }
-                        predictions.append(format_prediction_output(task_predictions))
-                else:
-                    raise e
+                    else:
+                        # Binary classification
+                        probs = torch.sigmoid(logits).cpu().numpy()
+                        
+                        # Process each example in the batch
+                        for i in range(len(texts)):
+                            # For binary tasks, we have yes/no predictions
+                            scores = {
+                                'no': 1.0 - float(probs[i][0]),
+                                'yes': float(probs[i][0])
+                            }
+                            
+                            # Get prediction based on threshold
+                            prediction = 'yes' if scores['yes'] > 0.5 else 'no'
+                            
+                            # Store prediction and scores
+                            batch_predictions[i][task] = {
+                                'prediction': prediction,
+                                'scores': scores,
+                                'context': task_contexts.get(task, "")
+                            }
+            
+            # Format predictions for output
+            predictions = [format_prediction_output(pred) for pred in batch_predictions]
+        else:
+            # Standard prediction approach (single head model)
+            # Tokenize texts
+            encoded_inputs = batch_encode(preprocessed_texts, self.tokenizer, self.model_config)
+            
+            # Create dataset
+            dataset = Dataset.from_dict({
+                'input_ids': encoded_inputs['input_ids'].tolist(),
+                'attention_mask': encoded_inputs['attention_mask'].tolist()
+            })
+            
+            # Create data loader
+            dataloader = DataLoader(
+                dataset,
+                batch_size=self.batch_size,
+                shuffle=False
+            )
+            
+            # Generate predictions
+            all_logits = []
+            
+            # Run inference
+            self.model.eval()
+            with torch.no_grad():
+                for batch in dataloader:
+                    batch = {k: v.to(self.device) for k, v in batch.items()}
+                    outputs = self.model(**batch)
+                    all_logits.append(outputs.logits.cpu())
+            
+            # Concatenate all batch logits
+            all_logits = torch.cat(all_logits, dim=0)
+            
+            # Process predictions for each example
+            start_idx = 0
+            for i, text in enumerate(texts):
+                task_predictions = {}
+                
+                for task in self.all_tasks:
+                    task_labels = all_labels.get(task, {})
+                    num_classes = len(task_labels)
+                    
+                    # Extract logits for this task
+                    task_logits = all_logits[i, start_idx:start_idx + num_classes]
+                    
+                    # Process based on task type
+                    if task == 'genre' or task == 'related':
+                        # Multi-class classification
+                        probs = torch.softmax(task_logits, dim=0).numpy()
+                        scores = {}
+                        
+                        for label_id, label_name in task_labels.items():
+                            if label_id < len(probs):
+                                scores[label_name] = float(probs[label_id])
+                        
+                        # Get prediction based on highest score
+                        prediction = max(scores.items(), key=lambda x: x[1])[0] if scores else list(task_labels.values())[0]
+                    else:
+                        # Binary classification
+                        prob = torch.sigmoid(task_logits[0]).item()
+                        scores = {'no': 1.0 - prob, 'yes': prob}
+                        prediction = 'yes' if prob > 0.5 else 'no'
+                    
+                    # Store prediction and scores
+                    task_predictions[task] = {
+                        'prediction': prediction,
+                        'scores': scores,
+                        'context': task_contexts.get(task, "")
+                    }
+                    
+                    # Update start index for next task
+                    start_idx += num_classes
+                
+                # Add formatted prediction
+                predictions.append(format_prediction_output(task_predictions))
         
+        # Return single prediction if input was a single string
+        if single_input:
+            return predictions[0] if predictions else {}
         return predictions
         
     def predict_optimized(self, texts: List[str]):
@@ -1030,7 +1277,7 @@ class TunedLLM(BaseLLM):
                 
                 inputs = self.tokenizer(
                     batch_texts,
-                    padding='max_length',
+                    padding=True,
                     truncation=True,
                     max_length=self.preprocessing_config.get('max_length', 128),
                     return_tensors='pt'
@@ -1134,12 +1381,16 @@ class TunedLLM(BaseLLM):
         try:
             # Load the training data
             train_data_path = self.project_root / 'data' / 'raw' / 'train1.csv'
+            validation_data_path = self.project_root / 'data' / 'raw' / 'validation1.csv'
             
             if not train_data_path.exists():
                 raise FileNotFoundError(f"Training data not found at {train_data_path}")
                 
             print(f"Loading training data from {train_data_path}")
             train_data = pd.read_csv(train_data_path)
+
+            print(f"Loading validation data from {validation_data_path}")
+            validation_data = pd.read_csv(validation_data_path)
             
             # Determine which tasks are available in the data
             self.available_tasks = []
@@ -1214,31 +1465,23 @@ class TunedLLM(BaseLLM):
                     train_data = pd.concat([train_data, aug_df], ignore_index=True)
                     print(f"Training data size after augmentation: {len(train_data)}")
             
-            # Split into training and validation sets
-            validation_split = 0.1
-            train_size = int(len(train_data) * (1 - validation_split))
-            
-            # Shuffle before splitting
-            train_data = train_data.sample(frac=1, random_state=42).reset_index(drop=True)
-            
-            # Create train and validation sets
-            train_df = train_data[:train_size]
-            val_df = train_data[train_size:]
+            else:
+                print("Data augmentation is disabled.")
             
             # Create clean DataFrames for Dataset conversion
             train_clean = pd.DataFrame()
             val_clean = pd.DataFrame()
             
             # Add text column
-            train_clean['text'] = train_df['message'].astype(str)
-            val_clean['text'] = val_df['message'].astype(str)
+            train_clean['text'] = train_data['message'].astype(str)
+            val_clean['text'] = validation_data['message'].astype(str)
             
             # Add task columns with proper type conversion
             for task in self.available_tasks:
                 if task in train_data.columns:
                     # Convert values to consistent format
-                    train_clean[task] = train_df[task].apply(self._normalize_label_value)
-                    val_clean[task] = val_df[task].apply(self._normalize_label_value)
+                    train_clean[task] = train_data[task].apply(self._normalize_label_value)
+                    val_clean[task] = validation_data[task].apply(self._normalize_label_value)
             
             # Create Datasets
             train_dataset = Dataset.from_pandas(train_clean)
@@ -1249,6 +1492,7 @@ class TunedLLM(BaseLLM):
                 self.preprocess_function,
                 batched=True,
                 batch_size=100,
+                remove_columns=train_clean.columns.tolist(),
                 desc="Preprocessing training data"
             )
             
@@ -1256,11 +1500,12 @@ class TunedLLM(BaseLLM):
                 self.preprocess_function,
                 batched=True,
                 batch_size=100,
+                remove_columns=train_clean.columns.tolist(),
                 desc="Preprocessing validation data"
             )
             
             # Calculate class weights for handling imbalance
-            class_weights = self._calculate_class_weights(train_df)
+            class_weights = self._calculate_class_weights(train_data)
             
             return train_dataset, val_dataset, class_weights
             
@@ -1270,24 +1515,22 @@ class TunedLLM(BaseLLM):
             raise
             
     def _normalize_label_value(self, value):
-        """Normalize label values to consistent string format."""
         if pd.isna(value):
             return "0"
-        
         if isinstance(value, (int, float)):
             return str(int(value))
-        
-        # Convert yes/no text values
         text_val = str(value).lower().strip()
-        if text_val in ['yes', 'true', '1']:
+        # binary tasks
+        if text_val in ("yes","true","1"):
             return "1"
-        elif text_val in ['no', 'false', '0']:
+        if text_val in ("no","false","0"):
             return "0"
-        
-        # For 'related' task with 'maybe' value
-        if text_val == 'maybe':
+        # related has maybe
+        if text_val == "maybe":
             return "2"
-            
+        # genre
+        if text_val in ("direct","news","social"):
+            return str({"direct":0,"news":1,"social":2}[text_val])
         return str(value)
         
     def _calculate_class_weights(self, df):

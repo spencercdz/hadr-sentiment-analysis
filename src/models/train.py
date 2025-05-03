@@ -104,11 +104,26 @@ def evaluate_model(model, test_data_path, output_dir=None):
             # Convert to appropriate format based on task
             if task in ['genre', 'related']:
                 # For multi-class tasks
-                if isinstance(ground_truth_raw, (int, float)):
-                    ground_truth = int(ground_truth_raw)
-                else:
-                    # Try to map string to label index
-                    if task == 'related':
+                if task == 'genre':
+                    # Handle genre which is a string in the CSV ('direct', 'news', 'social media')
+                    if isinstance(ground_truth_raw, (int, float)):
+                        # If it's a numeric value, use it directly
+                        ground_truth = int(ground_truth_raw)
+                    elif isinstance(ground_truth_raw, str):
+                        # It's a string from the CSV, convert to numeric index using label dictionary
+                        ground_truth_str = ground_truth_raw.strip().lower()
+                        if ground_truth_str in label_dict:
+                            # Use the numeric index from the label dictionary
+                            ground_truth = label_dict[ground_truth_str]
+                        else:
+                            # Try to find the matching label
+                            ground_truth = next((k for k, v in label_dict.items() 
+                                              if v.lower() == ground_truth_str), None)
+                            if ground_truth is None:
+                                continue
+                    else:
+                        continue
+                elif task == 'related':
                         # For related task with text labels (no/yes/maybe)
                         try:
                             if isinstance(ground_truth_raw, str):
@@ -131,9 +146,9 @@ def evaluate_model(model, test_data_path, output_dir=None):
                             # Fallback for any conversion errors
                             ground_truth = next((k for k, v in label_dict.items() 
                                               if v.lower() == str(ground_truth_raw).lower()), None)
-                    else:
-                        ground_truth = next((k for k, v in label_dict.items() 
-                                           if v.lower() == str(ground_truth_raw).lower()), None)
+                else:
+                    ground_truth = next((k for k, v in label_dict.items() 
+                                        if v.lower() == str(ground_truth_raw).lower()), None)
                     if ground_truth is None:
                         continue
                 
@@ -159,14 +174,31 @@ def evaluate_model(model, test_data_path, output_dir=None):
                     if model_pred is None:
                         continue
                 else:
+                    # For genre task with string values
+                    if task == 'genre':
+                        if isinstance(model_pred_raw, str):
+                            # Convert string prediction to label index
+                            model_pred_str = model_pred_raw.strip().lower()
+                            if model_pred_str in label_dict:
+                                # Use the numeric index from the label dictionary
+                                model_pred = label_dict[model_pred_str]
+                            else:
+                                # Try to find the matching label
+                                model_pred = next((k for k, v in label_dict.items() 
+                                                if v.lower() == model_pred_str), None)
+                            if model_pred is None:
+                                continue
+                        else:
+                            model_pred = int(model_pred_raw)
                     # For other multi-class tasks
-                    if isinstance(model_pred_raw, str):
-                        model_pred = next((k for k, v in label_dict.items() 
-                                         if v.lower() == model_pred_raw.lower()), None)
-                        if model_pred is None:
-                            continue
                     else:
-                        model_pred = int(model_pred_raw)
+                        if isinstance(model_pred_raw, str):
+                            model_pred = next((k for k, v in label_dict.items() 
+                                             if v.lower() == model_pred_raw.lower()), None)
+                            if model_pred is None:
+                                continue
+                        else:
+                            model_pred = int(model_pred_raw)
             else:
                 # For binary tasks
                 if isinstance(ground_truth_raw, str):
@@ -289,40 +321,40 @@ def main():
             logger.info(f"GPU Device: {torch.cuda.get_device_name(0)}")
             logger.info(f"Available GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.0f}MB")
         
-        # Initialize model configuration with optimized parameters
+        # Initialize model configuration with optimized parameters for GTX 1060 6GB
         model_config = {
             'preprocessing': {
-                'max_length': 128,
+                'max_length': 128,  # Reduced from 512 to save memory
                 'padding': 'max_length',
                 'truncation': True
             },
             'training': {
-                'num_epochs': 20,                # Reduced from 50 to prevent overfitting
-                'warmup_ratio': 0.1,             # Use ratio instead of steps for better scaling
+                'num_epochs': 20,
+                'warmup_ratio': 0.1,
                 'weight_decay': 0.01,
-                'learning_rate': 3e-5,           # Slightly higher learning rate
-                'gradient_accumulation_steps': 4, # Increased for larger effective batch size
+                'learning_rate': 3e-5,
+                'gradient_accumulation_steps': 8,  # Increased to compensate for smaller batch size
                 'fp16': torch.cuda.is_available(),
-                'logging_steps': 10,
-                'save_steps': 50,                # More frequent saving
-                'eval_steps': 50,                # More frequent evaluation
-                'save_total_limit': 3,           # Keep more checkpoints
+                'logging_steps': 50,  # Less frequent logging
+                'save_strategy': 'epoch',  # Save per epoch instead of steps
+                'eval_strategy': 'epoch',  # Evaluate per epoch
+                'save_total_limit': 1,  # Keep only the best model
                 'load_best_model_at_end': True,
                 'metric_for_best_model': 'eval_loss',
                 'greater_is_better': False,
                 'label_smoothing_factor': 0.1,   
-                'early_stopping_patience': 3,    # Reduced patience for faster training
-                'warmup_ratio': 0.1             
+                'early_stopping_patience': 2,  # Stop earlier if not improving
+                'freeze_backbone': True  # Keep backbone frozen to reduce trainable parameters
             },
-            'batch_size': 16,                    # Smaller batch size for better generalization
-            'class_weights': True,               # Enable class weights for imbalanced data
+            'batch_size': 8,  # Reduced from 32 for GTX 1060 6GB
+            'class_weights': True,
             'data_augmentation': {
-                'enabled': False,                # Disable data augmentation by default
-                'synonym_replacement_prob': 0.3,
-                'random_deletion_prob': 0.2,
-                'random_swap_prob': 0.2,
-                'random_insertion_prob': 0.2,
-                'back_translation_prob': 0.1
+                'enabled': True,  # Disable data augmentation to speed up training
+                'synonym_replacement_prob': 0.0,
+                'random_deletion_prob': 0.0,
+                'random_swap_prob': 0.0,
+                'random_insertion_prob': 0.0,
+                'back_translation_prob': 0.0
             }
         }
         

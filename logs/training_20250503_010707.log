@@ -1,0 +1,7 @@
+2025-05-03 01:07:07,805 - INFO - Starting model training...
+2025-05-03 01:07:07,807 - INFO - CUDA Available: True
+2025-05-03 01:07:07,812 - INFO - GPU Device: NVIDIA GeForce GTX 1060 6GB
+2025-05-03 01:07:07,812 - INFO - Available GPU memory: 6144MB
+2025-05-03 01:07:07,813 - INFO - Initializing model...
+2025-05-03 01:07:11,820 - ERROR - Error during training: name 'data' is not defined
+2025-05-03 01:07:11,820 - ERROR - Training failed. Please check the error message above.

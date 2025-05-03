@@ -57,12 +57,12 @@ def get_genre_labels() -> Dict[int, str]:
         Dict[int, str]:
             - 0: 'direct' (direct messages)
             - 1: 'news' (news stories or bulletins)
-            - 2: 'social media' (social posting)
+            - 2: 'social' (social media posting)
     """
     return {
         0: 'direct',
         1: 'news',
-        2: 'social media'
+        2: 'social',
     }
 
 def get_related_labels() -> Dict[int, str]:

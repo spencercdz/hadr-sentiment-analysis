@@ -1,0 +1,9 @@
+2025-05-03 00:34:12,422 - INFO - Starting model training...
+2025-05-03 00:34:12,422 - INFO - CUDA Available: True
+2025-05-03 00:34:12,426 - INFO - GPU Device: NVIDIA GeForce GTX 1060 6GB
+2025-05-03 00:34:12,426 - INFO - Available GPU memory: 6144MB
+2025-05-03 00:34:12,426 - INFO - Initializing model...
+2025-05-03 00:34:16,491 - INFO - Starting training...
+2025-05-03 00:34:27,474 - WARNING - Parameter 'function'=<bound method TunedLLM.preprocess_function of <src.models.llm.tuned.TunedLLM object at 0x000001E120D83230>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+2025-05-03 00:34:53,725 - ERROR - Error during training: 'tuple' object has no attribute 'logits'
+2025-05-03 00:34:53,725 - ERROR - Training failed. Please check the error message above.

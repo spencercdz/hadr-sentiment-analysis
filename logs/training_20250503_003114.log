@@ -1,0 +1,9 @@
+2025-05-03 00:31:14,598 - INFO - Starting model training...
+2025-05-03 00:31:14,598 - INFO - CUDA Available: True
+2025-05-03 00:31:14,603 - INFO - GPU Device: NVIDIA GeForce GTX 1060 6GB
+2025-05-03 00:31:14,603 - INFO - Available GPU memory: 6144MB
+2025-05-03 00:31:14,604 - INFO - Initializing model...
+2025-05-03 00:31:18,960 - INFO - Starting training...
+2025-05-03 00:31:29,384 - WARNING - Parameter 'function'=<bound method TunedLLM.preprocess_function of <src.models.llm.tuned.TunedLLM object at 0x0000020B9A7E3230>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+2025-05-03 00:31:29,548 - ERROR - Error during training: Unable to create tensor, you should probably activate truncation and/or padding with 'padding=True' 'truncation=True' to have batched tensors with the same length. Perhaps your features (`input_ids` in this case) have excessive nesting (inputs type `list` where type `int` is expected).
+2025-05-03 00:31:29,549 - ERROR - Training failed. Please check the error message above.

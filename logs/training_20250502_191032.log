@@ -1,0 +1,10 @@
+2025-05-02 19:10:32,052 - INFO - Starting model training...
+2025-05-02 19:10:32,052 - INFO - CUDA Available: True
+2025-05-02 19:10:32,056 - INFO - GPU Device: NVIDIA GeForce GTX 1060 6GB
+2025-05-02 19:10:32,057 - INFO - Available GPU memory: 6144MB
+2025-05-02 19:10:32,057 - INFO - Initializing model...
+2025-05-02 19:10:36,666 - WARNING - Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+2025-05-02 19:10:38,506 - INFO - Starting training...
+2025-05-02 19:10:51,187 - WARNING - Parameter 'function'=<bound method TunedLLM.preprocess_function of <src.models.llm.tuned.TunedLLM object at 0x000001582E24F230>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+2025-05-02 19:11:18,300 - ERROR - Error during training: 'MultiHeadXLMRoberta' object has no attribute 'device'
+2025-05-02 19:11:18,301 - ERROR - Training failed. Please check the error message above.

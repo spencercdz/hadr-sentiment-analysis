@@ -1,0 +1,9 @@
+2025-05-02 23:43:26,649 - INFO - Starting model training...
+2025-05-02 23:43:26,649 - INFO - CUDA Available: True
+2025-05-02 23:43:26,653 - INFO - GPU Device: NVIDIA GeForce GTX 1060 6GB
+2025-05-02 23:43:26,653 - INFO - Available GPU memory: 6144MB
+2025-05-02 23:43:26,653 - INFO - Initializing model...
+2025-05-02 23:43:30,510 - INFO - Starting training...
+2025-05-02 23:43:39,906 - WARNING - Parameter 'function'=<bound method TunedLLM.preprocess_function of <src.models.llm.tuned.TunedLLM object at 0x000001C96D2F34D0>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
+2025-05-02 23:44:58,620 - ERROR - Error during training: name 'training_tasks' is not defined
+2025-05-02 23:44:58,620 - ERROR - Training failed. Please check the error message above.

@@ -1,4 +1,6 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""   # force CPU
+
 from pathlib import Path
 import pandas as pd
 import torch
@@ -8,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Any
 import gc
 
-from .llm.untuned import UntunedLLM
+from .llm.tuned import TunedLLM
 from .llm.labels import get_all_labels
 
 # Get project root directory
@@ -33,17 +35,21 @@ def process_batch_predictions(args):
                     # For multi-class genre task
                     model_pred = model_pred_raw  # Already a string like 'direct', 'news', etc.
                     
-                    # Convert ground truth (numerical) to string using label dictionary
-                    if pd.notna(ground_truth_raw) and isinstance(ground_truth_raw, (int, float)):
-                        ground_truth_int = int(ground_truth_raw)
-                        if ground_truth_int in label_dict:
-                            ground_truth = label_dict[ground_truth_int]
+                    # Handle ground truth which is a string in the CSV ('direct', 'news', 'social media')
+                    if pd.notna(ground_truth_raw):
+                        if isinstance(ground_truth_raw, (int, float)):
+                            # If it's a numeric value, convert to string using label dictionary
+                            ground_truth_int = int(ground_truth_raw)
+                            if ground_truth_int in label_dict:
+                                ground_truth = label_dict[ground_truth_int]
+                            else:
+                                print(f"Warning: Unknown genre label {ground_truth_int}, using raw value")
+                                ground_truth = str(ground_truth_raw)
                         else:
-                            print(f"Warning: Unknown genre label {ground_truth_int}, using raw value")
-                            ground_truth = str(ground_truth_raw)
+                            # It's already a string from the CSV, use it directly
+                            ground_truth = str(ground_truth_raw).strip().lower()
                     else:
-                        # Handle string ground truth if any
-                        ground_truth = str(ground_truth_raw).strip().lower() if pd.notna(ground_truth_raw) else None
+                        ground_truth = None
                 
                 elif task == 'related':
                     # For related task with text labels (no/yes/maybe)
@@ -134,8 +140,8 @@ def main():
     }
     
     print("Loading model...")
-    model = UntunedLLM(
-        model_name='spencercdz/roberta-twitter-sentiment',
+    model = TunedLLM(
+        model_name='spencercdz/xlm-roberta-twitter-sentiment',
         model_config=model_config
     )
     
@@ -145,7 +151,7 @@ def main():
     
     # Read only necessary columns
     label_mappings = get_all_labels()
-    required_columns = ['message'] + list(label_mappings.keys())
+    required_columns = ['message'] + [key for key in label_mappings.keys() if key != 'sentiment']
     test_data = pd.read_csv(test_data_path, usecols=required_columns)
     print("\nTest data columns:", list(test_data.columns))
     
