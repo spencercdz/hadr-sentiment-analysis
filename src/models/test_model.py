@@ -141,7 +141,7 @@ def main():
     
     print("Loading model...")
     model = TunedLLM(
-        model_name='spencercdz/xlm-roberta-twitter-sentiment',
+        model_name='spencercdz/xlm-roberta-twitter-disaster',
         model_config=model_config
     )
     

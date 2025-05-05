@@ -4,13 +4,11 @@ HADR Agent - LangGraph-based agent for HADR sentiment analysis and report genera
 import os
 import sys
 import json
-import csv
 import pandas as pd
-import numpy as np
 import logging
 import gc
 from pathlib import Path
-from typing import Dict, List, Any, TypedDict, Annotated, Union
+from typing import Dict, List, Any, TypedDict
 import traceback
 from datetime import datetime, timedelta
 from langchain_community.llms import Ollama
@@ -33,12 +31,12 @@ models_dir = project_root / "src" / "models"
 sys.path.append(str(project_root))
 sys.path.append(str(models_dir))
 
-# Import Untuned LLM class
+# Import Tuned LLM class
 llm_dir = project_root / "src" / "models" / "llm"
 sys.path.append(str(llm_dir))
 
 # Import directly with full path to avoid custom class registry issues
-from models.llm.untuned import UntunedLLM
+from models.llm.tuned import TunedLLM
 
 # Import sentiment analysis packages for Twitter sentiment analysis
 try:
@@ -57,7 +55,7 @@ except ImportError:
         return {}
 
 # Import the build_report module
-import build_report
+from .tools.build_report import generate_report
 
 # Configure logging
 logging.basicConfig(
@@ -148,7 +146,7 @@ def init_sentiment_model():
         }
 
         # Load model
-        model_name = "spencercdz/roberta-twitter-sentiment"
+        model_name = "spencercdz/xlm-roberta-twitter-disaster"
         print(f"Loading model {model_name} for sentiment analysis with optimized settings")
 
         # Initialize PyTorch properly before creating model
@@ -163,8 +161,8 @@ def init_sentiment_model():
             logger.info("CUDA available: Enabling performance optimizations")
         
         # Create model with proper initialization
-        model = UntunedLLM(
-            model_name='spencercdz/roberta-twitter-sentiment',
+        model = TunedLLM(
+            model_name=model_name,
             model_config=model_config
         )
         
@@ -1796,7 +1794,7 @@ def create_report_file(report_data: Dict[str, Any], query: str, disaster_info: D
         pdf_file_path = OUTPUTS_DIR / pdf_file_name
         
         # Generate PDF report
-        output_path = build_report.generate_report(
+        output_path = generate_report(
             json_file_path=str(json_file_path),
             output_pdf_path=str(pdf_file_path)
         )

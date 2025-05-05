@@ -104,18 +104,24 @@ class TunedLLM(BaseLLM):
         self.project_root = Path(__file__).resolve().parent.parent.parent.parent
         
         # Get configuration values - optimize batch size based on GPU memory
-        if torch.cuda.is_available():
-            # Get GPU memory in MB
-            gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024 * 1024)
-            # Adjust batch size based on available memory
-            if gpu_memory < 8000:  # Less than 8GB
-                default_batch = 8
-            elif gpu_memory < 12000:  # Less than 12GB
-                default_batch = 16
-            else:  # 12GB or more
-                default_batch = 32
+        if torch.cuda.is_available() and torch.cuda.device_count() > 0:
+            try:
+                # Get GPU memory in MB
+                gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024 * 1024)
+                # Adjust batch size based on available memory
+                if gpu_memory < 8000:  # Less than 8GB
+                    default_batch = 8
+                elif gpu_memory < 12000:  # Less than 12GB
+                    default_batch = 16
+                else:  # 12GB or more
+                    default_batch = 32
+                print(f"Using GPU with {gpu_memory:.2f} MB memory")
+            except (AssertionError, RuntimeError) as e:
+                print(f"CUDA is available but device access failed: {e}")
+                default_batch = 8  # Conservative default
         else:
             default_batch = 8  # Conservative default for CPU
+            print("Using CPU for model training/inference")
             
         self.batch_size = model_config.get('batch_size', default_batch)
         self.preprocessing_config = model_config.get('preprocessing', {})
@@ -868,7 +874,7 @@ class TunedLLM(BaseLLM):
             def multi_head_compute_loss(model, inputs, return_outputs=False):
                 labels = inputs.pop("labels")                      # shape [batch, total_labels]
                 task_losses = []
-                all_outputs = None
+                all_logits = []
 
                 # for each task, run the model with that head and compute its loss
                 for task_idx, task in enumerate(self.training_tasks):
@@ -878,8 +884,7 @@ class TunedLLM(BaseLLM):
                     # run only that head
                     outputs = model(**inputs, task=task, return_dict=True)
                     logits = outputs.logits                          # shape [batch, num_classes]
-                    if all_outputs is None:
-                        all_outputs = outputs
+                    all_logits.append(logits)
 
                     # figure out which slice of the big label vector belongs to this task
                     start = sum(len(all_labels_defs[t]) for t in self.training_tasks[:task_idx])
@@ -906,6 +911,15 @@ class TunedLLM(BaseLLM):
                     loss = torch.stack(task_losses).mean()
                 else:
                     loss = torch.tensor(0.0, device=model.device)
+                
+                # Concatenate all logits for evaluation
+                if all_logits:
+                    combined_logits = torch.cat(all_logits, dim=1)
+                    # Create a SequenceClassifierOutput with the combined logits
+                    from transformers.modeling_outputs import SequenceClassifierOutput
+                    all_outputs = SequenceClassifierOutput(logits=combined_logits)
+                else:
+                    all_outputs = None
 
                 return (loss, all_outputs) if return_outputs else loss
 
@@ -919,15 +933,26 @@ class TunedLLM(BaseLLM):
                 metrics = {}
                 offset = 0
 
-                for task in self.available_tasks:              # ← only these
+                # Debug information
+                print(f"Computing metrics for tasks: {self.training_tasks}")
+                print(f"Logits shape: {logits.shape}, Labels shape: {labels.shape}")
+
+                # Use training_tasks instead of available_tasks to match the order of logits
+                for task in self.training_tasks:              
+                    if task not in self.model.heads:
+                        continue
+                        
                     n_classes = len(all_labels_defs[task])
                     task_logits = logits[:, offset:offset + n_classes]
                     task_labels = labels[:, offset:offset + n_classes]
                     offset += n_classes
 
                     if task_logits.shape[1] == 0:               # nothing to score
+                        print(f"Skipping {task} - no logits available")
                         continue
 
+                    print(f"Computing metrics for {task} - classes: {n_classes}, logits shape: {task_logits.shape}")
+                    
                     if n_classes > 2:
                         preds = np.argmax(task_logits, axis=1)
                         truth = np.argmax(task_labels, axis=1)
@@ -939,7 +964,10 @@ class TunedLLM(BaseLLM):
                         truth = task_labels.reshape(-1).astype(int)
                         metrics[f"{task}_acc"] = accuracy_score(truth, preds)
                         metrics[f"{task}_f1"]  = f1_score(truth, preds)
+                    
+                    print(f"Added metrics for {task}: acc={metrics[f'{task}_acc']:.4f}, f1={metrics[f'{task}_f1']:.4f}")
 
+                print(f"Final metrics: {metrics}")
                 return metrics
 
             # Create the trainer with our custom loss handling and optimized settings

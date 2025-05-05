@@ -1,0 +1,6 @@
+# Ignore the entire models and logs directory
+models/
+logs/
+
+# Ignore environments
+.env

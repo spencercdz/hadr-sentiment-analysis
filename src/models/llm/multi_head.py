@@ -86,7 +86,7 @@ class MultiHeadXLMRoberta(nn.Module):
         task=None
     ):
         # 1) Backbone forward - optimize memory usage
-        with torch.amp.autocast('amp', enabled=True):
+        with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
             backbone_outputs = self.backbone(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
