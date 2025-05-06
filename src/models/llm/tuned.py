@@ -25,7 +25,8 @@ from transformers import (
     EarlyStoppingCallback,
     DataCollatorWithPadding,
     AutoConfig,
-    EvalPrediction
+    EvalPrediction,
+    TrainerCallback
 )
 from sklearn.metrics import accuracy_score, f1_score
 from concurrent.futures import ThreadPoolExecutor
@@ -738,9 +739,19 @@ class TunedLLM(BaseLLM):
             total_steps = steps_per_epoch * self.training_config.get('epochs', 50)
             warmup_steps = int(total_steps * self.training_config.get('warmup_ratio', 0.1))
             
+            # Create checkpoint directory structure
+            model_dir = self.project_root / 'models' / 'tuned' / self.model_name
+            os.makedirs(model_dir, exist_ok=True)
+            
+            # Create a unique output directory for this training run
+            from datetime import datetime
+            run_timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+            output_dir = model_dir / f"run-{run_timestamp}"
+            os.makedirs(output_dir, exist_ok=True)
+            
             # Optimize training arguments for better performance
             training_args = TrainingArguments(
-                output_dir=str(self.project_root / 'models' / 'tuned' / self.model_name),
+                output_dir=str(output_dir),
                 num_train_epochs=self.training_config.get('epochs', 50),
                 per_device_train_batch_size=self.batch_size,
                 per_device_eval_batch_size=self.batch_size,
@@ -752,7 +763,7 @@ class TunedLLM(BaseLLM):
                 eval_steps=self.training_config.get('eval_steps', 100),
                 save_strategy="steps",
                 save_steps=self.training_config.get('save_steps', 100),
-                save_total_limit=self.training_config.get('save_total_limit', 2),
+                save_total_limit=self.training_config.get('save_total_limit', 5),  # Keep more checkpoints
                 load_best_model_at_end=True,
                 metric_for_best_model="eval_loss",
                 greater_is_better=False,
@@ -970,6 +981,34 @@ class TunedLLM(BaseLLM):
                 print(f"Final metrics: {metrics}")
                 return metrics
 
+            # Create a custom callback to properly save checkpoints
+            class SaveMultiHeadModelCallback(TrainerCallback):
+                def __init__(self, model, tokenizer, metadata_func, save_metadata_func):
+                    self.model = model
+                    self.tokenizer = tokenizer
+                    self.metadata_func = metadata_func
+                    self.save_metadata_func = save_metadata_func
+                    
+                def on_save(self, args, state, control, **kwargs):
+                    # Get the checkpoint directory
+                    checkpoint_dir = os.path.join(args.output_dir, f"checkpoint-{state.global_step}")
+                    
+                    # If the model is MultiHeadXLMRoberta, use its save_pretrained method
+                    if isinstance(self.model, MultiHeadXLMRoberta):
+                        # Save the model with all necessary files
+                        self.model.save_pretrained(checkpoint_dir)
+                        
+                        # Save the tokenizer
+                        self.tokenizer.save_pretrained(checkpoint_dir)
+                        
+                        # Save metadata
+                        metadata = self.metadata_func()
+                        self.save_metadata_func(metadata, checkpoint_dir)
+                        
+                        print(f"Saved complete checkpoint to {checkpoint_dir} with config and weights")
+                    
+                    return control
+            
             # Create the trainer with our custom loss handling and optimized settings
             trainer = CustomTrainer(
                 model=self.model,
@@ -983,9 +1022,17 @@ class TunedLLM(BaseLLM):
                 task_weights=task_weights,
                 available_tasks=self.available_tasks,
                 all_labels=all_labels_defs,
-                callbacks=[EarlyStoppingCallback(
-                    early_stopping_patience=self.training_config.get('early_stopping_patience', 5)
-                )]
+                callbacks=[
+                    EarlyStoppingCallback(
+                        early_stopping_patience=self.training_config.get('early_stopping_patience', 5)
+                    ),
+                    SaveMultiHeadModelCallback(
+                        model=self.model,
+                        tokenizer=self.tokenizer,
+                        metadata_func=self.get_model_info,
+                        save_metadata_func=save_metadata
+                    )
+                ]
             )
             
             # Clear memory before training
@@ -993,9 +1040,34 @@ class TunedLLM(BaseLLM):
             
             trainer.train()
             
+            # Save the final model after training
+            # This ensures all necessary files (config.json, pytorch_model.bin, etc.) are saved
             model_save_path = self.project_root / 'models' / 'tuned' / self.model_name
-            trainer.save_model(str(model_save_path))
+            os.makedirs(model_save_path, exist_ok=True)
+            
+            # Get the best model from training
+            if training_args.load_best_model_at_end:
+                print(f"Using best model from training")
+            else:
+                print(f"Using final model from training")
+                
+            # Save the model using MultiHeadXLMRoberta's save_pretrained method
+            # This ensures all necessary files are saved properly
+            if isinstance(self.model, MultiHeadXLMRoberta):
+                print(f"Saving MultiHeadXLMRoberta model to {model_save_path}")
+                self.model.save_pretrained(model_save_path)
+            else:
+                print(f"Saving standard model to {model_save_path}")
+                trainer.save_model(str(model_save_path))
+                
+            # Save the tokenizer
             self.tokenizer.save_pretrained(str(model_save_path))
+            
+            # Save metadata
+            metadata = self.get_model_info()
+            save_metadata(metadata, model_save_path)
+            
+            print(f"Model successfully saved to {model_save_path} with full configuration and weights")
             
             eval_results = trainer.evaluate()
             print("\nEvaluation Results:")
@@ -1618,10 +1690,25 @@ class TunedLLM(BaseLLM):
         if save_path is None:
             save_path = self.project_root / 'models' / 'tuned' / self.model_name
         
-        self.model.save_pretrained(save_path)
+        # Create directory if it doesn't exist
+        os.makedirs(save_path, exist_ok=True)
+        
+        # Save the model using the appropriate method
+        if isinstance(self.model, MultiHeadXLMRoberta):
+            print(f"Saving MultiHeadXLMRoberta model to {save_path}")
+            self.model.save_pretrained(save_path)
+        else:
+            print(f"Saving standard model to {save_path}")
+            self.model.save_pretrained(save_path)
+        
+        # Save the tokenizer
         self.tokenizer.save_pretrained(save_path)
+        
+        # Save metadata
         metadata = self.get_model_info()
         save_metadata(metadata, save_path)
+        
+        print(f"Model successfully saved to {save_path} with full configuration and weights")
         
     @classmethod
     def load_from_disk(cls, path: str) -> 'TunedLLM':
@@ -1630,15 +1717,66 @@ class TunedLLM(BaseLLM):
         Args:
             path: Path to load the model from.
         """
-        with open(Path(path) / 'metadata.json', 'r') as f:
-            import json
-            metadata = json.load(f)
+        path_obj = Path(path)
+        metadata_path = path_obj / 'metadata.json'
         
+        # Load metadata if it exists
+        if metadata_path.exists():
+            with open(metadata_path, 'r') as f:
+                import json
+                metadata = json.load(f)
+            model_config = metadata.get('model_config', {})
+        else:
+            print(f"Warning: No metadata.json found at {metadata_path}. Using default configuration.")
+            model_config = {}
+        
+        # Check if this is a MultiHeadXLMRoberta model by looking for task_labels.json
+        task_labels_path = path_obj / 'task_labels.json'
+        is_multi_head = task_labels_path.exists() or (path_obj / 'config.json').exists()
+        
+        # Create the instance
         instance = cls(
             model_name=path,
-            model_config=metadata.get('model_config', {}),
+            model_config=model_config,
         )
-        return instance 
+        
+        # If it's a MultiHeadXLMRoberta model, load it using from_pretrained
+        if is_multi_head:
+            print(f"Loading MultiHeadXLMRoberta model from {path}")
+            try:
+                # Load task labels if available
+                if task_labels_path.exists():
+                    with open(task_labels_path, 'r') as f:
+                        task_labels = json.load(f)
+                else:
+                    # Try to extract from config.json
+                    config_path = path_obj / 'config.json'
+                    if config_path.exists():
+                        with open(config_path, 'r') as f:
+                            config = json.load(f)
+                            task_labels = config.get('task_labels', None)
+                    else:
+                        task_labels = None
+                
+                # Load the model using MultiHeadXLMRoberta's from_pretrained
+                instance.model = MultiHeadXLMRoberta.from_pretrained(
+                    path, 
+                    task_labels=task_labels,
+                    freeze_backbone=instance.training_config.get('freeze_backbone', True)
+                )
+                
+                # Load the tokenizer
+                instance.tokenizer = AutoTokenizer.from_pretrained(path)
+                
+                # Update task heads
+                instance.task_heads = instance.model.heads
+                
+                print(f"Successfully loaded model with {len(instance.task_heads)} task heads")
+            except Exception as e:
+                print(f"Error loading MultiHeadXLMRoberta model: {str(e)}")
+                traceback.print_exc()
+        
+        return instance
 
     def get_model_info(self) -> Dict[str, Any]:
         """Get information about the model.

@@ -11,6 +11,7 @@ from typing import Dict, List, Any
 import gc
 
 from .llm.tuned import TunedLLM
+from .llm.untuned import UntunedLLM
 from .llm.labels import get_all_labels
 
 # Get project root directory
@@ -140,8 +141,8 @@ def main():
     }
     
     print("Loading model...")
-    model = TunedLLM(
-        model_name='spencercdz/xlm-roberta-twitter-disaster',
+    model = UntunedLLM(
+        model_name='spencercdz/xlm-roberta-twitter-disasters',
         model_config=model_config
     )
     

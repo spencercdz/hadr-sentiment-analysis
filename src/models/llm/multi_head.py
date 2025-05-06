@@ -201,41 +201,161 @@ class MultiHeadXLMRoberta(nn.Module):
         return super().to(device)
     
     def save_pretrained(self, save_path):
-        """Save the model to the specified path."""
-        # Save the backbone
-        self.backbone.save_pretrained(save_path)
+        """Save the model to the specified path.
         
-        # Save the heads
-        torch.save(self.heads.state_dict(), f"{save_path}/task_heads.pt")
+        This method saves the complete model state including all training weights and configuration,
+        ensuring full compatibility with Hugging Face's transformers library for checkpoint loading.
+        The saved model can be loaded with from_pretrained() to resume training or for inference.
+        """
+        import os
+        import json
+        
+        # Create the directory if it doesn't exist
+        os.makedirs(save_path, exist_ok=True)
+        
+        # Save the backbone configuration with additional model parameters
+        config = self.backbone.config.to_dict()
+        
+        # Add multi-head specific configuration
+        config["model_type"] = "multi_head_xlm_roberta"
+        config["backbone_model"] = self.model_name
+        config["task_labels"] = self.task_labels
+        config["is_multi_head"] = True
+        
+        # Save the enhanced config
+        with open(os.path.join(save_path, "config.json"), 'w') as f:
+            json.dump(config, f, indent=2)
+        
+        # Save the entire model state dict (backbone + heads) as pytorch_model.bin
+        # This ensures all training weights are preserved
+        torch.save(self.state_dict(), os.path.join(save_path, "pytorch_model.bin"))
+        
+        # Save the task heads separately for easier loading in our custom from_pretrained
+        torch.save(self.heads.state_dict(), os.path.join(save_path, "task_heads.pt"))
         
         # Save the task labels
-        import json
-        with open(f"{save_path}/task_labels.json", 'w') as f:
-            json.dump(self.task_labels, f)
+        with open(os.path.join(save_path, "task_labels.json"), 'w') as f:
+            json.dump(self.task_labels, f, indent=2)
+            
+        # Save comprehensive model architecture info with training details
+        model_info = {
+            "model_type": "multi_head_xlm_roberta",
+            "backbone_model": self.model_name,
+            "task_labels": self.task_labels,
+            "hidden_size": self.config.hidden_size,
+            "num_hidden_layers": self.config.num_hidden_layers,
+            "num_attention_heads": self.config.num_attention_heads,
+            "intermediate_size": self.config.intermediate_size if hasattr(self.config, "intermediate_size") else None,
+            "hidden_dropout_prob": self.config.hidden_dropout_prob,
+            "attention_probs_dropout_prob": self.config.attention_probs_dropout_prob if hasattr(self.config, "attention_probs_dropout_prob") else None,
+            "max_position_embeddings": self.config.max_position_embeddings if hasattr(self.config, "max_position_embeddings") else None,
+            "type_vocab_size": self.config.type_vocab_size if hasattr(self.config, "type_vocab_size") else None,
+            "initializer_range": self.config.initializer_range if hasattr(self.config, "initializer_range") else None,
+            "layer_norm_eps": self.config.layer_norm_eps if hasattr(self.config, "layer_norm_eps") else None,
+            "trainable_parameters": self.get_trainable_parameters()
+        }
+        with open(os.path.join(save_path, "model_info.json"), 'w') as f:
+            json.dump(model_info, f, indent=2)
+            
+        print(f"Model successfully saved to {save_path} with full weights and configuration")
     
     @classmethod
     def from_pretrained(cls, model_path, task_labels=None, freeze_backbone=True):
-        """Load a pretrained model from the specified path."""
-        # Load the backbone
-        backbone = AutoModel.from_pretrained(model_path)
-        config = backbone.config
+        """Load a pretrained model from the specified path.
         
-        # Load the task labels if not provided
+        This method loads a model saved with save_pretrained, handling both the enhanced format
+        (with complete model state and configuration) and the legacy format.
+        
+        Args:
+            model_path: Path to the saved model directory
+            task_labels: Dictionary mapping task names to number of labels (optional if saved in model)
+            freeze_backbone: Whether to freeze the backbone parameters
+            
+        Returns:
+            Loaded MultiHeadXLMRoberta model with complete training weights and configuration
+        """
+        import os
+        import json
+        
+        # First, try to load the task labels from the saved model
         if task_labels is None:
-            import json
             try:
-                with open(f"{model_path}/task_labels.json", 'r') as f:
-                    task_labels = json.load(f)
-            except FileNotFoundError:
-                raise ValueError("task_labels must be provided if not found in the model path")
+                # Try to load from task_labels.json first (preferred)
+                task_labels_path = os.path.join(model_path, "task_labels.json")
+                if os.path.exists(task_labels_path):
+                    with open(task_labels_path, 'r') as f:
+                        task_labels = json.load(f)
+                        print(f"Loaded task labels from {task_labels_path}")
+                # If not found, try to load from config.json
+                else:
+                    config_path = os.path.join(model_path, "config.json")
+                    if os.path.exists(config_path):
+                        with open(config_path, 'r') as f:
+                            config = json.load(f)
+                            if "task_labels" in config:
+                                task_labels = config["task_labels"]
+                                print(f"Loaded task labels from config.json")
+            except Exception as e:
+                print(f"Error loading task labels: {str(e)}")
+                if task_labels is None:
+                    raise ValueError("task_labels must be provided if not found in the model path")
         
-        # Create the model
-        model = cls(model_path, task_labels, freeze_backbone)
-        
-        # Load the heads
+        # Determine backbone model name
+        backbone_model = model_path
         try:
-            model.heads.load_state_dict(torch.load(f"{model_path}/task_heads.pt"))
-        except FileNotFoundError:
-            print("No task heads found in the model path. Using newly initialized heads.")
+            # Try to get backbone model name from model_info.json
+            model_info_path = os.path.join(model_path, "model_info.json")
+            if os.path.exists(model_info_path):
+                with open(model_info_path, 'r') as f:
+                    model_info = json.load(f)
+                    if "backbone_model" in model_info:
+                        backbone_model = model_info["backbone_model"]
+                        print(f"Using backbone model: {backbone_model}")
+            # If not found, try config.json
+            elif os.path.exists(os.path.join(model_path, "config.json")):
+                with open(os.path.join(model_path, "config.json"), 'r') as f:
+                    config = json.load(f)
+                    if "backbone_model" in config:
+                        backbone_model = config["backbone_model"]
+                        print(f"Using backbone model from config: {backbone_model}")
+        except Exception as e:
+            print(f"Warning: Could not determine backbone model, using model_path: {str(e)}")
         
+        # Create a new instance of the model
+        model = cls(backbone_model, task_labels, freeze_backbone)
+        
+        # Try to load the full model state dict (preferred method)
+        pytorch_model_path = os.path.join(model_path, "pytorch_model.bin")
+        if os.path.exists(pytorch_model_path):
+            try:
+                # Load the full state dict
+                state_dict = torch.load(pytorch_model_path, map_location="cpu")
+                model.load_state_dict(state_dict, strict=False)
+                print(f"Successfully loaded complete model state from {pytorch_model_path}")
+            except Exception as e:
+                print(f"Warning: Could not load full model state: {str(e)}")
+                print("Falling back to loading components separately...")
+                
+                # Try to load task heads separately
+                try:
+                    task_heads_path = os.path.join(model_path, "task_heads.pt")
+                    if os.path.exists(task_heads_path):
+                        model.heads.load_state_dict(torch.load(task_heads_path, map_location="cpu"))
+                        print(f"Successfully loaded task heads from {task_heads_path}")
+                except Exception as e:
+                    print(f"Warning: Could not load task heads: {str(e)}")
+        else:
+            print(f"Warning: pytorch_model.bin not found at {pytorch_model_path}")
+            print("Loading components separately...")
+            
+            # Try to load task heads separately
+            try:
+                task_heads_path = os.path.join(model_path, "task_heads.pt")
+                if os.path.exists(task_heads_path):
+                    model.heads.load_state_dict(torch.load(task_heads_path, map_location="cpu"))
+                    print(f"Successfully loaded task heads from {task_heads_path}")
+            except Exception as e:
+                print(f"Warning: Could not load task heads: {str(e)}")
+        
+        print(f"Model loaded with {len(model.task_labels)} tasks and {model.get_trainable_parameters():,} trainable parameters")
         return model

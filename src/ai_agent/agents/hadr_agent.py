@@ -146,7 +146,7 @@ def init_sentiment_model():
         }
 
         # Load model
-        model_name = "spencercdz/xlm-roberta-twitter-disaster"
+        model_name = "spencercdz/xlm-roberta-twitter-disasters"
         print(f"Loading model {model_name} for sentiment analysis with optimized settings")
 
         # Initialize PyTorch properly before creating model
