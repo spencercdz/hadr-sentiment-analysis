@@ -197,7 +197,8 @@ class TunedLLM(BaseLLM):
         """Load the pre-trained model and tokenizer, create multi-head architecture.
         
         Uses the MultiHeadXLMRoberta architecture with a frozen backbone and separate
-        classification heads for each task.
+        classification heads for each task. Ensures proper registration with Hugging Face's
+        Auto classes for API compatibility.
         """
         try:
             # Calculate number of labels for each task
@@ -215,6 +216,33 @@ class TunedLLM(BaseLLM):
             
             # Create the multi-head model
             print(f"Creating MultiHeadXLMRoberta model with frozen backbone: {freeze_backbone}")
+            
+            # Import and call the enhanced model registration function to ensure proper registration with Hugging Face
+            try:
+                from .model_registration import ensure_model_registered, MultiHeadXLMRobertaConfig
+                # Ensure the model is registered with Hugging Face's Auto classes
+                if ensure_model_registered():
+                    print("Successfully registered MultiHeadXLMRoberta with Hugging Face's Auto classes")
+                
+                # Use the registered configuration class for better compatibility
+                config = MultiHeadXLMRobertaConfig(
+                    backbone_model=base_model_name,
+                    task_labels=self.task_label_counts,
+                    freeze_backbone=freeze_backbone
+                )
+            except Exception as e:
+                print(f"Warning: Could not register model with Auto classes: {str(e)}")
+                print("Model may not be compatible with Hugging Face API requests")
+                # Fall back to standard config
+                config = AutoConfig.from_pretrained(base_model_name)
+                config.model_type = "multi_head_xlm_roberta"
+                config.architectures = ["MultiHeadXLMRoberta"]
+                config.task_labels = self.task_label_counts
+                config.backbone_model = base_model_name
+                config.freeze_backbone = freeze_backbone
+                
+            # Config is now initialized in the try/except block above
+            
             self.model = MultiHeadXLMRoberta(
                 model_name=base_model_name,
                 task_labels=self.task_label_counts,
@@ -727,17 +755,17 @@ class TunedLLM(BaseLLM):
         return tokenized
     
     def train(self):
-        """Train the model with improved training configuration."""
+        """Train the model with improved training configuration.
+        
+        Implements sequential training of each task head with early stopping for each task.
+        This ensures that each head is fully trained before moving to the next one.
+        """
         try:
             # Clear GPU cache before loading data
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
                 
             train_dataset, validation_dataset, class_weights = self.load_data()
-            
-            steps_per_epoch = len(train_dataset) // self.batch_size
-            total_steps = steps_per_epoch * self.training_config.get('epochs', 50)
-            warmup_steps = int(total_steps * self.training_config.get('warmup_ratio', 0.1))
             
             # Create checkpoint directory structure
             model_dir = self.project_root / 'models' / 'tuned' / self.model_name
@@ -749,37 +777,10 @@ class TunedLLM(BaseLLM):
             output_dir = model_dir / f"run-{run_timestamp}"
             os.makedirs(output_dir, exist_ok=True)
             
-            # Optimize training arguments for better performance
-            training_args = TrainingArguments(
-                output_dir=str(output_dir),
-                num_train_epochs=self.training_config.get('epochs', 50),
-                per_device_train_batch_size=self.batch_size,
-                per_device_eval_batch_size=self.batch_size,
-                warmup_steps=warmup_steps,
-                weight_decay=self.training_config.get('weight_decay', 0.01),
-                logging_dir=str(self.project_root / 'logs'),
-                logging_steps=self.training_config.get('logging_steps', 10),
-                eval_strategy="steps",
-                eval_steps=self.training_config.get('eval_steps', 100),
-                save_strategy="steps",
-                save_steps=self.training_config.get('save_steps', 100),
-                save_total_limit=self.training_config.get('save_total_limit', 5),  # Keep more checkpoints
-                load_best_model_at_end=True,
-                metric_for_best_model="eval_loss",
-                greater_is_better=False,
-                fp16=self.training_config.get('fp16', torch.cuda.is_available()),
-                gradient_accumulation_steps=self.training_config.get('gradient_accumulation_steps', 4),
-                learning_rate=self.training_config.get('learning_rate', 2e-5),
-                dataloader_num_workers=2,  # Use multiprocessing for data loading
-                dataloader_pin_memory=True,  # Speed up data transfer to GPU
-                optim="adamw_torch",  # Use PyTorch's AdamW implementation
-            )
-            
             # Data collator for padding
             data_collator = DataCollatorWithPadding(
                 tokenizer=self.tokenizer,
                 padding=True, # For now pad to the largest text in the batch
-                #max_length=self.preprocessing_config.get('max_length', 128),
                 pad_to_multiple_of=8 if self.training_config.get('fp16', True) else None
             )
             
@@ -806,133 +807,227 @@ class TunedLLM(BaseLLM):
                 if task not in task_weights:
                     task_weights[task] = 1.0
             
-            class CustomTrainer(Trainer):
-                def __init__(self, *args, focal_loss=None, task_weights=None, available_tasks=None, all_labels=None, **kwargs):
+            # Define a custom trainer for single-task training
+            class SingleTaskTrainer(Trainer):
+                def __init__(self, *args, task=None, task_idx=0, focal_loss=None, all_labels_defs=None, **kwargs):
+                    self.task = task
+                    self.task_idx = task_idx
                     self.focal_loss = focal_loss
-                    self.task_weights = task_weights or {}
-                    self.available_tasks = available_tasks or []
-                    self.all_labels = all_labels or {}
+                    self.all_labels_defs = all_labels_defs or {}
+                    
+                    # Handle the tokenizer to processing_class conversion for future compatibility
+                    if 'tokenizer' in kwargs and 'processing_class' not in kwargs:
+                        kwargs['processing_class'] = kwargs.pop('tokenizer')
+                        
                     super().__init__(*args, **kwargs)
                 
-                def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-                    if isinstance(model, MultiHeadXLMRoberta):
-                        return multi_head_compute_loss(model, inputs, return_outputs)
-                    else:
-                        labels = inputs.pop("labels")
-                        outputs = model(**inputs, return_dict=True)
-                        
-                        # Handle different output formats from the model
-                        if isinstance(outputs, dict):
-                            # MultiHeadXLMRoberta returns a dictionary of task outputs
-                            # We need to combine the logits from all tasks
-                            logits = []
-                            for task_name, task_logits in outputs.items():
-                                logits.append(task_logits)
-                            # Concatenate all logits along the last dimension
-                            if logits:
-                                logits = torch.cat(logits, dim=1)
+                def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+                    # Extract the full labels tensor
+                    full_labels = inputs.pop("labels")  # shape [batch, total_labels]
+                    
+                    # Calculate the start and end indices for this task's labels
+                    start_idx = sum(len(self.all_labels_defs[t]) for t in training_tasks[:self.task_idx])
+                    end_idx = start_idx + len(self.all_labels_defs[self.task])
+                    
+                    # Extract just this task's labels
+                    task_labels = full_labels[:, start_idx:end_idx]
+                    
+                    # Run the model with only this task
+                    outputs = model(**inputs, task=self.task, return_dict=True)
+                    logits = outputs.logits  # shape [batch, num_classes]
+                    
+                    num_classes = len(self.all_labels_defs[self.task])
+                    
+                    # Handle binary vs multi-class tasks differently
+                    if num_classes == 2:
+                        # For binary classification tasks (0/1 mapping to no/yes)
+                        # Use either focal loss or BCE loss depending on the task
+                        if self.task in ['request', 'offer', 'aid_related', 'direct_report']:
+                            # These tasks are typically imbalanced, so use focal loss
+                            if self.focal_loss is not None:
+                                loss = self.focal_loss(logits, task_labels)
                             else:
-                                raise ValueError("No task outputs found in model output dictionary")
+                                loss = torch.nn.functional.binary_cross_entropy_with_logits(logits, task_labels)
                         else:
-                            # Standard model returns an object with logits attribute
-                            logits = outputs.logits
-                        
-                        # Check if logits are 3D and reshape if needed
-                        if len(logits.shape) == 3:
-                            # If output is [batch_size, sequence_length, num_classes]
-                            # We'll use the first token's output (similar to CLS token)
-                            logits = logits[:, 0, :]
-                        
-                        if self.focal_loss is not None and self.available_tasks and self.all_labels:
-                            # Apply multi-task loss with task-specific weighting
-                            task_losses = []
-                            current_idx = 0
-                            
-                            for task in self.available_tasks:
-                                task_labels = self.all_labels[task]
-                                num_classes = len(task_labels)
-                                
-                                # Extract task-specific logits and labels
-                                task_logits = logits[:, current_idx:current_idx + num_classes]
-                                task_labels_tensor = labels[:, current_idx:current_idx + num_classes]
-                                
-                                # Get task-specific weighting
-                                task_weight = self.task_weights.get(task, 1.0)
-                                
-                                # Use focal loss for heavily imbalanced binary tasks
-                                if num_classes == 2 and task in ['request', 'offer', 'aid_related', 'direct_report']:
-                                    task_loss = self.focal_loss(task_logits, task_labels_tensor)
-                                else:
-                                    # Use standard BCE loss for other tasks
-                                    loss_fct = torch.nn.functional.binary_cross_entropy_with_logits(
-                                        task_logits, task_labels_tensor, reduction='mean'
-                                    )
-                                    task_loss = loss_fct
-                                
-                                # Apply task weighting
-                                task_losses.append(task_loss * task_weight)
-                                current_idx += num_classes
-                            
-                            # Combine losses across all tasks
-                            loss = torch.mean(torch.stack(task_losses))
-                        else:
-                            # Fallback to standard BCE loss if task info not available
-                            loss = torch.nn.functional.binary_cross_entropy_with_logits(logits, labels)
-                        
-                        return (loss, outputs) if return_outputs else loss
-            
-            # Create a custom compute_loss function for MultiHeadXLMRoberta
-            def multi_head_compute_loss(model, inputs, return_outputs=False):
-                labels = inputs.pop("labels")                      # shape [batch, total_labels]
-                task_losses = []
-                all_logits = []
-
-                # for each task, run the model with that head and compute its loss
-                for task_idx, task in enumerate(self.training_tasks):
-                    if task not in model.heads:
-                        continue
-
-                    # run only that head
-                    outputs = model(**inputs, task=task, return_dict=True)
-                    logits = outputs.logits                          # shape [batch, num_classes]
-                    all_logits.append(logits)
-
-                    # figure out which slice of the big label vector belongs to this task
-                    start = sum(len(all_labels_defs[t]) for t in self.training_tasks[:task_idx])
-                    end   = start + len(all_labels_defs[task])
-                    label_slice = labels[:, start:end]               # one‐hot
-
-                    num_classes = end - start
-                    weight      = task_weights.get(task, 1.0)
-
-                    if num_classes > 2:
-                        # multi‐class: CE on the full logits
-                        target = torch.argmax(label_slice, dim=1)   # shape [batch]
-                        loss_fct = torch.nn.CrossEntropyLoss()
-                        task_loss = loss_fct(logits, target)
+                            # For other binary tasks, use standard BCE loss
+                            loss = torch.nn.functional.binary_cross_entropy_with_logits(logits, task_labels)
                     else:
-                        # binary as 2-way classification: CE on 2-logits
-                        target = torch.argmax(label_slice, dim=1)   # shape [batch]
+                        # For multi-class tasks, use CrossEntropyLoss with argmax target
+                        target = torch.argmax(task_labels, dim=1)  # Convert one-hot to class indices
                         loss_fct = torch.nn.CrossEntropyLoss()
-                        task_loss = loss_fct(logits, target)
-
-                    task_losses.append(weight * task_loss)
-
-                if task_losses:
-                    loss = torch.stack(task_losses).mean()
-                else:
-                    loss = torch.tensor(0.0, device=model.device)
+                        loss = loss_fct(logits, target)
+                    
+                    return (loss, outputs) if return_outputs else loss
+            
+            # Function to compute metrics for a single task
+            def compute_single_task_metrics(eval_pred, task, task_idx, all_labels_defs):
+                logits, labels = eval_pred.predictions, eval_pred.label_ids
                 
-                # Concatenate all logits for evaluation
-                if all_logits:
-                    combined_logits = torch.cat(all_logits, dim=1)
-                    # Create a SequenceClassifierOutput with the combined logits
-                    from transformers.modeling_outputs import SequenceClassifierOutput
-                    all_outputs = SequenceClassifierOutput(logits=combined_logits)
+                # If the model returned a tuple (loss, logits), grab logits[0]
+                if isinstance(logits, tuple):
+                    logits = logits[0]
+                
+                # Calculate the start and end indices for this task's labels
+                start_idx = sum(len(all_labels_defs[t]) for t in training_tasks[:task_idx])
+                end_idx = start_idx + len(all_labels_defs[task])
+                
+                # Extract just this task's labels
+                task_labels = labels[:, start_idx:end_idx]
+                
+                # Get the label mapping for this task
+                label_mapping = all_labels_defs[task]
+                num_classes = len(label_mapping)
+                
+                metrics = {}
+                
+                # For binary classification
+                if num_classes == 2:
+                    # Convert logits to predictions (0 or 1)
+                    preds = (torch.sigmoid(torch.tensor(logits)) > 0.5).int().numpy()
+                    
+                    # Calculate metrics
+                    accuracy = accuracy_score(task_labels, preds)
+                    f1 = f1_score(task_labels, preds, average='weighted')
+                    
+                    # Map 0/1 to no/yes for reporting
+                    label_names = list(label_mapping.values())
+                    if len(label_names) == 2:
+                        print(f"Task {task} binary mapping: 0 -> {label_names[0]}, 1 -> {label_names[1]}")
+                    
+                    # Add metrics with both regular and eval_ prefix to ensure compatibility
+                    metrics[f"{task}_accuracy"] = accuracy
+                    metrics[f"{task}_f1"] = f1
+                    metrics[f"eval_{task}_accuracy"] = accuracy
+                    metrics[f"eval_{task}_f1"] = f1
                 else:
-                    all_outputs = None
-
-                return (loss, all_outputs) if return_outputs else loss
+                    # For multi-class, convert one-hot labels to class indices
+                    label_indices = np.argmax(task_labels, axis=1)
+                    pred_indices = np.argmax(logits, axis=1)
+                    
+                    # Calculate metrics
+                    accuracy = accuracy_score(label_indices, pred_indices)
+                    f1 = f1_score(label_indices, pred_indices, average='weighted')
+                    
+                    # Add metrics with both regular and eval_ prefix to ensure compatibility
+                    metrics[f"{task}_accuracy"] = accuracy
+                    metrics[f"{task}_f1"] = f1
+                    metrics[f"eval_{task}_accuracy"] = accuracy
+                    metrics[f"eval_{task}_f1"] = f1
+                
+                return metrics
+            
+            # Train each task head sequentially
+            print(f"Starting sequential training of {len(training_tasks)} task heads")
+            
+            for task_idx, task in enumerate(training_tasks):
+                print(f"\n{'='*50}\nTraining task {task_idx+1}/{len(training_tasks)}: {task}\n{'='*50}")
+                
+                # Skip if this task is not in the model heads
+                if task not in self.model.heads:
+                    print(f"Task {task} not found in model heads, skipping...")
+                    continue
+                
+                # Configure task-specific training arguments
+                steps_per_epoch = len(train_dataset) // self.batch_size
+                task_epochs = self.training_config.get('epochs_per_task', self.training_config.get('epochs', 20))
+                total_steps = steps_per_epoch * task_epochs
+                warmup_steps = int(total_steps * self.training_config.get('warmup_ratio', 0.1))
+                
+                # Create a task-specific output directory
+                task_output_dir = output_dir / task
+                os.makedirs(task_output_dir, exist_ok=True)
+                
+                # Configure training arguments for this task
+                task_training_args = TrainingArguments(
+                    output_dir=str(task_output_dir),
+                    num_train_epochs=task_epochs,
+                    per_device_train_batch_size=self.batch_size,
+                    per_device_eval_batch_size=self.batch_size,
+                    warmup_steps=warmup_steps,
+                    weight_decay=self.training_config.get('weight_decay', 0.01),
+                    logging_dir=str(self.project_root / 'logs'),
+                    logging_steps=self.training_config.get('logging_steps', 10),
+                    eval_strategy="steps",
+                    eval_steps=self.training_config.get('eval_steps', 100),
+                    save_strategy="steps",
+                    save_steps=self.training_config.get('save_steps', 100),
+                    save_total_limit=3,  # Keep fewer checkpoints per task
+                    load_best_model_at_end=True,
+                    metric_for_best_model=f"eval_{task}_f1",  # Use task-specific F1 score with eval_ prefix
+                    greater_is_better=True,  # Higher F1 is better
+                    fp16=self.training_config.get('fp16', torch.cuda.is_available()),
+                    gradient_accumulation_steps=self.training_config.get('gradient_accumulation_steps', 4),
+                    learning_rate=self.training_config.get('learning_rate', 2e-5),
+                    dataloader_num_workers=2,
+                    dataloader_pin_memory=True,
+                    optim="adamw_torch",
+                )
+                
+                # Create a compute_metrics function specific to this task
+                task_compute_metrics = lambda eval_pred: compute_single_task_metrics(
+                    eval_pred, task, task_idx, all_labels_defs
+                )
+                
+                # Create a trainer for this specific task
+                task_trainer = SingleTaskTrainer(
+                    model=self.model,
+                    args=task_training_args,
+                    train_dataset=train_dataset,
+                    eval_dataset=validation_dataset,
+                    processing_class=self.tokenizer,  # Use processing_class instead of tokenizer
+                    data_collator=data_collator,
+                    compute_metrics=task_compute_metrics,
+                    task=task,
+                    task_idx=task_idx,
+                    focal_loss=focal_loss_fn,
+                    all_labels_defs=all_labels_defs,
+                    callbacks=[EarlyStoppingCallback(
+                        early_stopping_patience=self.training_config.get('early_stopping_patience', 5),
+                        early_stopping_threshold=self.training_config.get('early_stopping_threshold', 0.01)
+                    )]
+                )
+                
+                # Train this task head
+                train_result = task_trainer.train()
+                
+                # Save the best model for this task
+                task_trainer.save_model(str(task_output_dir / "best"))
+                
+                # Log and save metrics
+                metrics = train_result.metrics
+                task_trainer.log_metrics("train", metrics)
+                task_trainer.save_metrics("train", metrics)
+                
+                # Run a final evaluation
+                eval_metrics = task_trainer.evaluate()
+                task_trainer.log_metrics("eval", eval_metrics)
+                task_trainer.save_metrics("eval", eval_metrics)
+                
+                # Clear GPU cache after training each task
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                
+                print(f"Completed training for task: {task}")
+                print(f"Final evaluation metrics: {eval_metrics}")
+            
+            # Save the final model with all heads trained
+            final_model_path = output_dir / "final_model"
+            os.makedirs(final_model_path, exist_ok=True)
+            self.model.save_pretrained(final_model_path)
+            self.tokenizer.save_pretrained(final_model_path)
+            
+            # Save metadata about the training process
+            metadata = {
+                "model_name": self.model_name,
+                "training_tasks": self.training_tasks,
+                "batch_size": self.batch_size,
+                "training_config": self.training_config,
+                "timestamp": run_timestamp,
+            }
+            save_metadata(metadata, final_model_path / "training_metadata.json")
+            
+            print(f"\nTraining completed successfully. Model saved to {final_model_path}")
+            return str(final_model_path)
 
             def compute_metrics(eval_pred: EvalPrediction):
                 logits, labels = eval_pred.predictions, eval_pred.label_ids
@@ -983,11 +1078,12 @@ class TunedLLM(BaseLLM):
 
             # Create a custom callback to properly save checkpoints
             class SaveMultiHeadModelCallback(TrainerCallback):
-                def __init__(self, model, tokenizer, metadata_func, save_metadata_func):
+                def __init__(self, model, tokenizer, metadata_func, save_metadata_func, tuned_llm_instance=None):
                     self.model = model
                     self.tokenizer = tokenizer
                     self.metadata_func = metadata_func
                     self.save_metadata_func = save_metadata_func
+                    self.tuned_llm_instance = tuned_llm_instance
                     
                 def on_save(self, args, state, control, **kwargs):
                     # Get the checkpoint directory
@@ -995,17 +1091,57 @@ class TunedLLM(BaseLLM):
                     
                     # If the model is MultiHeadXLMRoberta, use its save_pretrained method
                     if isinstance(self.model, MultiHeadXLMRoberta):
-                        # Save the model with all necessary files
-                        self.model.save_pretrained(checkpoint_dir)
+                        # Store optimizer and scheduler states if available
+                        if hasattr(kwargs, 'optimizer') and kwargs['optimizer'] is not None:
+                            self.model.optimizer_state = kwargs['optimizer'].state_dict()
                         
-                        # Save the tokenizer
-                        self.tokenizer.save_pretrained(checkpoint_dir)
+                        if hasattr(kwargs, 'scheduler') and kwargs['scheduler'] is not None:
+                            self.model.scheduler_state = kwargs['scheduler'].state_dict()
                         
-                        # Save metadata
+                        # Try to use enhanced model registration for saving
+                        try:
+                            from .model_registration import register_multi_head_model, save_model_with_auto_registration
+                            # Register the model with Auto classes
+                            register_multi_head_model()
+                            
+                            # Save the model with Auto class registration
+                            save_model_with_auto_registration(self.model, checkpoint_dir, self.tokenizer)
+                            print(f"Checkpoint saved with Auto class registration at {checkpoint_dir}")
+                        except Exception as e:
+                            print(f"Warning: Could not save with Auto registration: {str(e)}")
+                            # Fall back to standard save_pretrained
+                            self.model.save_pretrained(checkpoint_dir)
+                            # Save the tokenizer with all necessary files
+                            self.tokenizer.save_pretrained(checkpoint_dir)
+                        
+                        # Save metadata with training information
                         metadata = self.metadata_func()
+                        # Add current training state information
+                        metadata['training_state'] = {
+                            'global_step': state.global_step,
+                            'epoch': state.epoch,
+                            'max_steps': state.max_steps,
+                            'best_metric': state.best_metric if hasattr(state, 'best_metric') else None,
+                            'best_model_checkpoint': state.best_model_checkpoint if hasattr(state, 'best_model_checkpoint') else None,
+                        }
+                        # Add information about backbone freezing state
+                        metadata['backbone_frozen'] = not any(p.requires_grad for p in self.model.backbone.parameters())
+                        metadata['trainable_parameters'] = self.model.get_trainable_parameters()
+                        metadata['total_parameters'] = sum(p.numel() for p in self.model.parameters())
                         self.save_metadata_func(metadata, checkpoint_dir)
                         
-                        print(f"Saved complete checkpoint to {checkpoint_dir} with config and weights")
+                        # Save complete training state if TunedLLM instance is available
+                        if self.tuned_llm_instance is not None:
+                            # Create a training_state subdirectory in the checkpoint directory
+                            training_state_dir = os.path.join(checkpoint_dir, 'training_state')
+                            # Save the complete training state (optimizer, scheduler, RNG states, etc.)
+                            trainer = kwargs.get('trainer', None)
+                            if trainer is not None:
+                                self.tuned_llm_instance.save_training_state(trainer, training_state_dir)
+                            else:
+                                print("Warning: Trainer not available in kwargs, cannot save complete training state")
+                        
+                        print(f"Saved complete checkpoint to {checkpoint_dir} with config, weights, and training state")
                     
                     return control
             
@@ -1030,7 +1166,8 @@ class TunedLLM(BaseLLM):
                         model=self.model,
                         tokenizer=self.tokenizer,
                         metadata_func=self.get_model_info,
-                        save_metadata_func=save_metadata
+                        save_metadata_func=save_metadata,
+                        tuned_llm_instance=self  # Pass the TunedLLM instance for complete checkpoint saving
                     )
                 ]
             )
@@ -1051,20 +1188,40 @@ class TunedLLM(BaseLLM):
             else:
                 print(f"Using final model from training")
                 
-            # Save the model using MultiHeadXLMRoberta's save_pretrained method
-            # This ensures all necessary files are saved properly
+            # Import the model registration module
+            try:
+                from .model_registration import register_multi_head_model, save_model_with_auto_registration
+                # Register the model with Auto classes
+                register_multi_head_model()
+            except ImportError as e:
+                print(f"Warning: Could not import model_registration module: {str(e)}")
+                
+            # Save the model using enhanced registration if available
             if isinstance(self.model, MultiHeadXLMRoberta):
                 print(f"Saving MultiHeadXLMRoberta model to {model_save_path}")
-                self.model.save_pretrained(model_save_path)
+                try:
+                    # Try to use the enhanced registration method
+                    save_model_with_auto_registration(self.model, str(model_save_path), self.tokenizer)
+                    print(f"Model saved with Auto class registration")
+                except Exception as e:
+                    print(f"Warning: Could not save with Auto registration: {str(e)}")
+                    # Fall back to standard save_pretrained
+                    self.model.save_pretrained(model_save_path)
+                    # Save the tokenizer
+                    self.tokenizer.save_pretrained(str(model_save_path))
             else:
                 print(f"Saving standard model to {model_save_path}")
                 trainer.save_model(str(model_save_path))
-                
-            # Save the tokenizer
-            self.tokenizer.save_pretrained(str(model_save_path))
+                # Save the tokenizer
+                self.tokenizer.save_pretrained(str(model_save_path))
             
             # Save metadata
             metadata = self.get_model_info()
+            # Add information about backbone freezing state
+            if isinstance(self.model, MultiHeadXLMRoberta):
+                metadata['backbone_frozen'] = not any(p.requires_grad for p in self.model.backbone.parameters())
+                metadata['trainable_parameters'] = self.model.get_trainable_parameters()
+                metadata['total_parameters'] = sum(p.numel() for p in self.model.parameters())
             save_metadata(metadata, model_save_path)
             
             print(f"Model successfully saved to {model_save_path} with full configuration and weights")
@@ -1238,13 +1395,24 @@ class TunedLLM(BaseLLM):
                         # Process each example in the batch
                         for i in range(len(texts)):
                             # For binary tasks, we have yes/no predictions
+                            # Map 0/1 to no/yes explicitly
+                            label_names = list(task_labels.values())
+                            if len(label_names) == 2:
+                                # If we have explicit label names, use them
+                                no_label = label_names[0]  # 0 index maps to 'no'
+                                yes_label = label_names[1]  # 1 index maps to 'yes'
+                            else:
+                                # Default to standard yes/no
+                                no_label = 'no'
+                                yes_label = 'yes'
+                                
                             scores = {
-                                'no': 1.0 - float(probs[i][0]),
-                                'yes': float(probs[i][0])
+                                no_label: 1.0 - float(probs[i][0]),
+                                yes_label: float(probs[i][0])
                             }
                             
                             # Get prediction based on threshold
-                            prediction = 'yes' if scores['yes'] > 0.5 else 'no'
+                            prediction = yes_label if scores[yes_label] > 0.5 else no_label
                             
                             # Store prediction and scores
                             batch_predictions[i][task] = {
@@ -1314,8 +1482,20 @@ class TunedLLM(BaseLLM):
                     else:
                         # Binary classification
                         prob = torch.sigmoid(task_logits[0]).item()
-                        scores = {'no': 1.0 - prob, 'yes': prob}
-                        prediction = 'yes' if prob > 0.5 else 'no'
+                        
+                        # Map 0/1 to no/yes explicitly
+                        label_names = list(task_labels.values())
+                        if len(label_names) == 2:
+                            # If we have explicit label names, use them
+                            no_label = label_names[0]  # 0 index maps to 'no'
+                            yes_label = label_names[1]  # 1 index maps to 'yes'
+                        else:
+                            # Default to standard yes/no
+                            no_label = 'no'
+                            yes_label = 'yes'
+                            
+                        scores = {no_label: 1.0 - prob, yes_label: prob}
+                        prediction = yes_label if prob > 0.5 else no_label
                     
                     # Store prediction and scores
                     task_predictions[task] = {
@@ -1682,10 +1862,17 @@ class TunedLLM(BaseLLM):
         return class_weights
     
     def save(self, save_path: str = None) -> None:
-        """Save the model to the specified path.
+        """Save the model to the specified path with all components for a complete checkpoint.
+        
+        This method ensures that all necessary components are saved for a complete checkpoint,
+        including model weights, configuration, tokenizer, and training state information.
+        The saved model can be loaded for inference or to resume training from this exact point.
         
         Args:
             save_path: Path to save the model.
+            
+        Returns:
+            Path where the model was saved
         """
         if save_path is None:
             save_path = self.project_root / 'models' / 'tuned' / self.model_name
@@ -1693,22 +1880,71 @@ class TunedLLM(BaseLLM):
         # Create directory if it doesn't exist
         os.makedirs(save_path, exist_ok=True)
         
+        # Ensure model is properly registered with Hugging Face's Auto classes before saving
+        try:
+            from .model_registration import register_multi_head_model
+            # Register the model with Hugging Face's Auto classes
+            register_multi_head_model()
+            print("Ensured MultiHeadXLMRoberta is registered with Hugging Face's Auto classes")
+        except Exception as e:
+            print(f"Warning: Could not register model with Auto classes: {str(e)}")
+            
         # Save the model using the appropriate method
         if isinstance(self.model, MultiHeadXLMRoberta):
             print(f"Saving MultiHeadXLMRoberta model to {save_path}")
+            
+            # Create/update config.json with required fields for Hugging Face compatibility
+            config = self.model.config.to_dict() if hasattr(self.model, 'config') else {}
+            config["model_type"] = "multi_head_xlm_roberta"  # Critical for Auto classes
+            config["architectures"] = ["MultiHeadXLMRoberta"]  # Required for Auto classes
+            config["backbone_model"] = self.model.model_name if hasattr(self.model, 'model_name') else self.model_name
+            config["task_labels"] = self.task_label_counts
+            config["is_multi_head"] = True
+            
+            # Save the enhanced config
+            import json
+            import os
+            with open(os.path.join(save_path, "config.json"), 'w') as f:
+                json.dump(config, f, indent=2)
+                
+            # Save the model with its save_pretrained method
             self.model.save_pretrained(save_path)
+            
+            # Create a special file that indicates this is a MultiHeadXLMRoberta model
+            # This helps with auto-detection when loading the model via Hugging Face API
+            with open(os.path.join(save_path, "multi_head_model.txt"), 'w') as f:
+                f.write("This is a MultiHeadXLMRoberta model for HADR sentiment analysis.\n")
+                f.write(f"Backbone model: {self.model_name}\n")
+                f.write(f"Tasks: {', '.join(self.task_label_counts.keys())}\n")
         else:
             print(f"Saving standard model to {save_path}")
             self.model.save_pretrained(save_path)
         
-        # Save the tokenizer
+        # Save the tokenizer with all necessary files (vocabulary, special tokens, etc.)
         self.tokenizer.save_pretrained(save_path)
         
-        # Save metadata
+        # Save comprehensive metadata with model information
         metadata = self.get_model_info()
+        
+        # Add training configuration to metadata
+        metadata['training_config'] = self.training_config
+        metadata['preprocessing_config'] = self.preprocessing_config
+        metadata['data_augmentation_config'] = self.data_augmentation_config
+        
+        # Add task information
+        metadata['task_label_counts'] = self.task_label_counts
+        metadata['available_tasks'] = self.available_tasks
+        
+        # Save the metadata
         save_metadata(metadata, save_path)
         
-        print(f"Model successfully saved to {save_path} with full configuration and weights")
+        # Save task label information separately for easier access
+        with open(os.path.join(save_path, "task_labels.json"), 'w') as f:
+            import json
+            json.dump(self.task_label_counts, f, indent=2)
+        
+        print(f"Model successfully saved to {save_path} with complete checkpoint information")
+        return save_path
         
     @classmethod
     def load_from_disk(cls, path: str) -> 'TunedLLM':
@@ -1730,9 +1966,10 @@ class TunedLLM(BaseLLM):
             print(f"Warning: No metadata.json found at {metadata_path}. Using default configuration.")
             model_config = {}
         
-        # Check if this is a MultiHeadXLMRoberta model by looking for task_labels.json
+        # Check if this is a MultiHeadXLMRoberta model by looking for task_labels.json or multi_head_model.txt
         task_labels_path = path_obj / 'task_labels.json'
-        is_multi_head = task_labels_path.exists() or (path_obj / 'config.json').exists()
+        multi_head_marker = path_obj / 'multi_head_model.txt'
+        is_multi_head = task_labels_path.exists() or multi_head_marker.exists() or (path_obj / 'config.json').exists()
         
         # Create the instance
         instance = cls(
@@ -1744,6 +1981,14 @@ class TunedLLM(BaseLLM):
         if is_multi_head:
             print(f"Loading MultiHeadXLMRoberta model from {path}")
             try:
+                # Try to import the model registration module
+                try:
+                    from .model_registration import register_multi_head_model, load_model_with_auto_registration
+                    # Register the model with Auto classes
+                    register_multi_head_model()
+                except ImportError as e:
+                    print(f"Warning: Could not import model_registration module: {str(e)}")
+                
                 # Load task labels if available
                 if task_labels_path.exists():
                     with open(task_labels_path, 'r') as f:
@@ -1758,12 +2003,39 @@ class TunedLLM(BaseLLM):
                     else:
                         task_labels = None
                 
-                # Load the model using MultiHeadXLMRoberta's from_pretrained
-                instance.model = MultiHeadXLMRoberta.from_pretrained(
-                    path, 
-                    task_labels=task_labels,
-                    freeze_backbone=instance.training_config.get('freeze_backbone', True)
-                )
+                # Determine if backbone should be frozen from training config or metadata
+                freeze_backbone = instance.training_config.get('freeze_backbone', True)
+                
+                # Check if metadata has backbone_frozen information
+                if metadata and 'backbone_frozen' in metadata:
+                    freeze_backbone = metadata['backbone_frozen']
+                    print(f"Using backbone_frozen={freeze_backbone} from metadata")
+                
+                # Try to use the enhanced loading method if available
+                try:
+                    if 'load_model_with_auto_registration' in locals():
+                        instance.model = load_model_with_auto_registration(
+                            path,
+                            task_labels=task_labels,
+                            freeze_backbone=freeze_backbone
+                        )
+                        print(f"Loaded model using Auto registration")
+                    else:
+                        # Fall back to standard from_pretrained
+                        instance.model = MultiHeadXLMRoberta.from_pretrained(
+                            path, 
+                            task_labels=task_labels,
+                            freeze_backbone=freeze_backbone
+                        )
+                        print(f"Loaded model using standard from_pretrained")
+                except Exception as e:
+                    print(f"Warning: Enhanced loading failed, falling back to standard method: {str(e)}")
+                    # Fall back to standard from_pretrained
+                    instance.model = MultiHeadXLMRoberta.from_pretrained(
+                        path, 
+                        task_labels=task_labels,
+                        freeze_backbone=freeze_backbone
+                    )
                 
                 # Load the tokenizer
                 instance.tokenizer = AutoTokenizer.from_pretrained(path)
@@ -1771,7 +2043,12 @@ class TunedLLM(BaseLLM):
                 # Update task heads
                 instance.task_heads = instance.model.heads
                 
+                # Update instance with backbone freezing information
+                instance.training_config['freeze_backbone'] = freeze_backbone
+                
                 print(f"Successfully loaded model with {len(instance.task_heads)} task heads")
+                print(f"Backbone frozen: {freeze_backbone}")
+                print(f"Trainable parameters: {instance.model.get_trainable_parameters():,}")
             except Exception as e:
                 print(f"Error loading MultiHeadXLMRoberta model: {str(e)}")
                 traceback.print_exc()
@@ -1793,5 +2070,116 @@ class TunedLLM(BaseLLM):
             },
             'device': str(self.device),
             'tasks': self.all_tasks,
-            'available_tasks': self.available_tasks
+            'available_tasks': self.available_tasks,
+            'task_label_counts': self.task_label_counts,
+            'num_labels': self.num_labels if hasattr(self, 'num_labels') else None
         }
+        
+    def save_training_state(self, trainer, save_path: str = None):
+        """Save the current training state for resuming training later.
+        
+        This method saves the optimizer state, scheduler state, and other training
+        information needed to resume training from this exact point.
+        
+        Args:
+            trainer: The Trainer object with current training state
+            save_path: Path to save the training state. If None, use the model path.
+            
+        Returns:
+            Path where the training state was saved
+        """
+        if save_path is None:
+            save_path = self.project_root / 'models' / 'tuned' / self.model_name / 'training_state'
+            
+        os.makedirs(save_path, exist_ok=True)
+        
+        # Save optimizer state
+        if hasattr(trainer, 'optimizer') and trainer.optimizer is not None:
+            torch.save(trainer.optimizer.state_dict(), os.path.join(save_path, 'optimizer.pt'))
+            
+        # Save scheduler state
+        if hasattr(trainer, 'lr_scheduler') and trainer.lr_scheduler is not None:
+            torch.save(trainer.lr_scheduler.state_dict(), os.path.join(save_path, 'scheduler.pt'))
+            
+        # Save RNG states for reproducibility
+        rng_states = {
+            'python': random.getstate(),
+            'numpy': np.random.get_state(),
+            'torch': torch.get_rng_state(),
+        }
+        if torch.cuda.is_available():
+            rng_states['cuda'] = torch.cuda.get_rng_state_all()
+            
+        torch.save(rng_states, os.path.join(save_path, 'rng_states.pt'))
+        
+        # Save training arguments and state
+        if hasattr(trainer, 'args'):
+            trainer.args.save_to_json(os.path.join(save_path, 'training_args.json'))
+            
+        if hasattr(trainer, 'state'):
+            with open(os.path.join(save_path, 'trainer_state.json'), 'w') as f:
+                import json
+                json.dump(trainer.state.__dict__, f, indent=2)
+                
+        print(f"Training state successfully saved to {save_path}")
+        return save_path
+        
+    def load_training_state(self, trainer, load_path: str = None):
+        """Load a previously saved training state to resume training.
+        
+        Args:
+            trainer: The Trainer object to update with loaded state
+            load_path: Path to load the training state from. If None, use the model path.
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if load_path is None:
+            load_path = self.project_root / 'models' / 'tuned' / self.model_name / 'training_state'
+            
+        if not os.path.exists(load_path):
+            print(f"No training state found at {load_path}")
+            return False
+            
+        try:
+            # Load optimizer state
+            optimizer_path = os.path.join(load_path, 'optimizer.pt')
+            if os.path.exists(optimizer_path) and hasattr(trainer, 'optimizer'):
+                trainer.optimizer.load_state_dict(torch.load(optimizer_path, map_location=self.device))
+                print("Loaded optimizer state")
+                
+            # Load scheduler state
+            scheduler_path = os.path.join(load_path, 'scheduler.pt')
+            if os.path.exists(scheduler_path) and hasattr(trainer, 'lr_scheduler'):
+                trainer.lr_scheduler.load_state_dict(torch.load(scheduler_path))
+                print("Loaded learning rate scheduler state")
+                
+            # Load RNG states
+            rng_path = os.path.join(load_path, 'rng_states.pt')
+            if os.path.exists(rng_path):
+                rng_states = torch.load(rng_path)
+                random.setstate(rng_states['python'])
+                np.random.set_state(rng_states['numpy'])
+                torch.set_rng_state(rng_states['torch'])
+                if torch.cuda.is_available() and 'cuda' in rng_states:
+                    torch.cuda.set_rng_state_all(rng_states['cuda'])
+                print("Loaded random number generator states")
+                
+            # Load trainer state
+            state_path = os.path.join(load_path, 'trainer_state.json')
+            if os.path.exists(state_path) and hasattr(trainer, 'state'):
+                with open(state_path, 'r') as f:
+                    import json
+                    state_dict = json.load(f)
+                    for key, value in state_dict.items():
+                        setattr(trainer.state, key, value)
+                print("Loaded trainer state")
+                
+            print(f"Successfully loaded training state from {load_path}")
+            return True
+            
+        except Exception as e:
+            print(f"Error loading training state: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return False

@@ -346,7 +346,7 @@ def main():
                 'early_stopping_patience': 2,  # Stop earlier if not improving
                 'freeze_backbone': True  # Keep backbone frozen to reduce trainable parameters
             },
-            'batch_size': 8,  # Reduced from 32 for GTX 1060 6GB
+            'batch_size': 32,  # Reduced from 32 for GTX 1060 6GB
             'class_weights': True,
             'data_augmentation': {
                 'enabled': True,  # Disable data augmentation to speed up training
