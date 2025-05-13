@@ -809,11 +809,12 @@ class TunedLLM(BaseLLM):
             
             # Define a custom trainer for single-task training
             class SingleTaskTrainer(Trainer):
-                def __init__(self, *args, task=None, task_idx=0, focal_loss=None, all_labels_defs=None, **kwargs):
+                def __init__(self, *args, task=None, task_idx=0, focal_loss=None, all_labels_defs=None, class_weights_dict=None, **kwargs):
                     self.task = task
                     self.task_idx = task_idx
                     self.focal_loss = focal_loss
                     self.all_labels_defs = all_labels_defs or {}
+                    self.class_weights_dict = class_weights_dict or {}
                     
                     # Handle the tokenizer to processing_class conversion for future compatibility
                     if 'tokenizer' in kwargs and 'processing_class' not in kwargs:
@@ -829,33 +830,30 @@ class TunedLLM(BaseLLM):
                     start_idx = sum(len(self.all_labels_defs[t]) for t in training_tasks[:self.task_idx])
                     end_idx = start_idx + len(self.all_labels_defs[self.task])
                     
-                    # Extract just this task's labels
-                    task_labels = full_labels[:, start_idx:end_idx]
+                    # Extract just this task's labels (one-hot)
+                    task_one_hot_labels = full_labels[:, start_idx:end_idx]
+                    
+                    # Convert one-hot labels to class indices
+                    target_indices = torch.argmax(task_one_hot_labels, dim=1)
                     
                     # Run the model with only this task
                     outputs = model(**inputs, task=self.task, return_dict=True)
-                    logits = outputs.logits  # shape [batch, num_classes]
+                    logits = outputs.logits  # shape [batch, num_classes_for_task]
                     
-                    num_classes = len(self.all_labels_defs[self.task])
+                    # Determine if FocalLoss should be used for this task
+                    use_focal_loss = self.task in ['request', 'offer', 'aid_related', 'direct_report'] and self.focal_loss is not None
                     
-                    # Handle binary vs multi-class tasks differently
-                    if num_classes == 2:
-                        # For binary classification tasks (0/1 mapping to no/yes)
-                        # Use either focal loss or BCE loss depending on the task
-                        if self.task in ['request', 'offer', 'aid_related', 'direct_report']:
-                            # These tasks are typically imbalanced, so use focal loss
-                            if self.focal_loss is not None:
-                                loss = self.focal_loss(logits, task_labels)
-                            else:
-                                loss = torch.nn.functional.binary_cross_entropy_with_logits(logits, task_labels)
-                        else:
-                            # For other binary tasks, use standard BCE loss
-                            loss = torch.nn.functional.binary_cross_entropy_with_logits(logits, task_labels)
+                    if use_focal_loss:
+                        # FocalLoss expects class indices as targets
+                        loss = self.focal_loss(logits, target_indices)
                     else:
-                        # For multi-class tasks, use CrossEntropyLoss with argmax target
-                        target = torch.argmax(task_labels, dim=1)  # Convert one-hot to class indices
-                        loss_fct = torch.nn.CrossEntropyLoss()
-                        loss = loss_fct(logits, target)
+                        # Use CrossEntropyLoss with class weights for other tasks
+                        task_class_weights = self.class_weights_dict.get(self.task)
+                        current_device = logits.device
+                        weights_on_device = task_class_weights.to(current_device) if task_class_weights is not None else None
+                        
+                        loss_fct = torch.nn.CrossEntropyLoss(weight=weights_on_device)
+                        loss = loss_fct(logits, target_indices)
                     
                     return (loss, outputs) if return_outputs else loss
             
@@ -871,8 +869,13 @@ class TunedLLM(BaseLLM):
                 start_idx = sum(len(all_labels_defs[t]) for t in training_tasks[:task_idx])
                 end_idx = start_idx + len(all_labels_defs[task])
                 
-                # Extract just this task's labels
-                task_labels = labels[:, start_idx:end_idx]
+                # Extract just this task's labels (one-hot)
+                task_one_hot_labels = labels[:, start_idx:end_idx]
+                
+                # Convert one-hot labels to class indices
+                label_indices = np.argmax(task_one_hot_labels, axis=1)
+                # Convert logits to predicted class indices
+                pred_indices = np.argmax(logits, axis=1)
                 
                 # Get the label mapping for this task
                 label_mapping = all_labels_defs[task]
@@ -880,64 +883,81 @@ class TunedLLM(BaseLLM):
                 
                 metrics = {}
                 
-                # For binary classification
-                if num_classes == 2:
-                    # Convert logits to predictions (0 or 1)
-                    preds = (torch.sigmoid(torch.tensor(logits)) > 0.5).int().numpy()
-                    
-                    # Calculate metrics
-                    accuracy = accuracy_score(task_labels, preds)
-                    f1 = f1_score(task_labels, preds, average='weighted')
-                    
-                    # Map 0/1 to no/yes for reporting
+                # Calculate metrics (unified for binary and multi-class)
+                accuracy = accuracy_score(label_indices, pred_indices)
+                # For binary tasks, 'weighted' f1 is fine, or can specify positive label if needed
+                f1_average_mode = 'binary' if num_classes == 2 and 1 in label_indices else 'weighted'
+                if num_classes == 2 and f1_average_mode == 'binary':
+                    # Ensure pos_label is correctly identified if not always 1
+                    # This assumes the positive class is encoded as 1 after argmax
+                    f1 = f1_score(label_indices, pred_indices, average='binary', pos_label=1, zero_division=0)
+                else:
+                    f1 = f1_score(label_indices, pred_indices, average='weighted', zero_division=0)
+
+                if num_classes == 2: # Optional: print mapping for binary tasks
                     label_names = list(label_mapping.values())
                     if len(label_names) == 2:
-                        print(f"Task {task} binary mapping: 0 -> {label_names[0]}, 1 -> {label_names[1]}")
-                    
-                    # Add metrics with both regular and eval_ prefix to ensure compatibility
-                    metrics[f"{task}_accuracy"] = accuracy
-                    metrics[f"{task}_f1"] = f1
-                    metrics[f"eval_{task}_accuracy"] = accuracy
-                    metrics[f"eval_{task}_f1"] = f1
-                else:
-                    # For multi-class, convert one-hot labels to class indices
-                    label_indices = np.argmax(task_labels, axis=1)
-                    pred_indices = np.argmax(logits, axis=1)
-                    
-                    # Calculate metrics
-                    accuracy = accuracy_score(label_indices, pred_indices)
-                    f1 = f1_score(label_indices, pred_indices, average='weighted')
-                    
-                    # Add metrics with both regular and eval_ prefix to ensure compatibility
-                    metrics[f"{task}_accuracy"] = accuracy
-                    metrics[f"{task}_f1"] = f1
-                    metrics[f"eval_{task}_accuracy"] = accuracy
-                    metrics[f"eval_{task}_f1"] = f1
+                         # Assuming 0 and 1 are the class indices after argmax
+                        print(f"Task {task} binary mapping (indices): 0 -> {label_names[0]}, 1 -> {label_names[1]}")
+
+                # Add metrics with both regular and eval_ prefix to ensure compatibility
+                metrics[f"{task}_accuracy"] = accuracy
+                metrics[f"{task}_f1"] = f1
+                metrics[f"eval_{task}_accuracy"] = accuracy
+                metrics[f"eval_{task}_f1"] = f1
                 
                 return metrics
             
             # Train each task head sequentially
             print(f"Starting sequential training of {len(training_tasks)} task heads")
-            
+
+            # Learning rate and unfreezing schedule configurations
+            base_lr = self.training_config.get('learning_rate', 2e-5)
+            backbone_lr_factor = self.training_config.get('backbone_learning_rate_factor', 0.1) # Factor to multiply base_lr for backbone
+            backbone_lr = base_lr * backbone_lr_factor
+            unfreeze_incrementally = self.training_config.get('unfreeze_backbone_incrementally', False)
+            unfreeze_schedule_config = self.training_config.get('unfreeze_schedule', {})
+            initial_unfreeze_layers = unfreeze_schedule_config.get('initial_unfreeze_layers', 0)
+            layers_per_step = unfreeze_schedule_config.get('layers_per_step', 2)
+            tasks_per_step = unfreeze_schedule_config.get('tasks_per_step', 1) # Unfreeze after this many tasks
+
+            num_currently_unfrozen_layers = 0
+            if isinstance(self.model, MultiHeadXLMRoberta) and self.model.backbone is not None:
+                total_backbone_layers = len(self.model.backbone.encoder.layer) if hasattr(self.model.backbone, 'encoder') and hasattr(self.model.backbone.encoder, 'layer') else 12 # Default for RoBERTa-base
+            else:
+                total_backbone_layers = 12 # Default
+
+            # Initial unfreezing if configured
+            if unfreeze_incrementally and initial_unfreeze_layers > 0:
+                self.unfreeze_backbone_layers(min(initial_unfreeze_layers, total_backbone_layers))
+                num_currently_unfrozen_layers = min(initial_unfreeze_layers, total_backbone_layers)
+                print(f"Initially unfroze {num_currently_unfrozen_layers} backbone layers.")
+            elif not self.training_config.get('freeze_backbone', True): # If backbone is not frozen from the start
+                self.unfreeze_backbone_layers(None) # Unfreeze all
+                num_currently_unfrozen_layers = total_backbone_layers
+                print(f"Backbone initially unfrozen ({num_currently_unfrozen_layers} layers).")
+
+
             for task_idx, task in enumerate(training_tasks):
                 print(f"\n{'='*50}\nTraining task {task_idx+1}/{len(training_tasks)}: {task}\n{'='*50}")
                 
-                # Skip if this task is not in the model heads
                 if task not in self.model.heads:
                     print(f"Task {task} not found in model heads, skipping...")
                     continue
-                
-                # Configure task-specific training arguments
+
+                # Determine effective learning rate for this task
+                # Use backbone_lr if any backbone layers are unfrozen, otherwise base_lr for head-only training
+                effective_lr = backbone_lr if num_currently_unfrozen_layers > 0 else base_lr
+                print(f"Using learning rate: {effective_lr} for task {task} (Backbone LR: {backbone_lr}, Base LR: {base_lr}, Unfrozen Layers: {num_currently_unfrozen_layers})")
+
                 steps_per_epoch = len(train_dataset) // self.batch_size
                 task_epochs = self.training_config.get('epochs_per_task', self.training_config.get('epochs', 20))
                 total_steps = steps_per_epoch * task_epochs
                 warmup_steps = int(total_steps * self.training_config.get('warmup_ratio', 0.1))
                 
-                # Create a task-specific output directory
                 task_output_dir = output_dir / task
                 os.makedirs(task_output_dir, exist_ok=True)
                 
-                # Configure training arguments for this task
                 task_training_args = TrainingArguments(
                     output_dir=str(task_output_dir),
                     num_train_epochs=task_epochs,
@@ -951,66 +971,66 @@ class TunedLLM(BaseLLM):
                     eval_steps=self.training_config.get('eval_steps', 100),
                     save_strategy="steps",
                     save_steps=self.training_config.get('save_steps', 100),
-                    save_total_limit=3,  # Keep fewer checkpoints per task
+                    save_total_limit=3,
                     load_best_model_at_end=True,
-                    metric_for_best_model=f"eval_{task}_f1",  # Use task-specific F1 score with eval_ prefix
-                    greater_is_better=True,  # Higher F1 is better
+                    metric_for_best_model=f"eval_{task}_f1",
+                    greater_is_better=True,
                     fp16=self.training_config.get('fp16', torch.cuda.is_available()),
                     gradient_accumulation_steps=self.training_config.get('gradient_accumulation_steps', 4),
-                    learning_rate=self.training_config.get('learning_rate', 2e-5),
+                    learning_rate=effective_lr, # Use adjusted learning rate
                     dataloader_num_workers=2,
                     dataloader_pin_memory=True,
                     optim="adamw_torch",
                 )
                 
-                # Create a compute_metrics function specific to this task
                 task_compute_metrics = lambda eval_pred: compute_single_task_metrics(
                     eval_pred, task, task_idx, all_labels_defs
                 )
                 
-                # Create a trainer for this specific task
                 task_trainer = SingleTaskTrainer(
                     model=self.model,
                     args=task_training_args,
                     train_dataset=train_dataset,
                     eval_dataset=validation_dataset,
-                    processing_class=self.tokenizer,  # Use processing_class instead of tokenizer
+                    processing_class=self.tokenizer,
                     data_collator=data_collator,
                     compute_metrics=task_compute_metrics,
                     task=task,
                     task_idx=task_idx,
                     focal_loss=focal_loss_fn,
                     all_labels_defs=all_labels_defs,
+                    class_weights_dict=class_weights,
                     callbacks=[EarlyStoppingCallback(
                         early_stopping_patience=self.training_config.get('early_stopping_patience', 5),
                         early_stopping_threshold=self.training_config.get('early_stopping_threshold', 0.01)
                     )]
                 )
                 
-                # Train this task head
                 train_result = task_trainer.train()
-                
-                # Save the best model for this task
                 task_trainer.save_model(str(task_output_dir / "best"))
-                
-                # Log and save metrics
                 metrics = train_result.metrics
                 task_trainer.log_metrics("train", metrics)
                 task_trainer.save_metrics("train", metrics)
-                
-                # Run a final evaluation
                 eval_metrics = task_trainer.evaluate()
                 task_trainer.log_metrics("eval", eval_metrics)
                 task_trainer.save_metrics("eval", eval_metrics)
                 
-                # Clear GPU cache after training each task
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
                 
                 print(f"Completed training for task: {task}")
                 print(f"Final evaluation metrics: {eval_metrics}")
+
+                # Incremental unfreezing after this task is done
+                if unfreeze_incrementally and (task_idx + 1) % tasks_per_step == 0:
+                    if num_currently_unfrozen_layers < total_backbone_layers:
+                        num_to_unfreeze_now = num_currently_unfrozen_layers + layers_per_step
+                        self.unfreeze_backbone_layers(min(num_to_unfreeze_now, total_backbone_layers))
+                        num_currently_unfrozen_layers = min(num_to_unfreeze_now, total_backbone_layers)
+                        print(f"Unfrozen up to {num_currently_unfrozen_layers} backbone layers after task {task_idx + 1} ({task}).")
+                    else:
+                        print(f"All {total_backbone_layers} backbone layers already unfrozen.")
             
-            # Save the final model with all heads trained
             final_model_path = output_dir / "final_model"
             os.makedirs(final_model_path, exist_ok=True)
             self.model.save_pretrained(final_model_path)
@@ -1062,16 +1082,16 @@ class TunedLLM(BaseLLM):
                     if n_classes > 2:
                         preds = np.argmax(task_logits, axis=1)
                         truth = np.argmax(task_labels, axis=1)
-                        metrics[f"{task}_acc"] = accuracy_score(truth, preds)
-                        metrics[f"{task}_f1"]  = f1_score(truth, preds, average="weighted")
+                        metrics[f"eval_{task}_acc"] = accuracy_score(truth, preds)
+                        metrics[f"eval_{task}_f1"]  = f1_score(truth, preds, average="weighted")
                     else:
                         probs = torch.sigmoid(torch.from_numpy(task_logits)).numpy().reshape(-1)
                         preds = (probs > 0.5).astype(int)
                         truth = task_labels.reshape(-1).astype(int)
-                        metrics[f"{task}_acc"] = accuracy_score(truth, preds)
-                        metrics[f"{task}_f1"]  = f1_score(truth, preds)
+                        metrics[f"eval_{task}_acc"] = accuracy_score(truth, preds)
+                        metrics[f"eval_{task}_f1"]  = f1_score(truth, preds)
                     
-                    print(f"Added metrics for {task}: acc={metrics[f'{task}_acc']:.4f}, f1={metrics[f'{task}_f1']:.4f}")
+                    print(f"Added metrics for {task}: acc={metrics[f'eval_{task}_acc']:.4f}, f1={metrics[f'eval_{task}_f1']:.4f}")
 
                 print(f"Final metrics: {metrics}")
                 return metrics

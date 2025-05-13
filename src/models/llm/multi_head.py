@@ -201,273 +201,193 @@ class MultiHeadXLMRoberta(nn.Module):
         return super().to(device)
     
     def save_pretrained(self, save_path):
-        """Save the model to the specified path.
-        
-        This method saves the complete model state including all training weights and configuration,
-        ensuring full compatibility with Hugging Face's transformers library for checkpoint loading.
-        The saved model can be loaded with from_pretrained() to resume training or for inference.
-        
-        Saves all necessary components for a complete checkpoint:
-        - Full model state (backbone + heads)
-        - Task-specific heads separately
-        - Model configuration with task information
-        - Detailed model architecture information
-        - Training state information
+        """Save the model to the specified path as a single consolidated checkpoint file.
+
+        This method saves the model's configuration, state dictionary, and optionally
+        optimizer and scheduler states into a single 'model_checkpoint.pt' file.
+        This facilitates easier model sharing and sequential training by ensuring all
+        necessary components are bundled together.
+
+        Args:
+            save_path (str): Directory where the 'model_checkpoint.pt' file will be saved.
+
+        Returns:
+            str: The path to the saved checkpoint file.
         """
         import os
-        import json
-        import shutil
-        
-        # Create the directory if it doesn't exist
+        import torch
+        import json # Added import for json
+
         os.makedirs(save_path, exist_ok=True)
-        
-        # Save the backbone configuration with additional model parameters
+
+        # Prepare config dictionary
         config = self.backbone.config.to_dict()
-        
-        # Add multi-head specific configuration
-        config["model_type"] = "multi_head_xlm_roberta"  # Critical for Auto classes
-        config["architectures"] = ["MultiHeadXLMRoberta"]  # Required for Auto classes
+        config["model_type"] = "multi_head_xlm_roberta"
+        config["architectures"] = ["MultiHeadXLMRoberta"]
         config["backbone_model"] = self.model_name
         config["task_labels"] = self.task_labels
         config["is_multi_head"] = True
-        config["freeze_backbone"] = not any(p.requires_grad for p in self.backbone.parameters())
-        
-        # Save the enhanced config
+        config["freeze_backbone_at_save_time"] = not any(p.requires_grad for p in self.backbone.parameters())
+
+        # Data to save in the single checkpoint file
+        checkpoint_data = {
+            'config': config,
+            'model_state_dict': self.state_dict()
+        }
+
+        if hasattr(self, 'optimizer_state') and self.optimizer_state is not None:
+            checkpoint_data['optimizer_state_dict'] = self.optimizer_state
+        if hasattr(self, 'scheduler_state') and self.scheduler_state is not None:
+            checkpoint_data['scheduler_state_dict'] = self.scheduler_state
+
+        # Save the consolidated checkpoint
+        checkpoint_file_path = os.path.join(save_path, "model_checkpoint.pt")
+        torch.save(checkpoint_data, checkpoint_file_path)
+
+        # Save the config.json separately as well for Hugging Face compatibility / inspection
         with open(os.path.join(save_path, "config.json"), 'w') as f:
             json.dump(config, f, indent=2)
-        
-        # Save the entire model state dict (backbone + heads) as pytorch_model.bin
-        # This ensures all training weights are preserved
-        torch.save(self.state_dict(), os.path.join(save_path, "pytorch_model.bin"))
-        
-        # Save the backbone separately for easier inspection
-        torch.save(self.backbone.state_dict(), os.path.join(save_path, "backbone.pt"))
-        
-        # Save the task heads separately for easier loading in our custom from_pretrained
-        torch.save(self.heads.state_dict(), os.path.join(save_path, "task_heads.pt"))
-        
-        # Save the task labels
-        with open(os.path.join(save_path, "task_labels.json"), 'w') as f:
-            json.dump(self.task_labels, f, indent=2)
-        
-        # Save optimizer state if available (for resuming training)
-        if hasattr(self, 'optimizer_state'):
-            torch.save(self.optimizer_state, os.path.join(save_path, "optimizer.pt"))
-        
-        # Save scheduler state if available (for resuming training)
-        if hasattr(self, 'scheduler_state'):
-            torch.save(self.scheduler_state, os.path.join(save_path, "scheduler.pt"))
-            
-        # Save comprehensive model architecture info with training details
-        model_info = {
-            "model_type": "multi_head_xlm_roberta",
-            "backbone_model": self.model_name,
-            "task_labels": self.task_labels,
-            "hidden_size": self.config.hidden_size,
-            "num_hidden_layers": self.config.num_hidden_layers,
-            "num_attention_heads": self.config.num_attention_heads,
-            "intermediate_size": self.config.intermediate_size if hasattr(self.config, "intermediate_size") else None,
-            "hidden_dropout_prob": self.config.hidden_dropout_prob,
-            "attention_probs_dropout_prob": self.config.attention_probs_dropout_prob if hasattr(self.config, "attention_probs_dropout_prob") else None,
-            "max_position_embeddings": self.config.max_position_embeddings if hasattr(self.config, "max_position_embeddings") else None,
-            "type_vocab_size": self.config.type_vocab_size if hasattr(self.config, "type_vocab_size") else None,
-            "initializer_range": self.config.initializer_range if hasattr(self.config, "initializer_range") else None,
-            "layer_norm_eps": self.config.layer_norm_eps if hasattr(self.config, "layer_norm_eps") else None,
-            "trainable_parameters": self.get_trainable_parameters(),
-            "total_parameters": sum(p.numel() for p in self.parameters()),
-            "backbone_frozen": not any(p.requires_grad for p in self.backbone.parameters())
-        }
-        with open(os.path.join(save_path, "model_info.json"), 'w') as f:
-            json.dump(model_info, f, indent=2)
-        
-        # Create a special file that indicates this is a MultiHeadXLMRoberta model
-        # This helps with auto-detection when loading the model
-        with open(os.path.join(save_path, "multi_head_model.txt"), 'w') as f:
-            f.write("This is a MultiHeadXLMRoberta model for HADR sentiment analysis.\n")
-            f.write(f"Backbone model: {self.model_name}\n")
-            f.write(f"Tasks: {', '.join(self.task_labels.keys())}\n")
-            f.write(f"Backbone frozen: {not any(p.requires_grad for p in self.backbone.parameters())}\n")
-            
-        print(f"Model successfully saved to {save_path} with full weights and configuration")
-        return save_path
+
+        print(f"Model successfully saved to {checkpoint_file_path} (consolidated) and config.json.")
+        return checkpoint_file_path
     
     @classmethod
-    def from_pretrained(cls, model_path, task_labels=None, freeze_backbone=True, **kwargs):
-        """Load a pretrained model from the specified path.
-        
-        This method loads a model saved with save_pretrained, handling both the enhanced format
-        (with complete model state and configuration) and the legacy format. It's compatible with
-        the Hugging Face Transformers library's from_pretrained pattern.
-        
+    def from_pretrained(cls, model_path, task_labels=None, freeze_backbone_override=None, **kwargs):
+        """Load a pretrained model from a single consolidated checkpoint file or a standard directory.
+
+        This method first attempts to load a model from a 'model_checkpoint.pt' file if it exists.
+        If not found, it falls back to loading from a standard Hugging Face model directory structure
+        (expecting 'config.json' and 'pytorch_model.bin').
+
         Args:
-            model_path: Path to the saved model directory
-            task_labels: Dictionary mapping task names to number of labels (optional if saved in model)
-            freeze_backbone: Whether to freeze the backbone parameters
-            **kwargs: Additional arguments passed to the model initialization
-            
+            model_path (str): Path to the directory containing 'model_checkpoint.pt' or 'config.json'/'pytorch_model.bin',
+                              OR path to the 'model_checkpoint.pt' file itself.
+            task_labels (dict, optional): Dictionary mapping task names to number of labels.
+                                         If provided, overrides task_labels from the saved config.
+            freeze_backbone_override (bool, optional): Whether to freeze the backbone parameters upon loading.
+                                                     If None, uses the 'freeze_backbone_at_save_time' from config (if loading checkpoint)
+                                                     or 'freeze_backbone' from config (if loading standard dir), or defaults to True.
+            **kwargs: Additional arguments (e.g., map_location for torch.load).
+
         Returns:
-            Loaded MultiHeadXLMRoberta model with complete training weights and configuration
+            Loaded MultiHeadXLMRoberta model.
         """
         import os
-        import json
-        import traceback
-        
-        # Try to use our enhanced loading function if available
-        try:
-            from .model_registration import load_model_with_auto_registration
-            return load_model_with_auto_registration(model_path, task_labels, freeze_backbone)
-        except ImportError:
-            print("Warning: Could not import load_model_with_auto_registration, falling back to standard loading")
-        except Exception as e:
-            print(f"Warning: Error using load_model_with_auto_registration: {str(e)}")
-            print("Falling back to standard loading method")
-            
-        # Try to register the model with Auto classes if not already registered
-        try:
-            from transformers.models.auto.modeling_auto import MODEL_MAPPING
-            from transformers.models.auto.configuration_auto import CONFIG_MAPPING
-            
-            # Check if our model type is already registered
-            if "multi_head_xlm_roberta" not in CONFIG_MAPPING:
-                # Import and use the registration function from model_registration.py
-                try:
-                    from .model_registration import register_multi_head_model
-                    register_multi_head_model()
-                    print("Registered MultiHeadXLMRoberta with Auto classes")
-                except Exception as e:
-                    print(f"Warning: Could not register model with Auto classes: {str(e)}")
-        except Exception as e:
-            print(f"Warning: Auto class registration check failed: {str(e)}")
-        
-        # First, try to load the task labels from the saved model
-        if task_labels is None:
+        import torch
+        import json # Added import for json
+        import traceback # Added import for traceback
+
+        # Determine if model_path is a directory or a direct file path to the checkpoint
+        if os.path.isdir(model_path):
+            checkpoint_file_path = os.path.join(model_path, "model_checkpoint.pt")
+            config_file_path = os.path.join(model_path, "config.json")
+            pytorch_model_bin_path = os.path.join(model_path, "pytorch_model.bin")
+        else: # Assumed to be a direct path to model_checkpoint.pt
+            checkpoint_file_path = model_path
+            # Derive potential directory for config.json if needed for fallback
+            model_dir_for_fallback = os.path.dirname(model_path)
+            config_file_path = os.path.join(model_dir_for_fallback, "config.json")
+            pytorch_model_bin_path = os.path.join(model_dir_for_fallback, "pytorch_model.bin")
+
+        map_location = kwargs.pop('map_location', torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+
+        # Attempt to load from consolidated checkpoint first
+        if os.path.exists(checkpoint_file_path):
+            print(f"Attempting to load from consolidated checkpoint: {checkpoint_file_path}")
             try:
-                # Try to load from task_labels.json first (preferred)
-                task_labels_path = os.path.join(model_path, "task_labels.json")
-                if os.path.exists(task_labels_path):
-                    with open(task_labels_path, 'r') as f:
-                        task_labels = json.load(f)
-                        print(f"Loaded task labels from {task_labels_path}")
-                # If not found, try to load from config.json
+                checkpoint_data = torch.load(checkpoint_file_path, map_location=map_location)
+                config_data = checkpoint_data['config']
+                model_state_dict = checkpoint_data['model_state_dict']
+
+                backbone_model_name = config_data['backbone_model']
+                
+                task_labels_from_config = config_data.get('task_labels')
+                task_labels_to_use = task_labels if task_labels is not None else task_labels_from_config
+                if task_labels_to_use is None:
+                    raise ValueError("task_labels must be provided or be in the saved config.")
+
+                if freeze_backbone_override is not None:
+                    freeze_backbone_on_load = freeze_backbone_override
                 else:
-                    config_path = os.path.join(model_path, "config.json")
-                    if os.path.exists(config_path):
-                        with open(config_path, 'r') as f:
-                            config = json.load(f)
-                            if "task_labels" in config:
-                                task_labels = config["task_labels"]
-                                print(f"Loaded task labels from config.json")
+                    freeze_backbone_on_load = config_data.get('freeze_backbone_at_save_time', True)
+
+                model = cls(
+                    model_name=backbone_model_name,
+                    task_labels=task_labels_to_use,
+                    freeze_backbone=freeze_backbone_on_load,
+                    **kwargs
+                )
+                model.load_state_dict(model_state_dict)
+                model.to(map_location)
+
+                if 'optimizer_state_dict' in checkpoint_data:
+                    model.optimizer_state = checkpoint_data['optimizer_state_dict']
+                if 'scheduler_state_dict' in checkpoint_data:
+                    model.scheduler_state = checkpoint_data['scheduler_state_dict']
+
+                print(f"Model successfully loaded from consolidated checkpoint: {checkpoint_file_path}.")
+                return model
             except Exception as e:
-                print(f"Error loading task labels: {str(e)}")
-                if task_labels is None:
-                    raise ValueError("task_labels must be provided if not found in the model path")
+                print(f"Failed to load from consolidated checkpoint: {str(e)}. Traceback: {traceback.format_exc()}")
+                print("Falling back to standard directory loading if possible.")
         
-        # Determine backbone model name
-        backbone_model = model_path
-        try:
-            # Try to get backbone model name from model_info.json
-            model_info_path = os.path.join(model_path, "model_info.json")
-            if os.path.exists(model_info_path):
-                with open(model_info_path, 'r') as f:
-                    model_info = json.load(f)
-                    if "backbone_model" in model_info:
-                        backbone_model = model_info["backbone_model"]
-                        print(f"Using backbone model: {backbone_model}")
-            # If not found, try config.json
-            elif os.path.exists(os.path.join(model_path, "config.json")):
-                with open(os.path.join(model_path, "config.json"), 'r') as f:
-                    config = json.load(f)
-                    if "backbone_model" in config:
-                        backbone_model = config["backbone_model"]
-                        print(f"Using backbone model from config: {backbone_model}")
-        except Exception as e:
-            print(f"Warning: Could not determine backbone model, using model_path: {str(e)}")
+        # Fallback to standard Hugging Face directory loading (config.json + pytorch_model.bin)
+        print(f"Attempting to load from standard directory: {os.path.dirname(config_file_path) if os.path.isdir(model_path) else model_path}")
+        if not os.path.exists(config_file_path):
+            raise FileNotFoundError(f"'config.json' not found at {config_file_path}. Cannot load model.")
+        if not os.path.exists(pytorch_model_bin_path):
+            raise FileNotFoundError(f"'pytorch_model.bin' not found at {pytorch_model_bin_path}. Cannot load model.")
+
+        with open(config_file_path, 'r') as f:
+            config_data = json.load(f)
+
+        backbone_model_name = config_data.get('backbone_model', config_data.get('_name_or_path'))
         
-        # Check if freeze_backbone should be overridden from saved config
-        try:
-            config_path = os.path.join(model_path, "config.json")
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
-                    config = json.load(f)
-                    # Only override if explicitly specified in config
-                    if "freeze_backbone" in config and kwargs.get('use_saved_freeze_state', True):
-                        saved_freeze_state = config["freeze_backbone"]
-                        # Only log if we're changing the requested state
-                        if saved_freeze_state != freeze_backbone:
-                            print(f"Overriding freeze_backbone={freeze_backbone} with saved value {saved_freeze_state}")
-                            freeze_backbone = saved_freeze_state
-        except Exception as e:
-            print(f"Warning: Could not check saved freeze state: {str(e)}")
-        
-        # Create a new instance of the model
-        model = cls(backbone_model, task_labels, freeze_backbone)
-        
-        # Try to load the full model state dict (preferred method)
-        pytorch_model_path = os.path.join(model_path, "pytorch_model.bin")
-        if os.path.exists(pytorch_model_path):
-            try:
-                # Load the full state dict
-                state_dict = torch.load(pytorch_model_path, map_location="cpu")
-                
-                # Handle potential key mismatches for compatibility
-                # This helps when loading models saved with different versions
-                missing_keys = []
-                unexpected_keys = []
-                error_msgs = []
-                
-                # First try strict loading
-                try:
-                    model.load_state_dict(state_dict, strict=True)
-                    print(f"Successfully loaded complete model state from {pytorch_model_path} (strict mode)")
-                except Exception as e:
-                    # If strict loading fails, try non-strict loading
-                    try:
-                        model.load_state_dict(state_dict, strict=False)
-                        print(f"Successfully loaded model state from {pytorch_model_path} (non-strict mode)")
-                        print(f"Warning: Some keys were missing or unexpected. The model may not behave as expected.")
-                    except Exception as e2:
-                        print(f"Error loading model state: {str(e2)}")
-                        print("Falling back to loading components separately...")
-                        traceback.print_exc()
-                        
-                        # Try to load task heads separately
-                        try:
-                            task_heads_path = os.path.join(model_path, "task_heads.pt")
-                            if os.path.exists(task_heads_path):
-                                model.heads.load_state_dict(torch.load(task_heads_path, map_location="cpu"))
-                                print(f"Successfully loaded task heads from {task_heads_path}")
-                        except Exception as e3:
-                            print(f"Warning: Could not load task heads: {str(e3)}")
-            except Exception as e:
-                print(f"Warning: Could not load full model state: {str(e)}")
-                print("Falling back to loading components separately...")
-                
-                # Try to load task heads separately
-                try:
-                    task_heads_path = os.path.join(model_path, "task_heads.pt")
-                    if os.path.exists(task_heads_path):
-                        model.heads.load_state_dict(torch.load(task_heads_path, map_location="cpu"))
-                        print(f"Successfully loaded task heads from {task_heads_path}")
-                except Exception as e:
-                    print(f"Warning: Could not load task heads: {str(e)}")
+        task_labels_from_config = config_data.get('task_labels')
+        task_labels_to_use = task_labels if task_labels is not None else task_labels_from_config
+        if task_labels_to_use is None:
+            raise ValueError("task_labels must be provided or be in the saved config.json.")
+
+        if freeze_backbone_override is not None:
+            freeze_backbone_on_load = freeze_backbone_override
         else:
-            print(f"Warning: pytorch_model.bin not found at {pytorch_model_path}")
-            print("Loading components separately...")
-            
-            # Try to load task heads separately
+            # Use 'freeze_backbone' from config if present, else default to True
+            freeze_backbone_on_load = config_data.get('freeze_backbone', True) 
+
+        model = cls(
+            model_name=backbone_model_name,
+            task_labels=task_labels_to_use,
+            freeze_backbone=freeze_backbone_on_load,
+            **kwargs
+        )
+        
+        state_dict = torch.load(pytorch_model_bin_path, map_location=map_location)
+        try:
+            model.load_state_dict(state_dict, strict=True)
+            print(f"Successfully loaded model state from {pytorch_model_bin_path} (strict mode).")
+        except RuntimeError as e:
+            print(f"Strict loading failed: {e}. Attempting non-strict loading from {pytorch_model_bin_path}.")
+            model.load_state_dict(state_dict, strict=False)
+            print(f"Successfully loaded model state from {pytorch_model_bin_path} (non-strict mode). Review warnings.")
+        
+        model.to(map_location)
+
+        # Load optimizer/scheduler if they exist as separate .pt files (legacy or specific save pattern)
+        optimizer_path = os.path.join(os.path.dirname(pytorch_model_bin_path), "optimizer.pt")
+        if os.path.exists(optimizer_path):
             try:
-                task_heads_path = os.path.join(model_path, "task_heads.pt")
-                if os.path.exists(task_heads_path):
-                    model.heads.load_state_dict(torch.load(task_heads_path, map_location="cpu"))
-                    print(f"Successfully loaded task heads from {task_heads_path}")
-            except Exception as e:
-                print(f"Warning: Could not load task heads: {str(e)}")
+                model.optimizer_state = torch.load(optimizer_path, map_location=map_location)
+                print(f"Loaded optimizer state from {optimizer_path}")
+            except Exception as e_opt:
+                print(f"Warning: Could not load optimizer state from {optimizer_path}: {e_opt}")
         
-        # Apply any post-loading configuration
-        if kwargs.get('unfreeze_backbone', False):
-            num_layers = kwargs.get('unfreeze_layers', None)
-            model.unfreeze_backbone(num_layers)
-            print(f"Unfrozen backbone with {num_layers if num_layers else 'all'} layers as requested")
-        
-        print(f"Model loaded with {len(model.task_labels)} tasks and {model.get_trainable_parameters():,} trainable parameters")
+        scheduler_path = os.path.join(os.path.dirname(pytorch_model_bin_path), "scheduler.pt")
+        if os.path.exists(scheduler_path):
+            try:
+                model.scheduler_state = torch.load(scheduler_path, map_location=map_location)
+                print(f"Loaded scheduler state from {scheduler_path}")
+            except Exception as e_sch:
+                print(f"Warning: Could not load scheduler state from {scheduler_path}: {e_sch}")
+
+        print(f"Model successfully loaded from standard directory: {os.path.dirname(config_file_path)}.")
         return model

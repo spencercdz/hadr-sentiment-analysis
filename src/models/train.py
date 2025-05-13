@@ -343,7 +343,7 @@ def main():
                 'metric_for_best_model': 'eval_loss',
                 'greater_is_better': False,
                 'label_smoothing_factor': 0.1,   
-                'early_stopping_patience': 2,  # Stop earlier if not improving
+                'early_stopping_patience': 3,  # Stop earlier if not improving
                 'freeze_backbone': True  # Keep backbone frozen to reduce trainable parameters
             },
             'batch_size': 32,  # Reduced from 32 for GTX 1060 6GB
