@@ -94,7 +94,7 @@ def init_llm():
     """Initialize LLM for agent operations"""
     try:
         # For local use without API keys
-        return Ollama(model="qwen3:14b", temperature = 0) #  qwen2.5-coder:14b   # qwen3:14b
+        return Ollama(model="ollama run gemma3:12b-it-qat", temperature = 0) #  qwen2.5-coder:14b   #  qwen3:14b
     except Exception as e:
         logger.error(f"Error initializing LLM: {e}")
         # Fallback to a model with reasonable performance
