@@ -1,6 +1,7 @@
 # Ignore the entire models and logs directory
 models/
 logs/
+venv/
 
 # Ignore environments
 .env
