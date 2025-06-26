@@ -34,7 +34,6 @@ from .multi_head_model import MultiHeadClassificationModel
 from .custom_trainer import CustomTrainer
 
 logging.basicConfig(level=logging.INFO)
-logging.getLogger("transformers").setLevel(logging.WARNING)
 
 def compute_metrics(p: EvalPrediction) -> Dict[str, float]:
     """
