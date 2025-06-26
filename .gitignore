@@ -1,5 +1,5 @@
 # Ignore the entire models and logs directory
-models/
+/models/
 logs/
 venv/
 
