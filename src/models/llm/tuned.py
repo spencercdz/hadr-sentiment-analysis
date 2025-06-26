@@ -4,7 +4,7 @@ import os
 import logging
 import traceback
 import json
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from pathlib import Path
 import torch
 import pandas as pd
@@ -16,13 +16,13 @@ from transformers import (
     AutoConfig,
     TrainingArguments,
     EarlyStoppingCallback,
-    XLMRobertaTokenizer, 
     AutoTokenizer,
     TrainerCallback,
     EvalPrediction,
     default_data_collator,
 )
 from sklearn.metrics import f1_score, accuracy_score
+from huggingface_hub import login, whoami
 
 import nltk
 import nlpaug.augmenter.word as naw
@@ -78,11 +78,18 @@ class CsvLoggingCallback(TrainerCallback):
         self.csv_path = Path(csv_path)
         self.is_initialized = False
     def on_log(self, args, state, control, logs=None, **kwargs):
-        if logs is None or 'eval_loss' not in logs: return
-        log_data = {'step': state.global_step, **logs}
+        # We only want to log evaluation metrics
+        if logs is None or 'eval_loss' not in logs:
+            return
+            
+        log_data = {
+            'step': state.global_step,
+            **{k: v for k, v in logs.items() if k.startswith('eval_') or k == 'epoch'}
+        }
+        
         try:
             with open(self.csv_path, 'a', newline='') as f:
-                writer = csv.DictWriter(f, fieldnames=log_data.keys())
+                writer = csv.DictWriter(f, fieldnames=sorted(log_data.keys()))
                 if not self.is_initialized:
                     writer.writeheader()
                     self.is_initialized = True
@@ -100,10 +107,20 @@ class TunedLLM(BaseLLM):
         self.device = "cuda"
         logging.info(f"CUDA is available. Using GPU: {torch.cuda.get_device_name(0)}")
 
+        # Training configuration
         self.training_config = model_config.get('training', {})
         self.augmentation_config = self.training_config.get('augmentation', {})
         self.batch_size = self.training_config.get('batch_size', 16)
         self.max_length = self.training_config.get('max_length', 256)
+        
+        # Hub configuration
+        self.hub_config = model_config.get('hub', {})
+        self.enable_hub_upload = self.hub_config.get('enabled', False)
+        self.hub_repo_id = self.hub_config.get('repo_id', None)
+        self.hub_private = self.hub_config.get('private', True)
+        self.hub_token = self.hub_config.get('token', None)
+        
+        logging.info(f"Hub configuration: enabled={self.enable_hub_upload}, repo_id={self.hub_repo_id}, private={self.hub_private}")
 
         all_labels_map = get_all_labels()
         self.sentiment_task_name = 'sentiment'
@@ -124,11 +141,44 @@ class TunedLLM(BaseLLM):
         self.model = None
         self.tokenizer = None
 
+    def setup_huggingface_login(self):
+        """
+        Set up Hugging Face authentication. This should be called before training
+        if hub upload is enabled.
+        """
+        if not self.enable_hub_upload:
+            logging.info("Hub upload disabled, skipping authentication")
+            return
+            
+        logging.info("Setting up Hugging Face authentication...")
+        
+        # Validate that repo_id is set if hub is enabled
+        if not self.hub_repo_id:
+            raise ValueError("Hub upload is enabled, but 'hub.repo_id' is not set in the model config.")
+        
+        if self.hub_token:
+            try:
+                login(token=self.hub_token)
+                logging.info("✅ Logged in to Hugging Face Hub using provided token")
+            except Exception as e:
+                logging.error(f"❌ Failed to login with provided token: {e}")
+                raise
+        else:
+            try:
+                # Check if already logged in from the environment
+                user_info = whoami()
+                logging.info(f"✅ Already logged in to Hugging Face Hub as: {user_info.get('name', 'unknown')}")
+            except Exception:
+                logging.error("❌ Not logged in to Hugging Face Hub!")
+                logging.error("Please run 'huggingface-cli login' or provide a 'hub.token' in config.")
+                logging.error("Alternatively, set hub.enabled=false to disable Hub upload.")
+                raise RuntimeError("Hugging Face authentication required")
+
     def load_model(self):
         logging.info(f"Loading tokenizer for '{self.model_name}'.")
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         
-        logging.info("Initializing custom MultiHeadClassificationModel for feature extraction.")
+        logging.info("Initializing custom MultiHeadClassificationModel.")
         config = AutoConfig.from_pretrained(self.model_name)
         config.num_sentiment_labels = self.num_sentiment_labels
         self.model = MultiHeadClassificationModel(config=config, model_name=self.model_name, num_multilabels=self.num_multilabels)
@@ -139,13 +189,9 @@ class TunedLLM(BaseLLM):
         
         try:
             nltk.data.find('corpora/wordnet.zip')
-            nltk.data.find('taggers/averaged_perceptron_tagger.zip')
-            nltk.data.find('taggers/averaged_perceptron_tagger_eng')
         except LookupError:
-            logging.warning("Downloading necessary NLTK data for augmentation...")
+            logging.warning("Downloading 'wordnet' for NLTK augmentation...")
             nltk.download('wordnet', quiet=True)
-            nltk.download('averaged_perceptron_tagger', quiet=True)
-            nltk.download('averaged_perceptron_tagger_eng', quiet=True)
             logging.info("NLTK data download complete.")
         
         strength = self.augmentation_config.get('strength', 0.1)
@@ -155,29 +201,17 @@ class TunedLLM(BaseLLM):
         logging.info(f"Dynamic augmentation configured with strength={strength} and rate={rate}")
         
         def transform(examples):
-            # Handle both single examples and batches
-            if isinstance(examples['text'], str):
-                # Single example
-                original_texts = [examples['text']]
-                sentiment_labels = [examples['sentiment_labels']]
-                multilabel_labels = [examples['multilabel_labels']]
-            else:
-                # Batch of examples
-                original_texts = examples['text']
-                sentiment_labels = examples['sentiment_labels']
-                multilabel_labels = examples['multilabel_labels']
+            original_texts = examples['text']
             
             augmented_texts = []
             for text in original_texts:
-                # Ensure text is a string and handle None/NaN values
                 if text is None or pd.isna(text):
                     text = ""
                 text = str(text)
                 
-                if random.random() < rate and text.strip():  # Only augment non-empty texts
+                if random.random() < rate and text.strip():
                     try:
                         augmented_text = augmenter.augment(text)
-                        # Handle case where augmenter returns a list
                         if isinstance(augmented_text, list):
                             augmented_text = augmented_text[0] if augmented_text else text
                         augmented_texts.append(str(augmented_text))
@@ -187,19 +221,16 @@ class TunedLLM(BaseLLM):
                 else:
                     augmented_texts.append(text)
             
-            # Tokenize the texts - ensure they are strings
             tokenized = self.tokenizer(
                 augmented_texts, 
                 truncation=True, 
                 padding='max_length', 
                 max_length=self.max_length,
-                return_tensors=None  # Return lists, not tensors
+                return_tensors=None
             )
             
-            # Add labels back to tokenized output
-            tokenized['sentiment_labels'] = sentiment_labels
-            tokenized['multilabel_labels'] = multilabel_labels
-            
+            tokenized['sentiment_labels'] = examples['sentiment_labels']
+            tokenized['multilabel_labels'] = examples['multilabel_labels']
             return tokenized
 
         return transform
@@ -212,7 +243,7 @@ class TunedLLM(BaseLLM):
                 def safe_mapper(x):
                     if pd.isna(x): return 0
                     key = str(x).lower().strip()
-                    return value_map.get(key, int(key) if key.isdigit() and int(key) in value_map.values() else 0)
+                    return value_map.get(key, int(key) if str(key).isdigit() and int(key) in value_map.values() else 0)
                 df[col_name] = df[col_name].apply(safe_mapper).astype(int)
             else:
                 df[col_name] = 0
@@ -237,19 +268,19 @@ class TunedLLM(BaseLLM):
 
     def train(self):
         try:
+            self.setup_huggingface_login()
+            
             self.load_model()
             logging.info("Loading train, validation, and test datasets...")
-            train_path = self.project_root / 'data' / 'raw' / 'train1.csv'
-            validation_path = self.project_root / 'data' / 'raw' / 'validation1.csv'
-            test_path = self.project_root / 'data' / 'raw' / 'test1.csv'
-            
-            train_df = pd.read_csv(train_path, low_memory=False)
-            validation_df = pd.read_csv(validation_path, low_memory=False)
+            data_dir = self.project_root / 'data' / 'raw'
+            train_df = pd.read_csv(data_dir / 'train1.csv', low_memory=False)
+            validation_df = pd.read_csv(data_dir / 'validation1.csv', low_memory=False)
+            test_path = data_dir / 'test1.csv'
 
             def preprocess_df(df: pd.DataFrame) -> pd.DataFrame:
                 if 'message' in df.columns: 
                     df.rename(columns={'message': 'text'}, inplace=True)
-                df['text'] = df['text'].fillna("").astype(str)  # Handle NaN values
+                df['text'] = df['text'].fillna("").astype(str)
                 return df
 
             train_df = preprocess_df(train_df)
@@ -258,26 +289,7 @@ class TunedLLM(BaseLLM):
             train_dataset = self._prepare_data(train_df)
             validation_dataset = self._prepare_data(validation_df)
 
-            # Apply tokenization/augmentation
-            if self.augmentation_config.get('enabled', False):
-                augment_transform = self._create_dynamic_augment_transform()
-                train_dataset.set_transform(augment_transform)
-            else:
-                def tokenize_only(examples):
-                    tokenized = self.tokenizer(
-                        examples['text'], 
-                        truncation=True, 
-                        padding='max_length', 
-                        max_length=self.max_length,
-                        return_tensors=None
-                    )
-                    tokenized['sentiment_labels'] = examples['sentiment_labels']
-                    tokenized['multilabel_labels'] = examples['multilabel_labels']
-                    return tokenized
-                
-                train_dataset.set_transform(tokenize_only)
-
-            def tokenize_validation(examples):
+            def tokenize_func(examples):
                 tokenized = self.tokenizer(
                     examples['text'], 
                     truncation=True, 
@@ -288,62 +300,91 @@ class TunedLLM(BaseLLM):
                 tokenized['sentiment_labels'] = examples['sentiment_labels']
                 tokenized['multilabel_labels'] = examples['multilabel_labels']
                 return tokenized
+
+            if self.augmentation_config.get('enabled', False):
+                augment_transform = self._create_dynamic_augment_transform()
+                train_dataset.set_transform(augment_transform)
+            else:
+                train_dataset.set_transform(tokenize_func)
             
-            validation_dataset.set_transform(tokenize_validation)
+            validation_dataset.set_transform(tokenize_func)
 
             model_dir = self.project_root / 'models' / 'tuned' / self.model_name.replace("/", "_")
             model_dir.mkdir(parents=True, exist_ok=True)
             
             log_csv_path = model_dir / "training_log.csv"
-            csv_logger = CsvLoggingCallback(csv_path=log_csv_path)
+            
+            # Setup callbacks
+            callbacks = [
+                CsvLoggingCallback(csv_path=log_csv_path),
+                EarlyStoppingCallback(early_stopping_patience=self.training_config.get('early_stopping_patience', 10))
+            ]
             logging.info(f"Detailed training logs will be saved to: {log_csv_path}")
+            if self.enable_hub_upload:
+                logging.info(f"🚀 Hub auto-upload enabled. Trainer will push best model to: {self.hub_repo_id}")
 
             training_args = TrainingArguments(
                 output_dir=str(model_dir),
                 remove_unused_columns=False,
-                num_train_epochs=self.training_config.get('num_epochs', 500),
+                num_train_epochs=self.training_config.get('num_epochs', 50),
                 per_device_train_batch_size=self.batch_size,
                 per_device_eval_batch_size=self.batch_size,
                 learning_rate=float(self.training_config.get('learning_rate', 2e-5)),
+                weight_decay=self.training_config.get('weight_decay', 0.01),
                 logging_strategy="epoch",
                 eval_strategy="epoch",
                 save_strategy="epoch",
                 load_best_model_at_end=True,
                 metric_for_best_model="eval_f1_micro",
                 greater_is_better=True,
-                save_total_limit=100,
-                fp16=True,
-                report_to="none"
+                save_total_limit=self.training_config.get('save_total_limit', 2),
+                fp16=self.training_config.get('fp16', True),
+                dataloader_pin_memory=False,
+                
+                # --- Hugging Face Hub Integration ---
+                push_to_hub=self.enable_hub_upload,
+                hub_model_id=self.hub_repo_id,
+                hub_token=self.hub_token,
+                hub_private_repo=self.hub_private,
+                report_to="all" if self.enable_hub_upload else "none",
             )
-            
-            early_stopping_patience = self.training_config.get('early_stopping_patience', 50)
-            
+
             trainer = CustomTrainer(
                 model=self.model,
                 args=training_args,
                 train_dataset=train_dataset,
                 eval_dataset=validation_dataset,
                 compute_metrics=compute_metrics,
-                callbacks=[csv_logger, EarlyStoppingCallback(early_stopping_patience=early_stopping_patience)],
+                callbacks=callbacks,
                 data_collator=default_data_collator,
+                tokenizer=self.tokenizer,
             )
 
-            logging.info("Starting training...")
+            logging.info("🏃 Starting training...")
             trainer.train()
-            logging.info("Training finished.")
+            logging.info("🎯 Training finished.")
 
             if test_path.exists():
-                logging.info("--- Evaluating on Test Set ---")
+                logging.info("--- Evaluating on Test Set using the best model ---")
                 test_df = pd.read_csv(test_path, low_memory=False)
                 test_df = preprocess_df(test_df)
                 test_dataset = self._prepare_data(test_df)
-                test_dataset = test_dataset.map(tokenize_validation, batched=True, remove_columns=test_df.columns.tolist())
-                test_results = trainer.evaluate(eval_dataset=test_dataset)
+                test_dataset.set_transform(tokenize_func)
+                
+                test_results = trainer.evaluate(eval_dataset=test_dataset, metric_key_prefix="test")
                 logging.info(f"--- Test Results: {test_results} ---")
-                csv_logger.on_log(training_args, trainer.state, None, logs={'step': 'test', **test_results})
+                # Log test results to the CSV
+                test_log_data = {'step': 'test', **test_results}
+                callbacks[0].on_log(training_args, trainer.state, None, logs=test_log_data)
             
+            # Save the final (best) model locally
             final_model_dir = model_dir / 'final_model'
-            self.save(final_model_dir)
+            trainer.save_model(final_model_dir)
+            logging.info(f"Final best model saved locally to {final_model_dir}")
+            
+            # Metadata is saved with the model automatically by the trainer if passed,
+            # but we can save our custom metadata separately too.
+            save_metadata(self.get_model_info(), final_model_dir)
 
         except Exception as e:
             logging.error(f"An error occurred during training: {e}")
@@ -391,7 +432,8 @@ class TunedLLM(BaseLLM):
                 pred_vector = multilabel_preds[j]
                 
                 for task_name in self.binary_tasks:
-                    pred = pred_vector[self.multilabel_column_names.index(task_name)]
+                    pred_idx = self.multilabel_column_names.index(task_name)
+                    pred = pred_vector[pred_idx]
                     single_prediction[task_name] = 'yes' if pred == 1 else 'no'
 
                 for task_name, num_classes in self.multiclass_tasks.items():
