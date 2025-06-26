@@ -7,15 +7,15 @@ model:
 
 # Training hyperparameters
 training:
-  num_epochs: 500
+  num_epochs: 1000
   learning_rate: 2e-5
   batch_size: 32
   weight_decay: 0.01
-  early_stopping_patience: 50
+  early_stopping_patience: 100
   fp16: true
 
   # --- Data Augmentation Settings ---
   augmentation:
     enabled: true
-    rate: 0.5
-    strength: 0.1 
+    rate: 0.3
+    strength: 0.15

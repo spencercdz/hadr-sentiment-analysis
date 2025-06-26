@@ -10,6 +10,7 @@ import torch
 import pandas as pd
 import numpy as np
 import csv
+import random 
 from datasets import Dataset
 from transformers import (
     AutoConfig,
@@ -18,11 +19,11 @@ from transformers import (
     XLMRobertaTokenizer, 
     AutoTokenizer,
     TrainerCallback,
-    EvalPrediction
+    EvalPrediction,
+    default_data_collator,
 )
 from sklearn.metrics import f1_score, accuracy_score
 
-### NEW: Imports for data augmentation
 import nltk
 import nlpaug.augmenter.word as naw
 
@@ -36,15 +37,40 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger("transformers").setLevel(logging.WARNING)
 
 def compute_metrics(p: EvalPrediction) -> Dict[str, float]:
+    """
+    Computes and returns F1 (micro and macro) and subset accuracy for the multi-label head.
+    """
+    # The CustomTrainer is configured to output a tuple of (sentiment_logits, multilabel_logits).
+    # We are interested in the second element (index 1) for this metric calculation.
     logits = p.predictions[1] 
     labels = p.label_ids
+
+    # Convert logits to probabilities using the sigmoid function, as this is a multi-label problem.
     probs = 1 / (1 + np.exp(-logits))
+    
+    # Get binary predictions (0 or 1) by thresholding the probabilities at 0.5.
     y_pred = (probs > 0.5).astype(int)
+    
+    # Ensure the true labels are also integers.
     y_true = labels.astype(int)
+    
+    # Calculate F1-score with 'micro' averaging. This metric aggregates the contributions
+    # of all classes to compute the average metric. It's useful for imbalanced datasets.
     f1_micro = f1_score(y_true=y_true, y_pred=y_pred, average='micro', zero_division=0)
+    
+    # Calculate F1-score with 'macro' averaging. This calculates the metric independently
+    # for each class and then takes the average, treating all classes equally.
     f1_macro = f1_score(y_true=y_true, y_pred=y_pred, average='macro', zero_division=0)
+    
+    # Calculate subset accuracy. This is a strict metric that only considers a prediction
+    # correct if the entire set of labels for a given sample is predicted correctly.
     subset_accuracy = accuracy_score(y_true=y_true, y_pred=y_pred)
-    return {'f1_micro': f1_micro, 'f1_macro': f1_macro, 'subset_accuracy': subset_accuracy}
+    
+    return {
+        'f1_micro': f1_micro, 
+        'f1_macro': f1_macro, 
+        'subset_accuracy': subset_accuracy
+    }
 
 class CsvLoggingCallback(TrainerCallback):
     def __init__(self, csv_path):
@@ -75,7 +101,6 @@ class TunedLLM(BaseLLM):
         logging.info(f"CUDA is available. Using GPU: {torch.cuda.get_device_name(0)}")
 
         self.training_config = model_config.get('training', {})
-        ### NEW: Read augmentation config from the model config
         self.augmentation_config = self.training_config.get('augmentation', {})
         self.batch_size = self.training_config.get('batch_size', 16)
         self.max_length = self.training_config.get('max_length', 256)
@@ -101,82 +126,85 @@ class TunedLLM(BaseLLM):
 
     def load_model(self):
         logging.info(f"Loading tokenizer for '{self.model_name}'.")
-        try:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        except Exception as e:
-            logging.error(f"Failed to load tokenizer for {self.model_name}. Error: {e}")
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False)
-
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        
         logging.info("Initializing custom MultiHeadClassificationModel for feature extraction.")
         config = AutoConfig.from_pretrained(self.model_name)
         config.num_sentiment_labels = self.num_sentiment_labels
         self.model = MultiHeadClassificationModel(config=config, model_name=self.model_name, num_multilabels=self.num_multilabels)
         self.model.to(self.device)
 
-    def _apply_augmentation(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Applies synonym replacement augmentation to a portion of the dataframe."""
+    def _create_dynamic_augment_transform(self):
+        logging.info("Creating dynamic augmentation transform...")
         
-        logging.info(f"Checking augmentation config: {self.augmentation_config}")
-
-        if not self.augmentation_config.get('enabled', False):
-            logging.warning("Augmentation is disabled in the configuration. Skipping.")
-            return df
-
-        logging.info("Applying data augmentation to the training set...")
-        
-        # --- FIX: Added the new '_eng' package to the check and download list ---
         try:
-            # Check for all required packages. If one is missing, it will raise the error.
             nltk.data.find('corpora/wordnet.zip')
             nltk.data.find('taggers/averaged_perceptron_tagger.zip')
-            nltk.data.find('taggers/averaged_perceptron_tagger_eng') # <-- NEW CHECK
-
+            nltk.data.find('taggers/averaged_perceptron_tagger_eng')
         except LookupError:
             logging.warning("Downloading necessary NLTK data for augmentation...")
-            # Download all required packages if any are missing.
             nltk.download('wordnet', quiet=True)
             nltk.download('averaged_perceptron_tagger', quiet=True)
             nltk.download('averaged_perceptron_tagger_eng', quiet=True)
             logging.info("NLTK data download complete.")
-
-        rate = self.augmentation_config.get('rate', 0.5)
+        
         strength = self.augmentation_config.get('strength', 0.1)
-
-        df_to_augment = df.sample(frac=rate)
-        if df_to_augment.empty:
-            logging.warning("No data selected for augmentation. The 'rate' might be too low or the dataset too small.")
-            return df
-        
-        texts_to_augment = df_to_augment['text'].tolist()
-        
-        logging.info(f"Augmenting {len(texts_to_augment)} samples with synonym replacement (strength={strength})...")
-        # This is the line that requires the POS tagger
+        rate = self.augmentation_config.get('rate', 1.0)
         augmenter = naw.SynonymAug(aug_src='wordnet', aug_p=strength)
-        augmented_texts = augmenter.augment(texts_to_augment)
-
-        logging.info("--- AUGMENTATION SANITY CHECK ---")
-        for i in range(min(3, len(texts_to_augment))):
-            logging.info(f"Original  : {texts_to_augment[i]}")
-            logging.info(f"Augmented : {augmented_texts[i]}")
-            logging.info("-" * 10)
-        logging.info("--- END SANITY CHECK ---")
         
-        augmented_df = df_to_augment.copy()
-        augmented_df['text'] = augmented_texts
-
-        final_df = pd.concat([df, augmented_df], ignore_index=True)
-        logging.info(f"Augmentation complete. Training set size increased from {len(df)} to {len(final_df)}.")
+        logging.info(f"Dynamic augmentation configured with strength={strength} and rate={rate}")
         
-        return final_df
+        def transform(examples):
+            # Handle both single examples and batches
+            if isinstance(examples['text'], str):
+                # Single example
+                original_texts = [examples['text']]
+                sentiment_labels = [examples['sentiment_labels']]
+                multilabel_labels = [examples['multilabel_labels']]
+            else:
+                # Batch of examples
+                original_texts = examples['text']
+                sentiment_labels = examples['sentiment_labels']
+                multilabel_labels = examples['multilabel_labels']
+            
+            augmented_texts = []
+            for text in original_texts:
+                # Ensure text is a string and handle None/NaN values
+                if text is None or pd.isna(text):
+                    text = ""
+                text = str(text)
+                
+                if random.random() < rate and text.strip():  # Only augment non-empty texts
+                    try:
+                        augmented_text = augmenter.augment(text)
+                        # Handle case where augmenter returns a list
+                        if isinstance(augmented_text, list):
+                            augmented_text = augmented_text[0] if augmented_text else text
+                        augmented_texts.append(str(augmented_text))
+                    except Exception as e:
+                        logging.warning(f"Augmentation failed for text: {text[:50]}... Error: {e}")
+                        augmented_texts.append(text)
+                else:
+                    augmented_texts.append(text)
+            
+            # Tokenize the texts - ensure they are strings
+            tokenized = self.tokenizer(
+                augmented_texts, 
+                truncation=True, 
+                padding='max_length', 
+                max_length=self.max_length,
+                return_tensors=None  # Return lists, not tensors
+            )
+            
+            # Add labels back to tokenized output
+            tokenized['sentiment_labels'] = sentiment_labels
+            tokenized['multilabel_labels'] = multilabel_labels
+            
+            return tokenized
 
-    ### MODIFIED: This method now takes a DataFrame instead of a file path.
+        return transform
+
     def _prepare_data(self, df: pd.DataFrame) -> Dataset:
-        """Processes a DataFrame to create labels and tokenize for the model."""
-        original_columns = df.columns.tolist()
-
-        # The 'text' column is assumed to exist and be ready for processing.
-        # Renaming from 'message' now happens in the `train` method.
-        
         all_labels_map = get_all_labels()
         for col_name in all_labels_map.keys():
             if col_name in df.columns:
@@ -205,15 +233,8 @@ class TunedLLM(BaseLLM):
         df['multilabel_labels'] = final_multilabel_df[self.multilabel_column_names].values.tolist()
         df['sentiment_labels'] = df[self.sentiment_task_name]
         
-        dataset = Dataset.from_pandas(df)
-        def tokenize_and_format(examples):
-            tokenized = self.tokenizer(examples['text'], truncation=True, padding='max_length', max_length=self.max_length)
-            tokenized['sentiment_labels'] = examples['sentiment_labels']
-            tokenized['multilabel_labels'] = examples['multilabel_labels']
-            return tokenized
-        return dataset.map(tokenize_and_format, batched=True, remove_columns=original_columns)
+        return Dataset.from_pandas(df)
 
-    ### MODIFIED: The train method now orchestrates loading, augmenting, and preparing data.
     def train(self):
         try:
             self.load_model()
@@ -222,29 +243,53 @@ class TunedLLM(BaseLLM):
             validation_path = self.project_root / 'data' / 'raw' / 'validation1.csv'
             test_path = self.project_root / 'data' / 'raw' / 'test1.csv'
             
-            # --- 1. Load data into DataFrames ---
-            if not train_path.exists(): raise FileNotFoundError(f"Train data not found: {train_path}")
             train_df = pd.read_csv(train_path, low_memory=False)
-            
-            if not validation_path.exists(): raise FileNotFoundError(f"Validation data not found: {validation_path}")
             validation_df = pd.read_csv(validation_path, low_memory=False)
 
-            # --- 2. Pre-process DataFrames (e.g., rename columns) ---
             def preprocess_df(df: pd.DataFrame) -> pd.DataFrame:
-                if 'message' in df.columns:
+                if 'message' in df.columns: 
                     df.rename(columns={'message': 'text'}, inplace=True)
-                df['text'] = df['text'].astype(str)
+                df['text'] = df['text'].fillna("").astype(str)  # Handle NaN values
                 return df
 
             train_df = preprocess_df(train_df)
             validation_df = preprocess_df(validation_df)
 
-            # --- 3. Apply augmentation ONLY to the training DataFrame ---
-            train_df = self._apply_augmentation(train_df)
-
-            # --- 4. Prepare datasets for the Trainer ---
             train_dataset = self._prepare_data(train_df)
             validation_dataset = self._prepare_data(validation_df)
+
+            # Apply tokenization/augmentation
+            if self.augmentation_config.get('enabled', False):
+                augment_transform = self._create_dynamic_augment_transform()
+                train_dataset.set_transform(augment_transform)
+            else:
+                def tokenize_only(examples):
+                    tokenized = self.tokenizer(
+                        examples['text'], 
+                        truncation=True, 
+                        padding='max_length', 
+                        max_length=self.max_length,
+                        return_tensors=None
+                    )
+                    tokenized['sentiment_labels'] = examples['sentiment_labels']
+                    tokenized['multilabel_labels'] = examples['multilabel_labels']
+                    return tokenized
+                
+                train_dataset.set_transform(tokenize_only)
+
+            def tokenize_validation(examples):
+                tokenized = self.tokenizer(
+                    examples['text'], 
+                    truncation=True, 
+                    padding='max_length', 
+                    max_length=self.max_length,
+                    return_tensors=None
+                )
+                tokenized['sentiment_labels'] = examples['sentiment_labels']
+                tokenized['multilabel_labels'] = examples['multilabel_labels']
+                return tokenized
+            
+            validation_dataset.set_transform(tokenize_validation)
 
             model_dir = self.project_root / 'models' / 'tuned' / self.model_name.replace("/", "_")
             model_dir.mkdir(parents=True, exist_ok=True)
@@ -256,30 +301,31 @@ class TunedLLM(BaseLLM):
             training_args = TrainingArguments(
                 output_dir=str(model_dir),
                 remove_unused_columns=False,
-                num_train_epochs=self.training_config.get('num_epochs', 3),
+                num_train_epochs=self.training_config.get('num_epochs', 500),
                 per_device_train_batch_size=self.batch_size,
                 per_device_eval_batch_size=self.batch_size,
                 learning_rate=float(self.training_config.get('learning_rate', 2e-5)),
-                logging_steps=200,
-                eval_strategy="steps",
-                eval_steps=200,
-                save_strategy="steps",
-                save_steps=200,
+                logging_strategy="epoch",
+                eval_strategy="epoch",
+                save_strategy="epoch",
                 load_best_model_at_end=True,
                 metric_for_best_model="eval_f1_micro",
                 greater_is_better=True,
+                save_total_limit=100,
                 fp16=True,
                 report_to="none"
             )
+            
+            early_stopping_patience = self.training_config.get('early_stopping_patience', 50)
             
             trainer = CustomTrainer(
                 model=self.model,
                 args=training_args,
                 train_dataset=train_dataset,
                 eval_dataset=validation_dataset,
-                tokenizer=self.tokenizer,
                 compute_metrics=compute_metrics,
-                callbacks=[csv_logger]
+                callbacks=[csv_logger, EarlyStoppingCallback(early_stopping_patience=early_stopping_patience)],
+                data_collator=default_data_collator,
             )
 
             logging.info("Starting training...")
@@ -291,6 +337,7 @@ class TunedLLM(BaseLLM):
                 test_df = pd.read_csv(test_path, low_memory=False)
                 test_df = preprocess_df(test_df)
                 test_dataset = self._prepare_data(test_df)
+                test_dataset = test_dataset.map(tokenize_validation, batched=True, remove_columns=test_df.columns.tolist())
                 test_results = trainer.evaluate(eval_dataset=test_dataset)
                 logging.info(f"--- Test Results: {test_results} ---")
                 csv_logger.on_log(training_args, trainer.state, None, logs={'step': 'test', **test_results})
@@ -302,9 +349,65 @@ class TunedLLM(BaseLLM):
             logging.error(f"An error occurred during training: {e}")
             traceback.print_exc()
 
-    def predict(self, texts: List[str]):
-        # TODO: Implement prediction logic that decodes the one-hot encoded output
-        pass
+    def predict(self, texts: List[str]) -> List[Dict[str, Any]]:
+        if self.model is None or self.tokenizer is None:
+            raise RuntimeError("Model is not loaded. Please call load_model() or load_from_disk() first.")
+
+        self.model.eval()
+        
+        sentiment_labels = get_sentiment_labels()
+        idx_to_sentiment = {v: k for k, v in sentiment_labels.items()}
+        all_labels_map = get_all_labels()
+        
+        all_predictions = []
+
+        for i in range(0, len(texts), self.batch_size):
+            batch_texts = texts[i:i + self.batch_size]
+            
+            inputs = self.tokenizer(
+                batch_texts,
+                padding=True,
+                truncation=True,
+                max_length=self.max_length,
+                return_tensors="pt"
+            ).to(self.device)
+
+            with torch.no_grad():
+                outputs = self.model(**inputs)
+
+            sentiment_preds = torch.argmax(outputs.sentiment_logits, dim=1).cpu().numpy()
+            multilabel_probs = torch.sigmoid(outputs.multilabel_logits).cpu().numpy()
+            multilabel_preds = (multilabel_probs > 0.5).astype(int)
+
+            for j in range(len(batch_texts)):
+                single_prediction = {}
+                
+                sentiment_idx = sentiment_preds[j]
+                single_prediction['sentiment'] = {
+                    'prediction': idx_to_sentiment.get(sentiment_idx, "unknown"),
+                    'confidence': torch.softmax(outputs.sentiment_logits[j], dim=0)[sentiment_idx].item()
+                }
+
+                pred_vector = multilabel_preds[j]
+                
+                for task_name in self.binary_tasks:
+                    pred = pred_vector[self.multilabel_column_names.index(task_name)]
+                    single_prediction[task_name] = 'yes' if pred == 1 else 'no'
+
+                for task_name, num_classes in self.multiclass_tasks.items():
+                    task_cols = [f"{task_name}_{k}" for k in range(num_classes)]
+                    start_idx = self.multilabel_column_names.index(task_cols[0])
+                    end_idx = start_idx + num_classes
+                    
+                    task_preds = pred_vector[start_idx:end_idx]
+                    predicted_class_idx = np.argmax(task_preds) if np.sum(task_preds) > 0 else 0
+                    
+                    idx_to_label = {v: k for k, v in all_labels_map[task_name].items()}
+                    single_prediction[task_name] = idx_to_label.get(predicted_class_idx, "unknown")
+                
+                all_predictions.append(single_prediction)
+
+        return all_predictions
 
     def get_model_info(self) -> Dict[str, Any]:
         info = super().get_model_info()
@@ -322,7 +425,7 @@ class TunedLLM(BaseLLM):
         self.tokenizer.save_pretrained(save_path)
         
         save_metadata(self.get_model_info(), save_path)
-        logging.info("Save complete.")
+        logging.info(f"Save complete: {save_path}")
 
     @classmethod
     def load_from_disk(cls, load_path: Path) -> 'TunedLLM':
