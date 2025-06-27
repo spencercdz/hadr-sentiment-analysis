@@ -1,9 +1,0 @@
-2025-04-16 11:42:01,616 - INFO - Starting model training...
-2025-04-16 11:42:01,616 - INFO - CUDA Available: True
-2025-04-16 11:42:01,619 - INFO - GPU Device: NVIDIA GeForce RTX 3080 Ti Laptop GPU
-2025-04-16 11:42:01,619 - INFO - Available GPU memory: 16384MB
-2025-04-16 11:42:01,619 - INFO - Initializing model...
-2025-04-16 11:42:04,051 - INFO - Starting training...
-2025-04-16 11:42:08,696 - WARNING - Parameter 'function'=<function TunedLLM.load_data.<locals>.preprocess_function at 0x000001B629FC7880> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
-2025-04-16 11:42:14,311 - ERROR - Error during training: 'NoneType' object has no attribute 'step'
-2025-04-16 11:42:14,311 - ERROR - Training failed. Please check the error message above.

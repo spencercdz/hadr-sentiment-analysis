@@ -1,9 +1,0 @@
-2025-04-16 11:43:46,873 - INFO - Starting model training...
-2025-04-16 11:43:46,873 - INFO - CUDA Available: True
-2025-04-16 11:43:46,875 - INFO - GPU Device: NVIDIA GeForce RTX 3080 Ti Laptop GPU
-2025-04-16 11:43:46,875 - INFO - Available GPU memory: 16384MB
-2025-04-16 11:43:46,876 - INFO - Initializing model...
-2025-04-16 11:43:49,351 - INFO - Starting training...
-2025-04-16 11:43:54,033 - WARNING - Parameter 'function'=<function TunedLLM.load_data.<locals>.preprocess_function at 0x0000027A39883100> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
-2025-04-16 11:43:58,910 - ERROR - Error during training: TunedLLM.train.<locals>.MultiTaskTrainer.compute_loss() got an unexpected keyword argument 'num_items_in_batch'
-2025-04-16 11:43:58,911 - ERROR - Training failed. Please check the error message above.

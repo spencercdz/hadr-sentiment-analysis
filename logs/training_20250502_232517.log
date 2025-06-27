@@ -1,9 +1,0 @@
-2025-05-02 23:25:17,976 - INFO - Starting model training...
-2025-05-02 23:25:17,976 - INFO - CUDA Available: True
-2025-05-02 23:25:17,979 - INFO - GPU Device: NVIDIA GeForce GTX 1060 6GB
-2025-05-02 23:25:17,980 - INFO - Available GPU memory: 6144MB
-2025-05-02 23:25:17,980 - INFO - Initializing model...
-2025-05-02 23:25:24,032 - INFO - Starting training...
-2025-05-02 23:25:34,624 - WARNING - Parameter 'function'=<bound method TunedLLM.preprocess_function of <src.models.llm.tuned.TunedLLM object at 0x00000244F495F4D0>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
-2025-05-02 23:25:34,750 - ERROR - Error during training: 'int' object has no attribute 'lower'
-2025-05-02 23:25:34,750 - ERROR - Training failed. Please check the error message above.

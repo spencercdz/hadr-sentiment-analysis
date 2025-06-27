@@ -1,9 +1,0 @@
-2025-04-18 02:44:59,263 - INFO - Starting model training...
-2025-04-18 02:44:59,263 - INFO - CUDA Available: True
-2025-04-18 02:44:59,266 - INFO - GPU Device: NVIDIA GeForce GTX 1060 6GB
-2025-04-18 02:44:59,266 - INFO - Available GPU memory: 6144MB
-2025-04-18 02:44:59,266 - INFO - Initializing model...
-2025-04-18 02:44:59,841 - INFO - Starting training...
-2025-04-18 02:45:00,630 - WARNING - Parameter 'function'=<bound method TunedLLM.preprocess_function of <src.models.llm.tuned.TunedLLM object at 0x000001A937D42CF0>> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
-2025-04-18 02:45:00,644 - ERROR - Error during training: 'NoneType' object is not callable
-2025-04-18 02:45:00,644 - ERROR - Training failed. Please check the error message above.

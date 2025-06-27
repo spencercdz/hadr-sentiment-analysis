@@ -1,9 +1,0 @@
-2025-04-16 11:32:29,976 - INFO - Starting model training...
-2025-04-16 11:32:29,976 - INFO - CUDA Available: True
-2025-04-16 11:32:29,978 - INFO - GPU Device: NVIDIA GeForce RTX 3080 Ti Laptop GPU
-2025-04-16 11:32:29,978 - INFO - Available GPU memory: 16384MB
-2025-04-16 11:32:29,979 - INFO - Initializing model...
-2025-04-16 11:32:32,436 - INFO - Starting training...
-2025-04-16 11:32:37,057 - WARNING - Parameter 'function'=<function TunedLLM.load_data.<locals>.preprocess_function at 0x00000210548131A0> of the transform datasets.arrow_dataset.Dataset._map_single couldn't be hashed properly, a random hash was used instead. Make sure your transforms and parameters are serializable with pickle or dill for the dataset fingerprinting and caching to work. If you reuse this transform, the caching mechanism will consider it to be different from the previous calls and recompute everything. This warning is only showed once. Subsequent hashing failures won't be showed.
-2025-04-16 11:32:41,780 - ERROR - Error during training: name 'all_label_defs' is not defined
-2025-04-16 11:32:41,780 - ERROR - Training failed. Please check the error message above.
