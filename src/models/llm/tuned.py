@@ -431,9 +431,11 @@ class TunedLLM(BaseLLM):
                 single_pred[self.sentiment_task_name] = {
                     "prediction": self.sentiment_decoder.get(sentiment_pred_idx, "unknown"),
                     "confidence": sentiment_probs[j, sentiment_pred_idx].item(),
+                    "scores": sentiment_probs[j].tolist(),
                 }
 
                 prob_vector = multilabel_probs[j]
+                single_pred["multilabel_scores"] = prob_vector.tolist()
                 for task, decoder in self.binary_task_decoders.items():
                     prob = prob_vector[decoder["index"]]
                     pred_idx = 1 if prob > 0.5 else 0
