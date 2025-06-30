@@ -1,0 +1,282 @@
+{
+    "sections": {
+        "Background": "A powerful magnitude 7.7 earthquake struck central Myanmar on March 28, 2025, causing significant damage to buildings and infrastructure in the capital, Naypyidaw. The tremor also affected neighboring Thailand, leading to a collapsed building at a construction site in Bangkok. The disaster has caused widespread panic and displacement of people, with many seeking refuge in the streets. Rescue operations are underway, but the full extent of the damage and casualties is yet to be determined.",
+        "Tweet Overview": "The tweet data reveals a predominantly neutral to negative sentiment among users discussing the earthquake. Influential users such as 'Inquirer' and 'BBC News Indonesia' have provided factual updates and warnings about potential misinformation. The top tweets include reports on the impact of the disaster, calls for aid, and concerns about the safety of affected populations.",
+        "Sentiment Overview": "The overall sentiment analysis shows a neutral to negative trend over time. With an average score of 40.73, the data indicates that most tweets express concern or factual information rather than positive sentiments. The breakdown of tweet sentiments is as follows: 1147 neutral tweets, 902 negative tweets, and no positive tweets. This suggests that the public mood remains largely concerned about the situation and its aftermath.",
+        "Results": "The disaster has had a significant impact on both Myanmar and Thailand. In Myanmar, the earthquake has caused widespread damage to buildings and infrastructure, leading to displacement of people and potential casualties. In Thailand, a collapsed building at a construction site highlights the vulnerability of urban areas to such disasters. The response efforts are focused on rescue operations, providing aid to affected populations, and addressing immediate safety concerns.",
+        "Discussion": "Ongoing response efforts include search and rescue missions, medical assistance for injured individuals, and provision of shelter for displaced people. Priorities should focus on ensuring the safety of those in affected areas, providing necessary medical care, and coordinating international aid to support recovery efforts. There is also a need to address misinformation and ensure that accurate information reaches the public.",
+        "Recommendation": "Critical actions for humanitarian aid include deploying additional rescue teams to search for survivors, setting up temporary shelters for displaced people, and providing essential medical supplies. It is also crucial to establish communication channels to disseminate accurate information and coordinate efforts among local authorities and international organizations."
+    },
+    "tweets": [
+        {
+            "Username": "Florian Witulski",
+            "Date": "2025-03-28",
+            "Retweets": "20584",
+            "Tweet": "Earthquake sum up 3pm (Mynamar/Thailand) - 7.7 quake hit near Mandalay/Myanmar - Hundreds of homes collapsed (various Myanmar cities) - Strong shocks in Thailand + multiple building collapse in Bangkok - USGS predicts thousands of people dead (Bangkok clips from social media:)"
+        },
+        {
+            "Username": "UDD news \u0e22\u0e39\u0e14\u0e35\u0e14\u0e35\u0e19\u0e34\u0e27\u0e2a\u0e4c",
+            "Date": "2025-04-04",
+            "Retweets": "10820",
+            "Tweet": "'\u00e0\u00b8\u008a\u00e0\u00b8\u00b2\u00e0\u00b8\u00a7\u00e0\u00b9\u0084\u00e0\u00b8\u0097\u00e0\u00b8\u00a2\u00e0\u00b8\u0082\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u0088\u00e0\u00b8\u0087\u00e0\u00b9\u0080\u00e0\u00b8\u00aa\u00e0\u00b8\u00b5\u00e0\u00b8\u00a2\u00e0\u00b8\u0087\u00e0\u00b9\u0084\u00e0\u00b8\u009b\u00e0\u00b8\u0096\u00e0\u00b8\u00b6\u00e0\u00b8\u0087 '\u00e0\u00b8\u00a1\u00e0\u00b8\u00b4\u00e0\u00b8\u0099 \u00e0\u00b8\u00ad\u00e0\u00b9\u0088\u00e0\u00b8\u00ad\u00e0\u00b8\u0087 \u00e0\u00b8\u00ab\u00e0\u00b8\u00a5\u00e0\u00b9\u0088\u00e0\u00b8\u00b2\u00e0\u00b8\u00a2' \u00e0\u00b9\u0081\u00e0\u00b8\u00a5\u00e0\u00b8\u00b0\u00e0\u00b8\u0099\u00e0\u00b8\u00b2\u00e0\u00b8\u0099\u00e0\u00b8\u00b2\u00e0\u00b8\u009b\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b9\u0080\u00e0\u00b8\u0097\u00e0\u00b8\u00a8\u00e0\u00b8\u0097\u00e0\u00b8\u00b1\u00e0\u00b9\u0088\u00e0\u00b8\u00a7\u00e0\u00b9\u0082\u00e0\u00b8\u00a5\u00e0\u00b8\u0081\u00e0\u00b8\u00a7\u00e0\u00b9\u0088\u00e0\u00b8\u00b2\u00e0\u00b8\u0084\u00e0\u00b8\u0099\u00e0\u00b9\u0084\u00e0\u00b8\u0097\u00e0\u00b8\u00a2\u00e0\u00b9\u0084\u00e0\u00b8\u00a1\u00e0\u00b9\u0088\u00e0\u00b9\u0080\u00e0\u00b8\u00ad\u00e0\u00b8\u00b2\u00e0\u00b9\u0080\u00e0\u00b8\u009c\u00e0\u00b8\u0094\u00e0\u00b9\u0087\u00e0\u00b8\u0088\u00e0\u00b8\u0081\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3' . \u00e0\u00b8\u0099\u00e0\u00b8\u00b1\u00e0\u00b8\u0081\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\u0081\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2\u00e0\u00b8\u009b\u00e0\u00b8\u00b5 1 \u00e0\u00b8\u0081\u00e0\u00b8\u00a5\u00e0\u00b9\u0088\u00e0\u00b8\u00b2\u00e0\u00b8\u00a7\u00e0\u00b8\u00ab\u00e0\u00b8\u00a5\u00e0\u00b8\u00b1\u00e0\u00b8\u0087\u00e0\u00b8\u0096\u00e0\u00b8\u00b9\u00e0\u00b8\u0081\u00e0\u00b8\u009b\u00e0\u00b8\u00a5\u00e0\u00b9\u0088\u00e0\u00b8\u00ad\u00e0\u00b8\u00a2\u00e0\u00b8\u0095\u00e0\u00b8\u00b1\u00e0\u00b8\u00a7 \u00e0\u00b8\u0097\u00e0\u00b8\u00b5\u00e0\u00b9\u0088 \u00e0\u00b8\u00aa\u00e0\u00b8\u0099.\u00e0\u00b8\u00a2\u00e0\u00b8\u00b2\u00e0\u00b8\u0099\u00e0\u00b8\u0099\u00e0\u00b8\u00b2\u00e0\u00b8\u00a7\u00e0\u00b8\u00b2 \u00e0\u00b9\u0080\u00e0\u00b8\u00ab\u00e0\u00b8\u0095\u00e0\u00b8\u00b8\u00e0\u00b8\u009a\u00e0\u00b8\u00b8\u00e0\u00b8\u0081\u00e0\u00b9\u0080\u00e0\u00b8\u0094\u00e0\u00b8\u00b5\u00e0\u00b9\u0088\u00e0\u00b8\u00a2\u00e0\u00b8\u00a7\u00e0\u00b8\u009b\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u0097\u00e0\u00b9\u0089\u00e0\u00b8\u00a7\u00e0\u00b8\u0087\u00e0\u00b8\u0081\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a1\u00e0\u00b8\u00b2\u00e0\u00b9\u0080\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00ad\u00e0\u00b8\u0099\u00e0\u00b8\u0082\u00e0\u00b8\u00ad\u00e0\u00b8\u0087 '\u00e0\u00b8\u00a1\u00e0\u00b8\u00b4\u00e0\u00b8\u0099\u00e0\u00b8\u00ad\u00e0\u00b9\u0088\u00e0\u00b8\u00ad\u00e0\u00b8\u0087\u00e0\u00b8\u00ab\u00e0\u00b8\u00a5\u00e0\u00b9\u0088\u00e0\u00b8\u00b2\u00e0\u00b8\u00a2' \u00e0\u00b8\u0097\u00e0\u00b8\u00b5\u00e0\u00b9\u0088\u00e0\u00b8\u0081\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u009b\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u008a\u00e0\u00b8\u00b8\u00e0\u00b8\u00a1 BIMSTEC #UDDnews #\u00e0\u00b8\u00a2\u00e0\u00b8\u00b9\u00e0\u00b8\u0094\u00e0\u00b8\u00b5\u00e0\u00b8\u0094\u00e0\u00b8\u00b5\u00e0\u00b8\u0099\u00e0\u00b8\u00b4\u00e0\u00b8\u00a7\u00e0\u00b8\u00aa\u00e0\u00b9\u008c #\u00e0\u00b8\u00a1\u00e0\u00b8\u00b4\u00e0\u00b8\u0099\u00e0\u00b8\u00ad\u00e0\u00b9\u0088\u00e0\u00b8\u00ad\u00e0\u00b8\u0087\u00e0\u00b8\u00ab\u00e0\u00b8\u00a5\u00e0\u00b9\u0088\u00e0\u00b8\u00b2\u00e0\u00b8\u00a2 #\u00e0\u00b8\u009e\u00e0\u00b8\u00a1\u00e0\u00b9\u0088\u00e0\u00b8\u00b2 #\u00e0\u00b9\u0080\u00e0\u00b8\u00a1\u00e0\u00b8\u00b5\u00e0\u00b8\u00a2\u00e0\u00b8\u0099\u00e0\u00b8\u00a1\u00e0\u00b8\u00b2 #Myanmar #BIMSTEC"
+        },
+        {
+            "Username": "Daily Loud",
+            "Date": "2025-04-03",
+            "Retweets": "7052",
+            "Tweet": "Father jumped across a gap 600 feet in the air to save his wife and child during the Myanmar earthquake"
+        },
+        {
+            "Username": "BRICS News",
+            "Date": "2025-04-09",
+            "Retweets": "4584",
+            "Tweet": "JUST IN: US tariffs officially go in effect \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00b3 China - 104% \u00f0\u009f\u0087\u00b1\u00f0\u009f\u0087\u00b8 Lesotho - 50% \u00f0\u009f\u0087\u00b0\u00f0\u009f\u0087\u00ad Cambodia - 49% \u00f0\u009f\u0087\u00b1\u00f0\u009f\u0087\u00a6 Laos - 48% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00ac Madagascar - 47% \u00f0\u009f\u0087\u00bb\u00f0\u009f\u0087\u00b3 Vietnam - 46% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00b2 Myanmar - 44% \u00f0\u009f\u0087\u00b1\u00f0\u009f\u0087\u00b0 Sri Lanka - 44% \u00f0\u009f\u0087\u00ab\u00f0\u009f\u0087\u00b0 Falkland Islands - 41% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00be Syria - 41% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00ba Mauritius - 40% \u00f0\u009f\u0087\u00ae\u00f0\u009f\u0087\u00b6 Iraq - 39% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00be Guyana - 38% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00a9 Bangladesh - 37% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00bc Botswana - 37% \u00f0\u009f\u0087\u00b1\u00f0\u009f\u0087\u00ae Liechtenstein - 37% \u00f0\u009f\u0087\u00b7\u00f0\u009f\u0087\u00b8 Serbia - 37% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00ad Thailand - 36% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00a6 Bosnia and Herzegovina - 35% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00b0 North Macedonia - 33% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00b4 Angola - 32% \u00f0\u009f\u0087\u00ab\u00f0\u009f\u0087\u00af Fiji - 32% \u00f0\u009f\u0087\u00ae\u00f0\u009f\u0087\u00a9 Indonesia - 32% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00bc Taiwan - 32% \u00f0\u009f\u0087\u00b1\u00f0\u009f\u0087\u00be Libya - 31% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00a9 Moldova - 31% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00ad Switzerland - 31% \u00f0\u009f\u0087\u00a9\u00f0\u009f\u0087\u00bf Algeria - 30% \u00f0\u009f\u0087\u00b3\u00f0\u009f\u0087\u00b7 Nauru - 30% \u00f0\u009f\u0087\u00bf\u00f0\u009f\u0087\u00a6 South Africa - 30% \u00f0\u009f\u0087\u00b5\u00f0\u009f\u0087\u00b0 Pakistan - 29% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00b3 Tunisia - 28% \u00f0\u009f\u0087\u00b0\u00f0\u009f\u0087\u00bf Kazakhstan - 27% \u00f0\u009f\u0087\u00ae\u00f0\u009f\u0087\u00b3 India - 26% \u00f0\u009f\u0087\u00b0\u00f0\u009f\u0087\u00b7 South Korea - 25% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00b3 Brunei - 24% \u00f0\u009f\u0087\u00af\u00f0\u009f\u0087\u00b5 Japan - 24% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00be Malaysia - 24% \u00f0\u009f\u0087\u00bb\u00f0\u009f\u0087\u00ba Vanuatu - 22% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00ae C\u00c3\u00b4te d\u00e2\u0080\u0099Ivoire - 21% \u00f0\u009f\u0087\u00b3\u00f0\u009f\u0087\u00a6 Namibia - 21% \u00f0\u009f\u0087\u00aa\u00f0\u009f\u0087\u00ba European Union - 20% \u00f0\u009f\u0087\u00af\u00f0\u009f\u0087\u00b4 Jordan - 20% \u00f0\u009f\u0087\u00b3\u00f0\u009f\u0087\u00ae Nicaragua - 18% \u00f0\u009f\u0087\u00bf\u00f0\u009f\u0087\u00bc Zimbabwe - 18% \u00f0\u009f\u0087\u00ae\u00f0\u009f\u0087\u00b1 Israel - 17% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00bc Malawi - 17% \u00f0\u009f\u0087\u00b5\u00f0\u009f\u0087\u00ad Philippines - 17% \u00f0\u009f\u0087\u00bf\u00f0\u009f\u0087\u00b2 Zambia - 17% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00bf Mozambique - 16% \u00f0\u009f\u0087\u00b3\u00f0\u009f\u0087\u00b4 Norway - 15% \u00f0\u009f\u0087\u00bb\u00f0\u009f\u0087\u00aa Venezuela - 15% \u00f0\u009f\u0087\u00b3\u00f0\u009f\u0087\u00ac Nigeria - 14% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00a9 Chad - 13% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00b6 Equatorial Guinea - 13% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00b2 Cameroon - 11% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00a9 Democratic Republic of the Congo - 11% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00ab Afghanistan - 10% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00b1 Albania - 10% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00a9 Andorra - 10% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00ae Anguilla - 10% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00ac Antigua and Barbuda - 10% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00b7 Argentina - 10% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00b2 Armenia - 10% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00bc Aruba - 10% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00ba Australia - 10% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00bf Azerbaijan - 10% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00b8 Bahamas - 10% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00ad Bahrain - 10% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00a7 Barbados - 10% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00bf Belize - 10% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00af Benin - 10% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00b2 Bermuda - 10% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00b9 Bhutan - 10% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00b4 Bolivia - 10% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00b7 Brazil - 10% \u00f0\u009f\u0087\u00ae\u00f0\u009f\u0087\u00b4 British Indian Ocean Territory - 10% \u00f0\u009f\u0087\u00bb\u00f0\u009f\u0087\u00ac British Virgin Islands - 10% \u00f0\u009f\u0087\u00a7\u00f0\u009f\u0087\u00ae Burundi - 10% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00bb Cabo Verde - 10% \u00f0\u009f\u0087\u00b0\u00f0\u009f\u0087\u00be Cayman Islands - 10% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00ab Central African Republic - 10% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00b1 Chile - 10% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00bd Christmas Island - 10% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00a8 Cocos (Keeling) Islands - 10% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00b4 Colombia - 10% \u00f0\u009f\u0087\u00b0\u00f0\u009f\u0087\u00b2 Comoros - 10% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00b0 Cook Islands - 10% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00b7 Costa Rica - 10% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00bc Cura\u00c3\u00a7ao - 10% \u00f0\u009f\u0087\u00a9\u00f0\u009f\u0087\u00af Djibouti - 10% \u00f0\u009f\u0087\u00a9\u00f0\u009f\u0087\u00b2 Dominica - 10% \u00f0\u009f\u0087\u00a9\u00f0\u009f\u0087\u00b4 Dominican Republic - 10% \u00f0\u009f\u0087\u00aa\u00f0\u009f\u0087\u00a8 Ecuador - 10% \u00f0\u009f\u0087\u00aa\u00f0\u009f\u0087\u00ac Egypt - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00bb El Salvador - 10% \u00f0\u009f\u0087\u00aa\u00f0\u009f\u0087\u00b7 Eritrea - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00bf Eswatini - 10% \u00f0\u009f\u0087\u00aa\u00f0\u009f\u0087\u00b9 Ethiopia - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00ab French Guiana - 10% \u00f0\u009f\u0087\u00b5\u00f0\u009f\u0087\u00ab French Polynesia - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00a6 Gabon - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00b2 Gambia - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00aa Georgia - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00ad Ghana - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00ae Gibraltar - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00a9 Grenada - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00b5 Guadeloupe - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00b9 Guatemala - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00b3 Guinea - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00bc Guinea-Bissau - 10% \u00f0\u009f\u0087\u00ad\u00f0\u009f\u0087\u00b9 Haiti - 10% \u00f0\u009f\u0087\u00ad\u00f0\u009f\u0087\u00b2 Heard and McDonald Islands - 10% \u00f0\u009f\u0087\u00ad\u00f0\u009f\u0087\u00b3 Honduras - 10% \u00f0\u009f\u0087\u00ae\u00f0\u009f\u0087\u00b8 Iceland - 10% \u00f0\u009f\u0087\u00ae\u00f0\u009f\u0087\u00b7 Iran - 10% \u00f0\u009f\u0087\u00af\u00f0\u009f\u0087\u00b2 Jamaica - 10% \u00f0\u009f\u0087\u00b0\u00f0\u009f\u0087\u00aa Kenya - 10% \u00f0\u009f\u0087\u00b0\u00f0\u009f\u0087\u00ae Kiribati - 10% \u00f0\u009f\u0087\u00bd\u00f0\u009f\u0087\u00b0 Kosovo - 10% \u00f0\u009f\u0087\u00b0\u00f0\u009f\u0087\u00bc Kuwait - 10% \u00f0\u009f\u0087\u00b0\u00f0\u009f\u0087\u00ac Kyrgyzstan - 10% \u00f0\u009f\u0087\u00b1\u00f0\u009f\u0087\u00a7 Lebanon - 10% \u00f0\u009f\u0087\u00b1\u00f0\u009f\u0087\u00b7 Liberia - 10% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00bb Maldives - 10% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00b1 Mali - 10% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00ad Marshall Islands - 10% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00b6 Martinique - 10% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00b7 Mauritania - 10% \u00f0\u009f\u0087\u00be\u00f0\u009f\u0087\u00b9 Mayotte - 10% \u00f0\u009f\u0087\u00ab\u00f0\u009f\u0087\u00b2 Micronesia - 10% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00a8 Monaco - 10% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00b3 Mongolia - 10% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00aa Montenegro - 10% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00b8 Montserrat - 10% \u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00a6 Morocco - 10% \u00f0\u009f\u0087\u00b3\u00f0\u009f\u0087\u00b5 Nepal - 10% \u00f0\u009f\u0087\u00b3\u00f0\u009f\u0087\u00bf New Zealand - 10% \u00f0\u009f\u0087\u00b3\u00f0\u009f\u0087\u00aa Niger - 10% \u00f0\u009f\u0087\u00b3\u00f0\u009f\u0087\u00ab Norfolk Island - 10% \u00f0\u009f\u0087\u00b4\u00f0\u009f\u0087\u00b2 Oman - 10% \u00f0\u009f\u0087\u00b5\u00f0\u009f\u0087\u00a6 Panama - 10% \u00f0\u009f\u0087\u00b5\u00f0\u009f\u0087\u00ac Papua New Guinea - 10% \u00f0\u009f\u0087\u00b5\u00f0\u009f\u0087\u00be Paraguay - 10% \u00f0\u009f\u0087\u00b5\u00f0\u009f\u0087\u00aa Peru - 10% \u00f0\u009f\u0087\u00b6\u00f0\u009f\u0087\u00a6 Qatar - 10% \u00f0\u009f\u0087\u00a8\u00f0\u009f\u0087\u00ac Republic of the Congo - 10% \u00f0\u009f\u0087\u00b7\u00f0\u009f\u0087\u00aa R\u00c3\u00a9union - 10% \u00f0\u009f\u0087\u00b7\u00f0\u009f\u0087\u00bc Rwanda - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00ad Saint Helena - 10% \u00f0\u009f\u0087\u00b0\u00f0\u009f\u0087\u00b3 Saint Kitts and Nevis - 10% \u00f0\u009f\u0087\u00b1\u00f0\u009f\u0087\u00a8 Saint Lucia - 10% \u00f0\u009f\u0087\u00b5\u00f0\u009f\u0087\u00b2 Saint Pierre and Miquelon - 10% \u00f0\u009f\u0087\u00bb\u00f0\u009f\u0087\u00a8 Saint Vincent and the Grenadines - 10% \u00f0\u009f\u0087\u00bc\u00f0\u009f\u0087\u00b8 Samoa - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00b2 San Marino - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00b9 S\u00c3\u00a3o Tom\u00c3\u00a9 and Pr\u00c3\u00adncipe - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00a6 Saudi Arabia - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00b3 Senegal - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00b1 Sierra Leone - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00ac Singapore - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00bd Sint Maarten - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00a7 Solomon Islands - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00b8 South Sudan - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00a9 Sudan - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00b7 Suriname - 10% \u00f0\u009f\u0087\u00b8\u00f0\u009f\u0087\u00af Svalbard and Jan Mayen - 10% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00af Tajikistan - 10% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00bf Tanzania - 10% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00b1 Timor-Leste - 10% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00ac Togo - 10% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00b0 Tokelau - 10% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00b4 Tonga - 10% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00b9 Trinidad and Tobago - 10% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00b7 Turkey - 10% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00b2 Turkmenistan - 10% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00a8 Turks and Caicos Islands - 10% \u00f0\u009f\u0087\u00b9\u00f0\u009f\u0087\u00bb Tuvalu - 10% \u00f0\u009f\u0087\u00ba\u00f0\u009f\u0087\u00ac Uganda - 10% \u00f0\u009f\u0087\u00ba\u00f0\u009f\u0087\u00a6 Ukraine - 10% \u00f0\u009f\u0087\u00a6\u00f0\u009f\u0087\u00aa United Arab Emirates - 10% \u00f0\u009f\u0087\u00ac\u00f0\u009f\u0087\u00a7 United Kingdom - 10%"
+        },
+        {
+            "Username": "Lisa Desjardins",
+            "Date": "2025-04-05",
+            "Retweets": "3524",
+            "Tweet": "BREAKING here - U.S. team in quake zone told they are fired, per source. The 3-person disaster assessment team sent to Myanmar for the U.S. received termination notices while staying/sleeping outside \u00e2\u0080\u0094 US AID workers were told on an all hands call today, per a source familiar."
+        },
+        {
+            "Username": "CHOEAEDOL : Kpop ranking and community app",
+            "Date": "2025-04-04",
+            "Retweets": "3444",
+            "Tweet": "\u00e2\u009b\u0091\u00ef\u00b8\u008fCHOEAEDOL's Donation Project #StanWithValue Together for Myanmar \u00f0\u009f\u0094\u0081 10 KRW will be donated per retweet (up to 1 million KRW) \u00f0\u009f\u0097\u0093\u00ef\u00b8\u008f Until April 11 (Fri) 00:00 KST \u00e2\u009c Retweet this post! The more RTs, the more donations. \u00f0\u009f\u0097\u00b3 10 KRW will be donated per Themed Pick vote (up to 5 million KRW) \u00f0\u009f\u0097\u0093\u00ef\u00b8\u008f April 8 (Tue) ~ April 10 (Thu) \u00e2\u009c Vote in CHOEAEDOL App \u00e2\u0086\u0092 One Pick \u00e2\u0086\u0092 Themed Pick [CHOEAEDOL's Donation Project] *1 vote per day allowed Your participation can help Myanmar. Let's share warmth and solidarity. #CHOEAEDOL #\u00ec\u00b5\u009c\u00ec\u0095 \u00eb\u008f\u008c #StanWithValue #\u00ea\u00b0\u0080\u00ec\u00b9\u0098\u00eb\u008d\u0095\u00ec\u00a7\u0088 #Donation #\u00ea\u00b8\u00b0\u00eb\u00b6\u0080 #\u00eb\u00af\u00b8\u00ec\u0096\u0080\u00eb\u00a7\u0088 #Myanmar #PrayForMyanmar #HelpMyanmarRecover #TogetherForMyanmar"
+        },
+        {
+            "Username": "Dara \u00d3 Briain",
+            "Date": "2025-04-03",
+            "Retweets": "2767",
+            "Tweet": "These is something particularly crass and callous about announcing a 44% trade tariff against Myanmar, this week, of all weeks."
+        },
+        {
+            "Username": "POM",
+            "Date": "2025-04-07",
+            "Retweets": "2737",
+            "Tweet": "\u00f0\u009f\u0087\u00b2\u00f0\u009f\u0087\u00b2\u00e0\u00b8\u0082\u00e0\u00b9\u0088\u00e0\u00b8\u00b2\u00e0\u00b8\u00a7\u00e0\u00b8\u00a5\u00e0\u00b9\u0088\u00e0\u00b8\u00b2\u00e0\u00b8\u00aa\u00e0\u00b8\u00b8\u00e0\u00b8\u0094!: \u00e0\u00b8\u009b\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u008a\u00e0\u00b8\u00b2\u00e0\u00b8\u008a\u00e0\u00b8\u0099\u00e0\u00b8\u0081\u00e0\u00b8\u00b3\u00e0\u00b8\u00a5\u00e0\u00b8\u00b1\u00e0\u00b8\u0087\u00e0\u00b9\u0080\u00e0\u00b8\u009d\u00e0\u00b9\u0089\u00e0\u00b8\u00b2\u00e0\u00b8\u0094\u00e0\u00b8\u00b9\u00e0\u00b8\u00ad\u00e0\u00b8\u00a2\u00e0\u00b9\u0088\u00e0\u00b8\u00b2\u00e0\u00b8\u0087\u00e0\u00b8\u0081\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u00a7\u00e0\u00b8\u0099\u00e0\u00b8\u0081\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u00a7\u00e0\u00b8\u00b2\u00e0\u00b8\u00a2\u00e0\u00b9\u0083\u00e0\u00b8\u0088\u00e0\u00b8\u0081\u00e0\u00b8\u00b1\u00e0\u00b8\u009a\u00e0\u00b8\u0081\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u009b\u00e0\u00b8\u00b0\u00e0\u00b8\u0097\u00e0\u00b8\u00b8\u00e0\u00b8\u0082\u00e0\u00b8\u00ad\u00e0\u00b8\u0087\u00e0\u00b8 \u00e0\u00b8\u00b9\u00e0\u00b9\u0080\u00e0\u00b8\u0082\u00e0\u00b8\u00b2\u00e0\u00b9\u0084\u00e0\u00b8\u009f\u00e0\u00b9\u0082\u00e0\u00b8\u0084\u00e0\u00b8\u00a5\u00e0\u00b8\u0099\u00e0\u00b9\u0083\u00e0\u00b8\u0081\u00e0\u00b8\u00a5\u00e0\u00b9\u0089\u00e0\u00b8\u00ab\u00e0\u00b8\u00a1\u00e0\u00b8\u00b9\u00e0\u00b9\u0088\u00e0\u00b8\u009a\u00e0\u00b9\u0089\u00e0\u00b8\u00b2\u00e0\u00b8\u0099\u00e0\u00b8\u0099\u00e0\u00b8\u00b2\u00e0\u00b8\u0084\u00e0\u00b8\u00b2 \u00e0\u00b8\u0095\u00e0\u00b8\u00b3\u00e0\u00b8\u009a\u00e0\u00b8\u00a5\u00e0\u00b9\u0080\u00e0\u00b8\u00a1\u00e0\u00b8\u00b5\u00e0\u00b8\u00a2\u00e0\u00b8\u0099\u00e0\u00b8\u00ad\u00e0\u00b8\u0087 \u00e0\u00b8\u00a3\u00e0\u00b8\u00b1\u00e0\u00b8\u0090\u00e0\u00b8\u00a2\u00e0\u00b8\u00b0\u00e0\u00b9\u0084\u00e0\u00b8\u0082\u00e0\u00b9\u0088 \u00e0\u00b8\u009b\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b9\u0080\u00e0\u00b8\u0097\u00e0\u00b8\u00a8\u00e0\u00b9\u0080\u00e0\u00b8\u00a1\u00e0\u00b8\u00b5\u00e0\u00b8\u00a2\u00e0\u00b8\u0099\u00e0\u00b8\u00a1\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b9\u008c (\u00e0\u00b8\u009e\u00e0\u00b8\u00a1\u00e0\u00b9\u0088\u00e0\u00b8\u00b2) \u00e0\u00b8\u00a1\u00e0\u00b8\u00b5\u00e0\u00b8\u00a3\u00e0\u00b8\u00b2\u00e0\u00b8\u00a2\u00e0\u00b8\u0087\u00e0\u00b8\u00b2\u00e0\u00b8\u0099\u00e0\u00b8\u00a7\u00e0\u00b9\u0088\u00e0\u00b8\u00b2\u00e0\u00b8 \u00e0\u00b8\u00b9\u00e0\u00b9\u0080\u00e0\u00b8\u0082\u00e0\u00b8\u00b2\u00e0\u00b9\u0084\u00e0\u00b8\u009f\u00e0\u00b9\u0082\u00e0\u00b8\u0084\u00e0\u00b8\u00a5\u00e0\u00b8\u0099\u00e0\u00b8\u0099\u00e0\u00b8\u00b5\u00e0\u00b9\u0089\u00e0\u00b8\u0081\u00e0\u00b9\u0088\u00e0\u00b8\u00ad\u00e0\u00b8\u0095\u00e0\u00b8\u00b1\u00e0\u00b8\u00a7\u00e0\u00b8\u0082\u00e0\u00b8\u00b6\u00e0\u00b9\u0089\u00e0\u00b8\u0099\u00e0\u00b8\u00ab\u00e0\u00b8\u00a5\u00e0\u00b8\u00b1\u00e0\u00b8\u0087\u00e0\u00b8\u0088\u00e0\u00b8\u00b2\u00e0\u00b8\u0081\u00e0\u00b9\u0080\u00e0\u00b8\u0081\u00e0\u00b8\u00b4\u00e0\u00b8\u0094\u00e0\u00b9\u0081\u00e0\u00b8\u009c\u00e0\u00b9\u0088\u00e0\u00b8\u0099\u00e0\u00b8\u0094\u00e0\u00b8\u00b4\u00e0\u00b8\u0099\u00e0\u00b9\u0084\u00e0\u00b8\u00ab\u00e0\u00b8\u00a7\u00e0\u00b9\u0083\u00e0\u00b8\u0099\u00e0\u00b8\u009e\u00e0\u00b8\u00b7\u00e0\u00b9\u0089\u00e0\u00b8\u0099\u00e0\u00b8\u0097\u00e0\u00b8\u00b5\u00e0\u00b9\u0088\u00e0\u00b8\u0094\u00e0\u00b8\u00b1\u00e0\u00b8\u0087\u00e0\u00b8\u0081\u00e0\u00b8\u00a5\u00e0\u00b9\u0088\u00e0\u00b8\u00b2\u00e0\u00b8\u00a7 \u00f0\u009f\u0098\u00b1 #Thailand #\u00e0\u00b9\u0084\u00e0\u00b8\u0097\u00e0\u00b8\u00a2 #\u00e0\u00b9\u0081\u00e0\u00b8\u009c\u00e0\u00b9\u0088\u00e0\u00b8\u0099\u00e0\u00b8\u0094\u00e0\u00b8\u00b4\u00e0\u00b8\u0099\u00e0\u00b9\u0084\u00e0\u00b8\u00ab\u00e0\u00b8\u00a7 #Myanmar #\u00e0\u00b8\u009e\u00e0\u00b8\u00a1\u00e0\u00b9\u0088\u00e0\u00b8\u00b2 #\u00e0\u00b8\u00a1\u00e0\u00b8\u00b1\u00e0\u00b8\u0093\u00e0\u00b8\u0091\u00e0\u00b8\u00b0\u00e0\u00b9\u0080\u00e0\u00b8\u00a5\u00e0\u00b8\u00a2\u00e0\u00b9\u008c #earthquake"
+        },
+        {
+            "Username": "Inquirer",
+            "Date": "2025-03-28",
+            "Retweets": "2270",
+            "Tweet": "PRAY FOR MYANMAR AND THAILAND \u00f0\u009f\u0099\u008f LOOK: A collapsed building at a construction site is seen in Bangkok, Thailand, on Friday, March 28, 2025, following a magnitude 7.7 earthquake in Myanmar. A powerful tremor struck central Myanmar on March 28, buckling roads in the capital, Naypyidaw, damaging buildings, and forcing people to flee into the streets in neighboring Thailand. | \u00f0\u009f\u0093\u00b7: Lillian Suwanrumpha/AFP READ RELATED STORY:"
+        },
+        {
+            "Username": "BBC News Indonesia",
+            "Date": "2025-04-02",
+            "Retweets": "1974",
+            "Tweet": "Ini adalah video palsu buatan AI yang viral setelah gempa melanda Myanmar, pekan lalu. Video ini telah ditonton jutaan orang di TikTok. Jadi, bagaimana kita bisa tahu bahwa ini adalah video palsu? Simak selengkapnya."
+        }
+    ],
+    "details": [
+        {
+            "Date": "2025-03-28",
+            "Sentiment": 37.75,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Social media activity was moderate with 28 tweets, reflecting a negative sentiment (avg score: 37.75). The primary themes included genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+        },
+        {
+            "Date": "2025-03-29",
+            "Sentiment": 41.09,
+            "Elements": "Genre, Related, Aid Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Activity further decreased to 13 tweets with a slightly improved sentiment (avg score: 41.09). Themes remained focused on genre, related topics, aid requests, weather, and earthquakes."
+        },
+        {
+            "Date": "2025-03-30",
+            "Sentiment": 40.87,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Social media activity dropped to just 6 tweets, maintaining a neutral sentiment (avg score: 40.87). The main themes were genre, related topics, weather-related issues, aid requests, and earthquakes."
+        },
+        {
+            "Date": "2025-03-31",
+            "Sentiment": 38.6,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "",
+            "Summary": "Activity continued to decline with only 5 tweets, showing a slightly negative sentiment (avg score: 38.6). Themes included genre, related topics, weather, earthquake coverage, and aid requests."
+        },
+        {
+            "Date": "2025-04-01",
+            "Sentiment": 39.3,
+            "Elements": "Genre, Related, Aid Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Social media activity surged with 336 tweets, maintaining a neutral to slightly negative sentiment (avg score: 39.3). The primary themes were genre, related topics, aid requests, weather-related issues, and earthquake coverage."
+        },
+        {
+            "Date": "2025-04-02",
+            "Sentiment": 40.61,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Activity remained high with 338 tweets, showing a slight improvement in sentiment (avg score: 40.61). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+        },
+        {
+            "Date": "2025-04-03",
+            "Sentiment": 40.3,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Social media activity decreased to 178 tweets with a neutral sentiment (avg score: 40.3). The main themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+        },
+        {
+            "Date": "2025-04-04",
+            "Sentiment": 41.12,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Activity further declined to 143 tweets, showing a slight improvement in sentiment (avg score: 41.12). Themes remained focused on genre, related topics, aid requests, weather-related issues, and earthquakes."
+        },
+        {
+            "Date": "2025-04-05",
+            "Sentiment": 40.84,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Social media activity decreased to 88 tweets with a neutral sentiment (avg score: 40.84). The primary themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+        },
+        {
+            "Date": "2025-04-06",
+            "Sentiment": 41.28,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Activity remained at 88 tweets with a slight improvement in sentiment (avg score: 41.28). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+        },
+        {
+            "Date": "2025-04-07",
+            "Sentiment": 40.6,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "",
+            "Summary": "Social media activity decreased to 61 tweets with a neutral sentiment (avg score: 40.6). The main themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+        },
+        {
+            "Date": "2025-04-08",
+            "Sentiment": 41.31,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Activity increased slightly to 114 tweets with a slight improvement in sentiment (avg score: 41.31). Themes remained focused on genre, related topics, aid requests, weather-related issues, and earthquakes."
+        },
+        {
+            "Date": "2025-04-09",
+            "Sentiment": 41.51,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Social media activity increased to 122 tweets with a slight improvement in sentiment (avg score: 41.51). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+        },
+        {
+            "Date": "2025-04-10",
+            "Sentiment": 41.54,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Activity decreased to 63 tweets with a slight improvement in sentiment (avg score: 41.54). The primary themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+        },
+        {
+            "Date": "2025-04-11",
+            "Sentiment": 41.58,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "",
+            "Summary": "Social media activity remained at 68 tweets with a slight improvement in sentiment (avg score: 41.58). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+        },
+        {
+            "Date": "2025-04-12",
+            "Sentiment": 40.84,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "",
+            "Summary": "Activity decreased to 41 tweets with a neutral sentiment (avg score: 40.84). The main themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+        },
+        {
+            "Date": "2025-04-13",
+            "Sentiment": 42.88,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "",
+            "Summary": "Social media activity increased slightly to 62 tweets with a significant improvement in sentiment (avg score: 42.88). Themes remained focused on genre, related topics, aid requests, weather-related issues, and earthquakes."
+        },
+        {
+            "Date": "2025-04-14",
+            "Sentiment": 40.75,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Activity decreased to 41 tweets with a slight improvement in sentiment (avg score: 40.75). The primary themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+        },
+        {
+            "Date": "2025-04-15",
+            "Sentiment": 39.83,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Social media activity remained at 42 tweets with a slight decrease in sentiment (avg score: 39.83). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+        },
+        {
+            "Date": "2025-04-16",
+            "Sentiment": 41.23,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Activity decreased to 38 tweets with a slight improvement in sentiment (avg score: 41.23). The main themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+        },
+        {
+            "Date": "2025-04-17",
+            "Sentiment": 42.08,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "",
+            "Summary": "Social media activity increased slightly to 39 tweets with a significant improvement in sentiment (avg score: 42.08). Themes remained focused on genre, related topics, aid requests, weather-related issues, and earthquakes."
+        },
+        {
+            "Date": "2025-04-18",
+            "Sentiment": 43.09,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "Request",
+            "Summary": "Activity decreased to 37 tweets with a significant improvement in sentiment (avg score: 43.09). The primary themes were genre, related topics, aid requests, weather-related issues, and earthquake coverage."
+        },
+        {
+            "Date": "2025-04-19",
+            "Sentiment": 40.85,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "",
+            "Summary": "Social media activity decreased to 26 tweets with a neutral sentiment (avg score: 40.85). The main themes were genre, related topics, aid requests, weather-related issues, and earthquake coverage."
+        },
+        {
+            "Date": "2025-04-20",
+            "Sentiment": 41.05,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "",
+            "Summary": "Activity further decreased to 18 tweets with a slight improvement in sentiment (avg score: 41.05). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+        },
+        {
+            "Date": "2025-04-21",
+            "Sentiment": 41.93,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "",
+            "Summary": "Social media activity decreased to 16 tweets with a significant improvement in sentiment (avg score: 41.93). The primary themes were genre, related topics, aid requests, weather-related issues, and earthquake coverage."
+        },
+        {
+            "Date": "2025-04-22",
+            "Sentiment": 41.35,
+            "Elements": "Genre, Related, Weather Related",
+            "Impact": "",
+            "Requests": "",
+            "Summary": "Activity increased slightly to 38 tweets with a slight improvement in sentiment (avg score: 41.35). Themes remained focused on genre, related topics, aid requests, weather-related issues, and earthquakes."
+        }
+    ]
+}

@@ -91,7 +91,7 @@ class AgentState(TypedDict):
 def init_llm() -> Ollama:
     """Initializes and returns the Ollama LLM for agent operations."""
     try:
-        return Ollama(model="gemma3n:e4b", temperature = 0)
+        return Ollama(model="qwen2.5-coder:14b", temperature = 0)
     except Exception as e:
         logger.error(f"Error initializing LLM: {e}")
         logger.info("Falling back to default LLM")
@@ -382,7 +382,8 @@ def _aggregate_results_by_date(results: List[Dict[str, Any]], all_labels: dict =
     
     for tweet in results:
         tweet_norm = {k.lower(): v for k, v in tweet.items()}
-        date_str = (tweet_norm.get('date', '') or tweet_norm.get('time', '')).split(' ')[0]
+        date_str_raw = (tweet_norm.get('date', '') or tweet_norm.get('time', ''))
+        date_str = date_str_raw.split(' ')[0].split('_')[0]
         if not date_str:
             continue
             
@@ -501,8 +502,8 @@ def generate_report_data(
             sorted_tweets = sorted(sentiment_analysis, key=lambda x: int(x.get('retweets', 0)), reverse=True)
             for tweet in sorted_tweets[:10]:
                 top_tweets.append({
-                    "Username": tweet.get("username", ""), "Date": tweet.get("date", ""),
-                    "Retweets": str(tweet.get("retweets", "0")), "Tweet": clean_tweet_text(tweet.get("tweet", ""))
+                    "Username": tweet.get("username", ""), "Date": tweet.get("time", "").split("_")[0],
+                    "Retweets": str(tweet.get("retweets", "0")), "Tweet": clean_tweet_text(tweet.get("text", ""))
                 })
         
         day_by_day_data = _aggregate_results_by_date(sentiment_analysis)
@@ -533,16 +534,18 @@ def generate_report_data(
         final_top_tweets = top_tweets
         while len(final_top_tweets) < 10:
             final_top_tweets.append({"Username": "N/A", "Date": "N/A", "Retweets": "0", "Tweet": "N/A"})
-        
+
         final_day_by_day_data = []
         for day_data in day_by_day_data:
             top_elements = sorted(day_data['label_counts'].items(), key=lambda item: item[1], reverse=True)[:3]
+            impact_labels = [k for k, v in day_data['label_counts'].items() if 'impact' in k and v > 0]
+            request_labels = [k for k, v in day_data['label_counts'].items() if 'request' in k and v > 0]
             final_day_by_day_data.append({
                 "Date": day_data.get("date", "N/A"),
                 "Sentiment": round(day_data.get("sentiment_score", 50.0), 2),
                 "Elements": ", ".join([k.replace('_', ' ').title() for k, v in top_elements if v > 0]),
-                "Impact": "See report sections",
-                "Requests": "See report sections",
+                "Impact": ", ".join([l.replace('_', ' ').title() for l in impact_labels]),
+                "Requests": ", ".join([l.replace('_', ' ').title() for l in request_labels]),
                 "Summary": day_data.get("Summary", "No summary available.")
             })
 
