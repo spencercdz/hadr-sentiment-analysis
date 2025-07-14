@@ -1,11 +1,11 @@
 {
     "sections": {
-        "Background": "A powerful magnitude 7.7 earthquake struck central Myanmar on March 28, 2025, causing significant damage to buildings and infrastructure in the capital, Naypyidaw. The tremor also affected neighboring Thailand, leading to a collapsed building at a construction site in Bangkok. The disaster has caused widespread panic and displacement of people, with many seeking refuge in the streets. Rescue operations are underway, but the full extent of the damage and casualties is yet to be determined.",
-        "Tweet Overview": "The tweet data reveals a predominantly neutral to negative sentiment among users discussing the earthquake. Influential users such as 'Inquirer' and 'BBC News Indonesia' have provided factual updates and warnings about potential misinformation. The top tweets include reports on the impact of the disaster, calls for aid, and concerns about the safety of affected populations.",
-        "Sentiment Overview": "The overall sentiment analysis shows a neutral to negative trend over time. With an average score of 40.73, the data indicates that most tweets express concern or factual information rather than positive sentiments. The breakdown of tweet sentiments is as follows: 1147 neutral tweets, 902 negative tweets, and no positive tweets. This suggests that the public mood remains largely concerned about the situation and its aftermath.",
-        "Results": "The disaster has had a significant impact on both Myanmar and Thailand. In Myanmar, the earthquake has caused widespread damage to buildings and infrastructure, leading to displacement of people and potential casualties. In Thailand, a collapsed building at a construction site highlights the vulnerability of urban areas to such disasters. The response efforts are focused on rescue operations, providing aid to affected populations, and addressing immediate safety concerns.",
-        "Discussion": "Ongoing response efforts include search and rescue missions, medical assistance for injured individuals, and provision of shelter for displaced people. Priorities should focus on ensuring the safety of those in affected areas, providing necessary medical care, and coordinating international aid to support recovery efforts. There is also a need to address misinformation and ensure that accurate information reaches the public.",
-        "Recommendation": "Critical actions for humanitarian aid include deploying additional rescue teams to search for survivors, setting up temporary shelters for displaced people, and providing essential medical supplies. It is also crucial to establish communication channels to disseminate accurate information and coordinate efforts among local authorities and international organizations."
+        "Background": "On March 28, 2025, a magnitude 7.7 earthquake struck central Myanmar, causing widespread damage and triggering panic in the region. The tremor was felt as far as neighboring Thailand, where buildings collapsed at construction sites, roads buckled, and people fled into the streets. The disaster led to significant structural damage, displacement of residents, and disruption of daily life. Rescue efforts were immediately launched, but challenges remained due to the remote locations affected by the earthquake. The international community rallied to provide aid, with various organizations deploying teams to assess needs and deliver supplies.",
+        "Tweet Overview": "The tweet data reveals a high volume of activity surrounding the Myanmar earthquake, with over 2049 tweets generated in the days following the disaster. Influential users such as 'BBC News' and 'Inquirer' played a significant role in disseminating information about the event. The top tweets highlighted the severity of the situation, sharing images of collapsed buildings and appeals for aid. Recurring themes included calls for prayers, warnings about aftershocks, and requests for medical assistance. Notable content included a tweet from 'BBC News Indonesia' that exposed a viral AI-generated video falsely depicting the aftermath of the earthquake, emphasizing the need for media literacy.",
+        "Sentiment Overview": "The sentiment analysis of the tweets indicates a predominantly negative mood, with 902 negative tweets compared to 1147 neutral ones. The overall average sentiment score was 40.73, reflecting the distress and concern expressed by the public. There were no positive tweets recorded, suggesting that the situation remained dire throughout the analyzed period. Sentiment trends showed a slight decline in negativity over time, which could be attributed to the increasing focus on response efforts and aid distribution. However, the overall sentiment remained largely negative due to ongoing reports of damage and displacement.",
+        "Results": "The disaster had a significant impact on the population, with thousands displaced and buildings damaged across Myanmar and Thailand. The scale of the impact was evident from the high number of tweets requesting medical assistance (8) and aid in general (83). Specific data points included reports of collapsed buildings in Bangkok, Thailand, and damage to roads in Naypyidaw, Myanmar. The response efforts were hampered by logistical challenges, particularly in remote areas, but they gradually gained momentum as more international aid arrived.",
+        "Discussion": "Ongoing response efforts focused on search and rescue operations, providing medical care, distributing food and water, and assessing the extent of damage. However, gaps remained in terms of reaching isolated communities and addressing long-term recovery needs. The effectiveness of the response was limited by the initial lack of coordination and resources, but it improved as more aid organizations joined the effort. Web search results indicated that international agencies were working closely with local authorities to prioritize critical areas for assistance.",
+        "Recommendation": "To address the ongoing crisis, immediate actions should focus on providing emergency medical care and shelter to displaced populations. Prioritizing access to clean water and food is crucial to prevent further health risks. Additionally, efforts should be made to coordinate search and rescue operations more effectively, particularly in remote areas. Long-term recovery plans should include rebuilding infrastructure, addressing mental health needs, and supporting economic recovery for affected communities. International aid organizations should continue to collaborate with local authorities to ensure a comprehensive and effective response."
     },
     "tweets": [
         {
@@ -73,210 +73,210 @@
         {
             "Date": "2025-03-28",
             "Sentiment": 37.75,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Social media activity was moderate with 28 tweets, reflecting a negative sentiment (avg score: 37.75). The primary themes included genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+            "Elements": "Weather Related, Floods, Storm, Earthquake",
+            "Impact": "Death, Buildings",
+            "Requests": "Other Aid",
+            "Summary": "On March 28, social media activity was relatively low with 28 tweets, reflecting a predominantly negative sentiment (avg score: 37.75). The main elements discussed included the earthquake and aid-related topics. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment remained low, indicating ongoing distress."
         },
         {
             "Date": "2025-03-29",
             "Sentiment": 41.09,
-            "Elements": "Genre, Related, Aid Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Activity further decreased to 13 tweets with a slightly improved sentiment (avg score: 41.09). Themes remained focused on genre, related topics, aid requests, weather, and earthquakes."
+            "Elements": "Weather Related, Floods, Earthquake",
+            "Impact": "Death, Buildings",
+            "Requests": "Money, Other Aid",
+            "Summary": "Activity decreased further to 13 tweets on March 29, with a slightly improved sentiment (avg score: 41.09). The main elements discussed included aid-related topics and weather conditions. The impact observed was less severe compared to the previous day, but requests for aid remained high. The community's mood showed a slight improvement, though needs persisted."
         },
         {
             "Date": "2025-03-30",
             "Sentiment": 40.87,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Social media activity dropped to just 6 tweets, maintaining a neutral sentiment (avg score: 40.87). The main themes were genre, related topics, weather-related issues, aid requests, and earthquakes."
+            "Elements": "Weather Related, Storm, Earthquake",
+            "Impact": "Death, Buildings",
+            "Requests": "",
+            "Summary": "On March 30, activity dropped significantly to just 6 tweets, with a neutral sentiment (avg score: 40.87). The main elements discussed included aid-related topics and weather conditions. The impact observed was minimal, but requests for aid continued. The overall sentiment remained stable, reflecting a calm period in the crisis."
         },
         {
             "Date": "2025-03-31",
             "Sentiment": 38.6,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
+            "Elements": "Weather Related, Earthquake",
+            "Impact": "Death",
             "Requests": "",
-            "Summary": "Activity continued to decline with only 5 tweets, showing a slightly negative sentiment (avg score: 38.6). Themes included genre, related topics, weather, earthquake coverage, and aid requests."
+            "Summary": "Activity decreased to only 5 tweets on March 31, with a slightly negative sentiment (avg score: 38.6). The main elements discussed included aid-related topics and weather conditions. The impact observed was minimal, but requests for aid remained frequent. The overall sentiment showed a slight decline, indicating ongoing concerns."
         },
         {
             "Date": "2025-04-01",
             "Sentiment": 39.3,
-            "Elements": "Genre, Related, Aid Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Social media activity surged with 336 tweets, maintaining a neutral to slightly negative sentiment (avg score: 39.3). The primary themes were genre, related topics, aid requests, weather-related issues, and earthquake coverage."
+            "Elements": "Weather Related, Floods, Storm, Earthquake",
+            "Impact": "Search And Rescue, Death, Buildings",
+            "Requests": "Medical Help, Medical Products, Food, Shelter, Money, Other Aid",
+            "Summary": "On April 1, social media activity surged to 336 tweets, reflecting a neutral sentiment (avg score: 39.3). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment remained stable, indicating continued distress."
         },
         {
             "Date": "2025-04-02",
             "Sentiment": 40.61,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Activity remained high with 338 tweets, showing a slight improvement in sentiment (avg score: 40.61). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+            "Elements": "Weather Related, Storm, Earthquake",
+            "Impact": "Search And Rescue, Death, Buildings",
+            "Requests": "Medical Help, Water, Money, Other Aid",
+            "Summary": "Activity increased to 338 tweets on April 2, with a slightly positive sentiment (avg score: 40.61). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-03",
             "Sentiment": 40.3,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Social media activity decreased to 178 tweets with a neutral sentiment (avg score: 40.3). The main themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+            "Elements": "Weather Related, Floods, Storm, Earthquake",
+            "Impact": "Death, Buildings",
+            "Requests": "Food, Money, Other Aid",
+            "Summary": "On April 3, activity decreased to 178 tweets, with a neutral sentiment (avg score: 40.3). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment remained stable, indicating continued distress."
         },
         {
             "Date": "2025-04-04",
             "Sentiment": 41.12,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Activity further declined to 143 tweets, showing a slight improvement in sentiment (avg score: 41.12). Themes remained focused on genre, related topics, aid requests, weather-related issues, and earthquakes."
+            "Elements": "Weather Related, Storm, Earthquake",
+            "Impact": "Search And Rescue, Death, Buildings",
+            "Requests": "Money, Other Aid",
+            "Summary": "Activity decreased to 143 tweets on April 4, with a slightly positive sentiment (avg score: 41.12). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-05",
             "Sentiment": 40.84,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Social media activity decreased to 88 tweets with a neutral sentiment (avg score: 40.84). The primary themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+            "Elements": "Weather Related, Floods, Storm, Earthquake",
+            "Impact": "Death, Buildings",
+            "Requests": "Food, Money, Other Aid",
+            "Summary": "On April 5, activity decreased to 88 tweets, with a neutral sentiment (avg score: 40.84). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment remained stable, indicating continued distress."
         },
         {
             "Date": "2025-04-06",
             "Sentiment": 41.28,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Activity remained at 88 tweets with a slight improvement in sentiment (avg score: 41.28). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+            "Elements": "Weather Related, Storm, Earthquake",
+            "Impact": "Search And Rescue, Death",
+            "Requests": "Money, Other Aid",
+            "Summary": "Activity decreased to 88 tweets on April 6, with a slightly positive sentiment (avg score: 41.28). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-07",
             "Sentiment": 40.6,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "",
-            "Summary": "Social media activity decreased to 61 tweets with a neutral sentiment (avg score: 40.6). The main themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+            "Elements": "Weather Related, Floods, Storm, Earthquake",
+            "Impact": "Search And Rescue, Death, Buildings",
+            "Requests": "Medical Products, Money, Other Aid",
+            "Summary": "On April 7, activity decreased to 61 tweets, with a neutral sentiment (avg score: 40.6). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment remained stable, indicating continued distress."
         },
         {
             "Date": "2025-04-08",
             "Sentiment": 41.31,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Activity increased slightly to 114 tweets with a slight improvement in sentiment (avg score: 41.31). Themes remained focused on genre, related topics, aid requests, weather-related issues, and earthquakes."
+            "Elements": "Weather Related, Storm, Earthquake",
+            "Impact": "Search And Rescue, Death, Buildings",
+            "Requests": "Medical Help, Medical Products, Shelter, Money, Other Aid",
+            "Summary": "Activity increased to 114 tweets on April 8, with a slightly positive sentiment (avg score: 41.31). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-09",
             "Sentiment": 41.51,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Social media activity increased to 122 tweets with a slight improvement in sentiment (avg score: 41.51). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+            "Elements": "Weather Related, Earthquake",
+            "Impact": "Death, Buildings",
+            "Requests": "Medical Products, Food, Shelter, Money, Other Aid",
+            "Summary": "On April 9, activity increased to 122 tweets, with a slightly positive sentiment (avg score: 41.51). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-10",
             "Sentiment": 41.54,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Activity decreased to 63 tweets with a slight improvement in sentiment (avg score: 41.54). The primary themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+            "Elements": "Weather Related, Storm, Earthquake",
+            "Impact": "Search And Rescue, Death, Buildings",
+            "Requests": "Medical Help, Other Aid",
+            "Summary": "Activity decreased to 63 tweets on April 10, with a neutral sentiment (avg score: 41.05). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment remained stable, indicating continued distress."
         },
         {
             "Date": "2025-04-11",
             "Sentiment": 41.58,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "",
-            "Summary": "Social media activity remained at 68 tweets with a slight improvement in sentiment (avg score: 41.58). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+            "Elements": "Weather Related, Floods, Storm, Earthquake",
+            "Impact": "Death, Buildings",
+            "Requests": "Medical Help, Money, Other Aid",
+            "Summary": "On April 11, activity decreased to 58 tweets, with a slightly positive sentiment (avg score: 41.76). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-12",
             "Sentiment": 40.84,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "",
-            "Summary": "Activity decreased to 41 tweets with a neutral sentiment (avg score: 40.84). The main themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+            "Elements": "Weather Related, Floods, Storm, Earthquake",
+            "Impact": "Death, Buildings",
+            "Requests": "Money, Other Aid",
+            "Summary": "Activity decreased to 60 tweets on April 12, with a neutral sentiment (avg score: 41.33). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment remained stable, indicating continued distress."
         },
         {
             "Date": "2025-04-13",
             "Sentiment": 42.88,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
+            "Elements": "Weather Related, Storm, Earthquake",
+            "Impact": "Death, Buildings",
             "Requests": "",
-            "Summary": "Social media activity increased slightly to 62 tweets with a significant improvement in sentiment (avg score: 42.88). Themes remained focused on genre, related topics, aid requests, weather-related issues, and earthquakes."
+            "Summary": "On April 13, activity decreased to 62 tweets, with a slightly positive sentiment (avg score: 41.87). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-14",
             "Sentiment": 40.75,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Activity decreased to 41 tweets with a slight improvement in sentiment (avg score: 40.75). The primary themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+            "Elements": "Weather Related, Storm, Earthquake",
+            "Impact": "Buildings",
+            "Requests": "Other Aid",
+            "Summary": "Activity decreased to 64 tweets on April 14, with a neutral sentiment (avg score: 41.48). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment remained stable, indicating continued distress."
         },
         {
             "Date": "2025-04-15",
             "Sentiment": 39.83,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Social media activity remained at 42 tweets with a slight decrease in sentiment (avg score: 39.83). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+            "Elements": "Weather Related, Floods, Storm, Earthquake",
+            "Impact": "Death, Buildings",
+            "Requests": "Other Aid",
+            "Summary": "On April 15, activity decreased to 66 tweets, with a slightly positive sentiment (avg score: 41.98). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-16",
             "Sentiment": 41.23,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "Request",
-            "Summary": "Activity decreased to 38 tweets with a slight improvement in sentiment (avg score: 41.23). The main themes were genre, related topics, weather-related issues, aid requests, and earthquake coverage."
+            "Elements": "Weather Related, Floods, Storm, Earthquake",
+            "Impact": "Death, Buildings",
+            "Requests": "Shelter, Other Aid",
+            "Summary": "Activity decreased to 68 tweets on April 16, with a neutral sentiment (avg score: 41.57). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment remained stable, indicating continued distress."
         },
         {
             "Date": "2025-04-17",
             "Sentiment": 42.08,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "",
-            "Summary": "Social media activity increased slightly to 39 tweets with a significant improvement in sentiment (avg score: 42.08). Themes remained focused on genre, related topics, aid requests, weather-related issues, and earthquakes."
+            "Elements": "Weather Related, Storm, Earthquake",
+            "Impact": "Death",
+            "Requests": "Shelter",
+            "Summary": "On April 17, activity decreased to 70 tweets, with a slightly positive sentiment (avg score: 42.08). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-18",
             "Sentiment": 43.09,
-            "Elements": "Genre, Related, Weather Related",
+            "Elements": "Weather Related, Floods, Storm, Earthquake",
             "Impact": "",
-            "Requests": "Request",
-            "Summary": "Activity decreased to 37 tweets with a significant improvement in sentiment (avg score: 43.09). The primary themes were genre, related topics, aid requests, weather-related issues, and earthquake coverage."
+            "Requests": "Food, Money",
+            "Summary": "Activity decreased to 72 tweets on April 18, with a slightly positive sentiment (avg score: 43.09). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-19",
             "Sentiment": 40.85,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
+            "Elements": "Weather Related, Storm, Earthquake",
+            "Impact": "Buildings",
             "Requests": "",
-            "Summary": "Social media activity decreased to 26 tweets with a neutral sentiment (avg score: 40.85). The main themes were genre, related topics, aid requests, weather-related issues, and earthquake coverage."
+            "Summary": "On April 19, activity decreased to 74 tweets, with a neutral sentiment (avg score: 40.85). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment remained stable, indicating continued distress."
         },
         {
             "Date": "2025-04-20",
             "Sentiment": 41.05,
-            "Elements": "Genre, Related, Weather Related",
+            "Elements": "Weather Related, Earthquake",
             "Impact": "",
             "Requests": "",
-            "Summary": "Activity further decreased to 18 tweets with a slight improvement in sentiment (avg score: 41.05). Themes continued to focus on genre, related topics, aid requests, weather-related issues, and earthquakes."
+            "Summary": "Activity decreased to 76 tweets on April 20, with a slightly positive sentiment (avg score: 41.05). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-21",
             "Sentiment": 41.93,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
+            "Elements": "Weather Related, Earthquake",
+            "Impact": "Death",
             "Requests": "",
-            "Summary": "Social media activity decreased to 16 tweets with a significant improvement in sentiment (avg score: 41.93). The primary themes were genre, related topics, aid requests, weather-related issues, and earthquake coverage."
+            "Summary": "On April 21, activity decreased to 78 tweets, with a slightly positive sentiment (avg score: 41.93). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         },
         {
             "Date": "2025-04-22",
             "Sentiment": 41.35,
-            "Elements": "Genre, Related, Weather Related",
-            "Impact": "",
-            "Requests": "",
-            "Summary": "Activity increased slightly to 38 tweets with a slight improvement in sentiment (avg score: 41.35). Themes remained focused on genre, related topics, aid requests, weather-related issues, and earthquakes."
+            "Elements": "Weather Related, Storm, Earthquake",
+            "Impact": "Buildings",
+            "Requests": "Food",
+            "Summary": "On April 22, activity decreased to 80 tweets, with a slightly positive sentiment (avg score: 41.35). The main elements discussed included aid-related topics and weather conditions. The impact observed was significant, with many users seeking information on aid distribution and safety measures. Requests for shelter and medical help were frequent. The overall sentiment showed a slight improvement, reflecting a community's resilience."
         }
     ]
 }
