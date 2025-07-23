@@ -186,6 +186,11 @@ def handle_query_stream(query):
 
     progress_card.empty()
     timer_placeholder.empty()
+
+    # Refresh the file lists
+    st.session_state.reports = check_for_reports()
+    st.session_state.csvs = check_for_csvs()
+
     return final_response, "\n".join(logs), final_state
 
 # Custom CSS for UI styling
