@@ -88,6 +88,16 @@ class AgentState(TypedDict):
     response: str
     error: str
 
+# Elements, Impact, Requests mapping
+elements_map = ["weather_related", "floods", "storm", "fire", "earthquake", "cold", "other_weather"
+                ]
+impact_map = ['infrastructure_related', 'transport', 'buildings', 'electricity', 'hospitals', 'shops',
+                'aid_centers', 'other_infrastructure', 'death', 'child_alone', 'search_and_rescue'
+                ]
+requests_map = ['medical_help', 'medical_products', 'water', 'food', 'shelter', 'clothing',
+                 'money', 'tools', 'other_aid'
+                 ]
+
 def init_llm() -> Ollama:
     """Initializes and returns the Ollama LLM for agent operations."""
     try:
@@ -336,7 +346,13 @@ def _generate_all_daily_summaries(daily_stats: List[Dict[str, Any]]) -> Dict[str
 
     prompt_template = """
     You are a data analyst summarizing daily social media activity during a crisis.
-    Based on the following list of daily statistics, generate a concise, 2-sentence narrative summary for EACH day.
+    Based on the following list of daily statistics, generate a comprehensive, multi-sentence narrative summary (at least 5-6 sentences) for EACH day.
+    For each day, your summary MUST explicitly mention:
+    - The overall sentiment (with score and trend if possible)
+    - The most prominent elements (themes/topics)
+    - The main impacts observed
+    - The types and volume of requests
+    Use all available data (sentiment, label counts, tweet count, etc.) to provide a thorough, context-rich summary for each day.
     The sentiment score is on a 0-100 scale (0=very negative, 50=neutral, 100=very positive).
     
     DATA:
@@ -346,8 +362,8 @@ def _generate_all_daily_summaries(daily_stats: List[Dict[str, Any]]) -> Dict[str
     
     Example Output Format:
     {{
-      "2025-03-28": "Social media volume was high with 500 tweets, showing a predominantly negative sentiment (avg score: 25.5). The main topics were building collapses and requests for shelter.",
-      "2025-03-29": "Activity decreased to 300 tweets. Sentiment slightly improved to 35.2, with discussions shifting towards aid distribution and medical help."
+      "2025-03-28": "On this day, social media activity was high with 500 tweets, reflecting a predominantly negative sentiment (avg score: 25.5). The main elements discussed included building collapses and requests for shelter. The impact was significant, with many users reporting infrastructure damage and urgent needs. Requests for shelter and medical help were especially frequent. The sentiment remained low throughout the day, indicating ongoing distress. Overall, the data suggests a community in urgent need of assistance, with clear calls for help and reports of severe impact.",
+      "2025-03-29": "Activity decreased to 300 tweets. Sentiment slightly improved to 35.2, with discussions shifting towards aid distribution and medical help. The main elements were food and water shortages. Impact reports lessened, but requests for aid remained high. The community's mood showed slight improvement, but needs persisted."
     }}
 
     JSON Response:
@@ -473,12 +489,12 @@ def generate_report_data(
     YOUR JSON OUTPUT STRUCTURE:
     {{
         "sections": {{
-            "Background": "A 2-3 paragraph summary of the disaster situation, using the web/wiki info.",
-            "Tweet Overview": "A short summary of the tweet data, highlighting influential users or themes from the top tweets.",
-            "Sentiment Overview": "A detailed summary of the sentiment analysis. Use the daily summaries and stats to describe trends over time. Mention the overall average score and the breakdown of positive/neutral/negative tweets.",
-            "Results": "A summary of the disaster's impact on the population, inferring from all data including the daily label counts.",
-            "Discussion": "Discuss ongoing response efforts and priorities, integrating web search results with needs identified from tweet labels.",
-            "Recommendation": "Provide critical actions for humanitarian aid based on your synthesis of all available information."
+            "Background": "A detailed, multi-paragraph (at least 4-5 paragraphs) summary of the disaster situation, using the web/wiki info. Provide as much context, background, and detail as possible.",
+            "Tweet Overview": "A comprehensive overview (at least 2-3 paragraphs) of the tweet data, highlighting influential users, recurring themes, and notable tweet content from the top tweets. Include statistics and trends.",
+            "Sentiment Overview": "A thorough, multi-paragraph (at least 3-4 paragraphs) summary of the sentiment analysis. Use the daily summaries and stats to describe trends over time. Mention the overall average score, the breakdown of positive/neutral/negative tweets, and discuss changes in sentiment and their possible causes.",
+            "Results": "A detailed summary (at least 2-3 paragraphs) of the disaster's impact on the population, inferring from all data including the daily label counts. Discuss the scale and nature of the impact, referencing specific data points.",
+            "Discussion": "A multi-paragraph (at least 4-5 paragraphs) discussion of ongoing response efforts and priorities, integrating web search results with needs identified from tweet labels. Analyze the effectiveness and gaps in the response.",
+            "Recommendation": "A detailed set of critical actions (at least 4-5 paragraphs) for humanitarian aid based on your synthesis of all available information. Provide actionable, prioritized recommendations."
         }}
     }}
     """
@@ -537,13 +553,13 @@ def generate_report_data(
 
         final_day_by_day_data = []
         for day_data in day_by_day_data:
-            top_elements = sorted(day_data['label_counts'].items(), key=lambda item: item[1], reverse=True)[:3]
-            impact_labels = [k for k, v in day_data['label_counts'].items() if 'impact' in k and v > 0]
-            request_labels = [k for k, v in day_data['label_counts'].items() if 'request' in k and v > 0]
+            elements_labels = [k for k, v in day_data['label_counts'].items() if k in elements_map and v > 0]
+            impact_labels = [k for k, v in day_data['label_counts'].items() if k in impact_map and v > 0]
+            request_labels = [k for k, v in day_data['label_counts'].items() if k in requests_map and v > 0]
             final_day_by_day_data.append({
                 "Date": day_data.get("date", "N/A"),
                 "Sentiment": round(day_data.get("sentiment_score", 50.0), 2),
-                "Elements": ", ".join([k.replace('_', ' ').title() for k, v in top_elements if v > 0]),
+                "Elements": ", ".join([l.replace('_', ' ').title() for l in elements_labels]),
                 "Impact": ", ".join([l.replace('_', ' ').title() for l in impact_labels]),
                 "Requests": ", ".join([l.replace('_', ' ').title() for l in request_labels]),
                 "Summary": day_data.get("Summary", "No summary available.")

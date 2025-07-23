@@ -222,9 +222,9 @@ class SentimentReport(SimpleDocTemplate):
                 processed_row = []
                 for i, cell in enumerate(row):
                     # For the Tweet column (index 3), limit the height
-                    if i == 3 and len(cell) > 300:
+                    if i == 3 and len(cell) > 500:
                         # Truncate very long tweets to prevent overflow
-                        truncated_text = cell[:300] + "..."
+                        truncated_text = cell[:500] + " ..."
                         p = Paragraph(truncated_text, self.text_style)
                     else:
                         p = Paragraph(cell, self.text_style)
@@ -265,9 +265,9 @@ class SentimentReport(SimpleDocTemplate):
                 processed_row = []
                 for i, cell in enumerate(row):
                     # For the Summary column (index 5), limit the height
-                    if i == 5 and len(cell) > 200:
+                    if i == 5 and len(cell) > 1000:
                         # Truncate very long summary to prevent overflow
-                        truncated_text = cell[:200] + "..."
+                        truncated_text = cell[:1000] + "..."
                         p = Paragraph(truncated_text, self.text_style)
                     else:
                         p = Paragraph(cell, self.text_style)
@@ -367,9 +367,9 @@ class SentimentReport(SimpleDocTemplate):
 
         # Y axis
         lp.yValueAxis.valueMin = 0
-        lp.yValueAxis.valueMax = 1
-        lp.yValueAxis.valueStep = 0.1
-        lp.yValueAxis.labelTextFormat = '%0.1f'
+        lp.yValueAxis.valueMax = 100
+        lp.yValueAxis.valueStep = 10
+        lp.yValueAxis.labelTextFormat = '%d'
         lp.yValueAxis.labels.fontName = 'Times-Bold'
         lp.yValueAxis.labels.fontSize = 9
 
