@@ -109,22 +109,36 @@ def init_llm() -> Ollama:
 
 def init_sentiment_model() -> Optional[TunedLLM]:
     """Initializes and returns the custom TunedLLM for multi-label classification."""
+    # First, try to download from Hugging Face Hub
     try:
         repo_id = "spencercdz/xlm-roberta-sentiment-requests"
         token = os.environ.get("HF_TOKEN")
-        logger.info(f"Downloading model repository '{repo_id}' from the Hub...")
+        logger.info(f"Attempting to download model repository '{repo_id}' from the Hub...")
         model_path = snapshot_download(
             repo_id=repo_id, repo_type="model", token=token, allow_patterns="final_model/**"
         )
         logger.info(f"Model downloaded to cache: {model_path}")
         final_model_path = Path(model_path) / "final_model"
         if not final_model_path.is_dir():
-            raise FileNotFoundError(f"Model directory not found: {final_model_path}.")
+            raise FileNotFoundError(f"Model directory not found in cache: {final_model_path}.")
         model = TunedLLM.load_from_disk(final_model_path)
-        logger.info(f"Successfully initialized TunedLLM with model: {repo_id}")
+        logger.info(f"Successfully initialized TunedLLM with model from Hub: {repo_id}")
         return model
     except Exception as e:
-        logger.error(f"Failed to initialize TunedLLM: {e}", exc_info=True)
+        logger.warning(f"Failed to download or load model from Hugging Face Hub: {e}")
+        logger.info("Falling back to loading a local model.")
+
+    # If downloading fails, try to load from a local path
+    try:
+        local_model_path = project_root / "models" / "tuned" / "cardiffnlp_twitter-xlm-roberta-base-sentiment" / "final_model"
+        logger.info(f"Attempting to load model from local path: {local_model_path}")
+        if not local_model_path.is_dir():
+            raise FileNotFoundError(f"Local model directory not found: {local_model_path}.")
+        model = TunedLLM.load_from_disk(local_model_path)
+        logger.info("Successfully initialized TunedLLM with local model.")
+        return model
+    except Exception as e:
+        logger.error(f"Failed to initialize TunedLLM from both Hub and local path: {e}", exc_info=True)
         return None
  
 def analyze_sentiment(twitter_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
