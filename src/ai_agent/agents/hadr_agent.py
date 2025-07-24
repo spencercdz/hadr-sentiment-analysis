@@ -8,8 +8,7 @@ import logging
 import gc
 from pathlib import Path
 from typing import Dict, List, Any, TypedDict
-import traceback
-from datetime import datetime, timedelta
+from datetime import datetime
 from langchain_community.llms import Ollama
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper, WikipediaAPIWrapper
 from langchain.chains import LLMChain
@@ -18,8 +17,6 @@ from langchain.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
 from tqdm import tqdm
 import re
-import csv
-import yaml
 from typing import Any, Dict, List, Optional, TypedDict
 
 # Configure paths
@@ -709,6 +706,14 @@ def generate_final_response(state: AgentState) -> AgentState:
     )
     return {**state, "response": response}
 
+def warmup_ollama():
+    """Warm up the Ollama LLM by running a trivial prompt to load the model."""
+    llm = init_llm()
+    try:
+        _ = llm.invoke("Hello")
+    except Exception as e:
+        logger.warning(f"Ollama warmup failed: {e}")
+
 def build_agent_workflow():
     """Build the agent workflow graph"""
     workflow = StateGraph(AgentState)
@@ -733,22 +738,58 @@ def build_agent_workflow():
     
     return workflow.compile()
 
-def process_query(query: str) -> Dict[str, Any]:
-    logger.info(f"Processing query: {query}")
+def process_query_stream(query: str):
+    """
+    Generator version of process_query that yields befire each major step starts.
+    """
+    logs = []
     default_state = {
         "query": query, "disaster_type": "", "disaster_location": "", "disaster_date": "",
         "twitter_data": [], "search_results": [], "wikipedia_results": [],
         "sentiment_analysis": [], "report_data": {}, "report_path": "",
         "response": "", "error": ""
     }
-    try:
-        app = build_agent_workflow()
-        result = app.invoke(default_state)
-        logger.info(f"Workflow completed with report path: {result.get('report_path', 'N/A')}")
-        return result
-    except Exception as e:
-        logger.error(f"Error in process_query: {e}", exc_info=True)
-        return {**default_state, "error": str(e), "response": "A critical error occurred."}
+    state = default_state
+
+    # Step 1: Extract info
+    logs.append("🔍 Extracting disaster information from your query...")
+    yield {"step": "extract_info", "logs": "\n".join(logs), "state": state}
+    state = extract_info(state)
+
+    # Step 2: Gather Twitter data
+    logs.append("🐦 Gathering relevant Twitter data...")
+    yield {"step": "gather_twitter_data", "logs": "\n".join(logs), "state": state}
+    state = gather_twitter_data(state)
+
+    # Step 3: Gather web info
+    logs.append("🌐 Searching the web for disaster impact and humanitarian info...")
+    yield {"step": "gather_web_info", "logs": "\n".join(logs), "state": state}
+    state = gather_web_info(state)
+
+    # Step 4: Gather Wikipedia info
+    logs.append("📚 Retrieving background information from Wikipedia...")
+    yield {"step": "gather_wikipedia_info", "logs": "\n".join(logs), "state": state}
+    state = gather_wikipedia_info(state)
+
+    # Step 5: Analyze tweet sentiment
+    logs.append("💡 Analyzing tweet sentiment and extracting key labels...")
+    yield {"step": "analyze_tweet_sentiment", "logs": "\n".join(logs), "state": state}
+    state = analyze_tweet_sentiment(state)
+
+    # Step 6: Build report data
+    logs.append("📝 Building structured report data from all sources...")
+    yield {"step": "build_report_data", "logs": "\n".join(logs), "state": state}
+    state = build_report_data(state)
+
+    # Step 7: Create final report
+    logs.append("📄 Generating the final PDF report...")
+    yield {"step": "create_final_report", "logs": "\n".join(logs), "state": state}
+    state = create_final_report(state)
+
+    # Step 8: Generate final response
+    logs.append("✅ Done! Your report and analysis are ready.")
+    yield {"step": "generate_final_response", "logs": "\n".join(logs), "state": state}
+    state = generate_final_response(state)
 
 if __name__ == "__main__":
     import argparse
@@ -756,9 +797,13 @@ if __name__ == "__main__":
     parser.add_argument("--query", type=str, help="Query to process")
     args = parser.parse_args()
     if args.query:
-        result = process_query(args.query)
-        print(f"\n---AGENT FINAL RESPONSE---\n{result['response']}")
-        if result.get('report_path'):
-            print(f"Report Path: {result.get('report_path')}")
+        app = build_agent_workflow()
+        result = app.invoke({"query": args.query})
+        logger.info(f"Workflow completed with report path: {result.get('report_path', 'N/A')}")
+        for step in process_query_stream(args.query):
+            print(f"\n---{step['step'].upper()}---")
+            print(step['logs'])
+            print("Current State:")
+            print(json.dumps(step['state'], indent=2))
     else:
         print("Please provide a query with --query")

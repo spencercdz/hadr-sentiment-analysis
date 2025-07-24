@@ -60,6 +60,20 @@ streamlit run app.py
 3. Wait for the agent to process the query and generate a report
 4. Download the PDF report from the sidebar
 
+### **Accessing All Reports and Prediction CSVs**
+
+- **All previously generated PDF and JSON reports** are automatically loaded from `assets/outputs/` and shown in the sidebar, even from previous sessions.
+- **All prediction CSV files** (containing tweet-level sentiment and label predictions) are loaded from `assets/outputs/reports/` and are also available in the sidebar.
+- You can download any report or CSV at any time, including those from earlier sessions.
+- Both reports and CSVs are persistent and always available in the sidebar for analysis.
+
+### About the Prediction CSV Files
+
+- Each time a report is generated, a corresponding CSV file is created in `assets/outputs/reports/`.
+- These CSVs contain detailed tweet-level predictions, including sentiment scores and label assignments for each tweet analyzed.
+- You can use these CSVs for further analysis, visualization, or integration with other tools.
+- The sidebar provides download buttons and basic info (filename, size, date) for each CSV.
+
 ### Running the Agent from Command Line
 
 You can also run the agent directly from the command line:
