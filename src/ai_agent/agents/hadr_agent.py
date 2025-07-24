@@ -127,7 +127,7 @@ def init_sentiment_model() -> Optional[TunedLLM]:
 
     # If downloading fails, try to load from a local path
     try:
-        local_model_path = project_root / "models" / "tuned" / "cardiffnlp_twitter-xlm-roberta-base-sentiment" / "final_model"
+        local_model_path = project_root / "models" / "tuned" / "cardiffnlp_twitter-xlm-roberta-base-sentiment"
         logger.info(f"Attempting to load model from local path: {local_model_path}")
         if not local_model_path.is_dir():
             raise FileNotFoundError(f"Local model directory not found: {local_model_path}.")
